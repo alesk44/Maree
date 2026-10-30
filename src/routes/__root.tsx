@@ -93,7 +93,16 @@ function RootContent() {
               <Link key={n.to} to={n.to} className="rounded-md px-2 py-2 text-sm font-medium text-muted-foreground hover:text-primary" activeProps={{ className: "text-primary bg-secondary" }}>{t(n.label)}</Link>
             ))}
           </nav>
-          <div className="flex items-center gap-2"><select aria-label="Language" className="field w-auto max-w-32 text-sm" value={language} onChange={(e) => setLanguage(resolveLanguage(e.target.value))}><option value="fr">Français</option><option value="en">English</option><option value="ro">Română</option></select><button className="btn btn-ghost lg:hidden" aria-expanded={open} aria-label={t("Menu")} onClick={() => setOpen(!open)}>☰</button></div>
+          <div className="flex items-center gap-2">
+            <div role="group" aria-label={t("Langue")} className="inline-flex shrink-0 items-center rounded-lg border bg-background p-1">
+              {([{ code: "fr", label: "FR" }, { code: "en", label: "EN" }, { code: "ro", label: "RO" }] as const).map((item) => (
+                <button key={item.code} type="button" lang={item.code} aria-pressed={language === item.code} onClick={() => setLanguage(item.code)} className={"rounded-md px-2 py-1.5 text-xs font-semibold transition-colors " + (language === item.code ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary hover:text-foreground")}>
+                  {item.label}
+                </button>
+              ))}
+            </div>
+            <button className="btn btn-ghost lg:hidden" aria-expanded={open} aria-label={t("Menu")} onClick={() => setOpen(!open)}>☰</button>
+          </div>
         </div>
         {open && (
           <nav className="grid border-t px-4 py-2 lg:hidden" aria-label={t("Navigation mobile")}>
