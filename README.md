@@ -42,7 +42,7 @@ A first Supabase/PostgreSQL schema migration is included at `supabase/migrations
 
 - Supabase client configuration and the `/connexion` sign-in / sign-up page are now present. The app's catalogue, fisher workspace and order forms still use the local demo store; they have not yet been migrated to the shared database.
 - Fisher/admin role assignment is not self-service. Do not use the demo fisher workspace for real listings until the routes are connected to authenticated user IDs and server-side permissions.
-- There is no payment processing or live notification service.
+- There is no payment processing. The `notify-verification-request` Supabase Edge Function is deployed; to activate email alerts, configure the Supabase Edge Function secrets `RESEND_API_KEY` (Resend API key) and `MAREE_FROM_EMAIL` (a sender address verified with Resend). The notification target is `alexozo44760@gmail.com`. Until those secrets and a verified sender are configured, verification requests still save to the database but the automatic alert cannot be delivered.
 - Before real commercial use, connect a shared database and secure authentication, then verify Jersey food-sale, traceability, data-protection and business requirements.
 
 ## Stack
@@ -56,3 +56,12 @@ A first Supabase/PostgreSQL schema migration is included at `supabase/migrations
 ## Supabase browser configuration
 
 The frontend uses only the public project URL and publishable key in `src/lib/supabase.ts`. These are intended for browser use; never add a Supabase `service_role` key to frontend code. Optional deployment overrides are `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. The sign-up flow creates restaurant accounts; fisher access must be granted by a trusted administrator after verification. Configure the Supabase Auth site URL and allowed redirect URLs for the final deployed domain before inviting real users.
+
+
+## Account creation and automatic email setup
+
+- Account creation/sign-in: open `/connexion` on the deployed app. The page includes account creation, sign-in, a password-reset email action, and a link to request fisher/restaurant verification.
+- Fisher/restaurant verification: sign in first, then open `/verification` and submit the professional details. Requests are stored in Supabase; an Edge Function emails the verification inbox once Resend secrets are configured.
+- In Supabase Dashboard → Edge Functions → Secrets, add `RESEND_API_KEY` and `MAREE_FROM_EMAIL`. Create a free Resend account, verify a sender domain/address as Resend requires, and use that sender in `MAREE_FROM_EMAIL`. Never put the API key in frontend code or commit it to GitHub.
+- In Supabase Dashboard → Authentication → URL Configuration, set the Site URL to the final deployed app URL and add that URL plus `/connexion` to the allowed redirect URLs. Ensure email confirmations are enabled if new accounts must confirm their email; Supabase's default test mailer is rate-limited, so configure SMTP for reliable production delivery.
+- Password reset and confirmation links depend on the correct Site URL / allowed redirect URLs and the Auth email settings. The app does not send email credentials itself.
