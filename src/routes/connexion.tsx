@@ -1,0 +1,126 @@
+import { useEffect, useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import type { AuthError } from "@supabase/supabase-js";
+import { toast } from "sonner";
+import { useLanguage } from "@/lib/i18n";
+import { supabase } from "@/lib/supabase";
+
+export const Route = createFileRoute("/connexion")({
+  head: () => ({
+    meta: [
+      { title: "Connexion — Marée Jersey" },
+      { name: "description", content: "Connexion et création de compte Marée Jersey." },
+    ],
+  }),
+  component: AuthPage,
+});
+
+function AuthPage() {
+  const { t } = useLanguage();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [busy, setBusy] = useState(false);
+  const [sessionEmail, setSessionEmail] = useState<string | null>(null);
+  const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (active) setSessionEmail(data.session?.user.email ?? null);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSessionEmail(session?.user.email ?? null);
+    });
+    return () => {
+      active = false;
+      listener.subscription.unsubscribe();
+    };
+  }, []);
+
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!email.trim() || password.length < 8) {
+      toast.error(t("Entrez un e-mail valide et un mot de passe d'au moins 8 caractères."));
+      return;
+    }
+    if (mode === "signup" && !displayName.trim()) {
+      toast.error(t("Entrez votre nom ou celui de votre établissement."));
+      return;
+    }
+    setBusy(true);
+    setNeedsEmailConfirmation(false);
+    try {
+      if (mode === "signup") {
+        const { data, error } = await supabase.auth.signUp({
+          email: email.trim(),
+          password,
+          options: { data: { display_name: displayName.trim() } },
+        });
+        if (error) throw error;
+        if (data.session) {
+          setSessionEmail(data.user?.email ?? email.trim());
+          toast.success(t("Compte créé. Vous êtes connecté en tant que restaurant."));
+        } else {
+          setNeedsEmailConfirmation(true);
+          toast.success(t("Compte créé. Vérifiez votre e-mail pour confirmer l'adresse."));
+        }
+      } else {
+        const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+        if (error) throw error;
+        setSessionEmail(data.user.email ?? email.trim());
+        toast.success(t("Connexion réussie."));
+      }
+    } catch (error) {
+      const message = error as AuthError;
+      toast.error(message?.message ?? t("La connexion a échoué."));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const signOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) toast.error(error.message);
+    else {
+      setSessionEmail(null);
+      toast.success(t("Vous êtes déconnecté."));
+    }
+  };
+
+  return (
+    <div className="mx-auto max-w-xl px-4 py-12">
+      <div className="card grid gap-5 p-6 sm:p-8">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-widest text-accent">Marée Jersey</p>
+          <h1 className="mt-2 font-display text-3xl font-semibold">{t("Compte sécurisé")}</h1>
+          <p className="mt-2 text-muted-foreground">{t("Créez un compte restaurant ou connectez-vous pour continuer.")}</p>
+        </div>
+        {sessionEmail ? (
+          <div className="grid gap-4">
+            <p className="rounded-lg bg-secondary p-4 text-sm">{t("Connecté en tant que")} <strong>{sessionEmail}</strong></p>
+            <p className="text-sm text-muted-foreground">{t("Les comptes créés ici reçoivent le rôle restaurant. L'accès pêcheur est accordé séparément après vérification.")}</p>
+            <button className="btn" onClick={signOut}>{t("Se déconnecter")}</button>
+            <Link to="/catalogue" className="btn btn-accent">{t("Voir la pêche du jour")}</Link>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-2 rounded-lg bg-secondary p-1">
+              <button type="button" className={"rounded-md px-3 py-2 text-sm font-semibold " + (mode === "signin" ? "bg-background shadow" : "")} onClick={() => setMode("signin")}>{t("Connexion")}</button>
+              <button type="button" className={"rounded-md px-3 py-2 text-sm font-semibold " + (mode === "signup" ? "bg-background shadow" : "")} onClick={() => setMode("signup")}>{t("Créer un compte")}</button>
+            </div>
+            <form onSubmit={submit} className="grid gap-4">
+              {mode === "signup" && <label className="grid gap-1 text-sm font-medium">{t("Nom / établissement")}<input className="field" autoComplete="name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required maxLength={120} /></label>}
+              <label className="grid gap-1 text-sm font-medium">{t("E-mail")}<input className="field" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
+              <label className="grid gap-1 text-sm font-medium">{t("Mot de passe")}<input className="field" type="password" autoComplete={mode === "signup" ? "new-password" : "current-password"} value={password} onChange={(e) => setPassword(e.target.value)} minLength={8} required /></label>
+              <button className="btn btn-accent" disabled={busy}>{busy ? t("Patientez…") : mode === "signup" ? t("Créer mon compte restaurant") : t("Se connecter")}</button>
+            </form>
+            {needsEmailConfirmation && <p role="status" className="rounded-lg bg-secondary p-3 text-sm">{t("Ouvrez le lien reçu par e-mail pour activer votre compte.")}</p>}
+            <p className="text-xs text-muted-foreground">{t("Ne partagez jamais votre mot de passe. Les données réelles ne seront accessibles que selon les permissions de votre compte.")}</p>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
