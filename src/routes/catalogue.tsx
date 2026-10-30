@@ -44,7 +44,7 @@ function Catalogue() {
       <div className="card mb-6 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-6">
         <input className="field lg:col-span-2" placeholder={t("Rechercher espèce, zone…")} aria-label={t("Recherche")} value={q} onChange={(e) => setQ(e.target.value)} />
         <select className="field" aria-label={t("Espèce")} value={species} onChange={(e) => setSpecies(e.target.value)}>
-          <option value="">{t("Toutes espèces")}</option>{speciesList.map((s) => <option key={t(s)}>{t(s)}</option>)}
+          <option value="">{t("Toutes espèces")}</option>{speciesList.map((s) => <option key={s} value={s}>{t(s)}</option>)}
         </select>
         <select className="field" aria-label={t("Disponibilité")} value={status} onChange={(e) => setStatus(e.target.value)}>
           <option value="">{t("Tous statuts")}</option><option value="disponible">{t("Disponible")}</option><option value="réservé">{t("Réservé")}</option><option value="épuisé">{t("Épuisé")}</option>
