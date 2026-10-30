@@ -1,41 +1,48 @@
-# Welcome to your Lovable project
+# Marée Jersey
 
-This project was built with [Lovable](https://lovable.dev).
+A trilingual (French, English, Romanian) prototype connecting Jersey fishers with local restaurants for the day's fresh catch.
 
-## Build with Lovable
+## Local development
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
-
-## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+Requirements: Node.js and Bun.
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
+git clone https://github.com/alesk44/Maree.git
+cd Maree
+bun install
+bun run dev
 ```
 
-## Built with
+## Verify before deployment
 
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS
+```sh
+bun run build
+bun run test
+bun x wrangler deploy --dry-run
+```
+
+The build creates a Cloudflare Workers-compatible Nitro bundle under `.output/`. The dry run checks the generated Worker and asset bundle without publishing it.
 
 ## Deploy to Cloudflare Workers
 
-This repository includes a `wrangler.jsonc` configuration and a deployment script.
-
-1. Install Node.js and Bun (the repository includes `bun.lock`).
-2. Clone this repository and run `bun install`.
-3. Run `bun run build` and check that the build succeeds.
-4. Authenticate to Cloudflare with `npx wrangler login`.
+1. Create or sign in to your free Cloudflare account.
+2. In the project folder, run `bun install`.
+3. Run the verification commands above.
+4. Authenticate with `bun x wrangler login` and complete the browser authorization.
 5. Deploy with `bun run deploy`.
+6. Open the `workers.dev` URL returned by Wrangler and verify the home page, all routes, and the FR / EN / RO language selector.
 
-The first deployment must be completed from a machine where you can authenticate to your own Cloudflare account. The site is not considered deployed until Wrangler reports a successful deployment and returns its live `workers.dev` URL.
+The deployment has not been performed automatically because it requires authorization to the owner's Cloudflare account. Do not treat the site as deployed until Wrangler reports success and returns a live URL.
+
+## Current prototype limitations
+
+- Fisher profiles, catches and orders are demonstration data stored in the browser; data is not shared between devices or users.
+- There is no production authentication, payment processing, or live notification service.
+- Before real commercial use, connect a shared database and secure authentication, then verify Jersey food-sale, traceability, data-protection and business requirements.
+
+## Stack
+
+- TanStack Start
+- React and TypeScript
+- Tailwind CSS
+- Nitro Cloudflare Workers preset
