@@ -27,3 +27,15 @@ npm run dev
 - TypeScript
 - React
 - Tailwind CSS
+
+## Deploy to Cloudflare Workers
+
+This repository includes a `wrangler.jsonc` configuration and a deployment script.
+
+1. Install Node.js and Bun (the repository includes `bun.lock`).
+2. Clone this repository and run `bun install`.
+3. Run `bun run build` and check that the build succeeds.
+4. Authenticate to Cloudflare with `npx wrangler login`.
+5. Deploy with `bun run deploy`.
+
+The first deployment must be completed from a machine where you can authenticate to your own Cloudflare account. The site is not considered deployed until Wrangler reports a successful deployment and returns its live `workers.dev` URL.
