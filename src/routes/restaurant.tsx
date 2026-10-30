@@ -36,11 +36,15 @@ function Restaurant() {
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!sel || !restaurant || !slot) return toast.error(t("Complétez produit, restaurant et créneau."));
-    if (qty <= 0 || qty > sel.qtyKg) return toast.error(t("Quantité entre 0,5 et {max} kg.", { max: sel.qtyKg }));
-    actions.addOrder({ catchId, restaurant, contact, qtyKg: qty, slot: new Date(slot).toISOString(), mode, note });
-    toast.success(t("Demande enregistrée (démo) — rien n'a été envoyé au pêcheur."));
-    setNote("");
+    if (!sel || !restaurant.trim() || !slot) return toast.error(t("Complétez produit, restaurant et créneau."));
+    if (!Number.isFinite(new Date(slot).getTime())) return toast.error(t("Créneau invalide."));
+    try {
+      actions.addOrder({ catchId, restaurant: restaurant.trim(), contact: contact.trim(), qtyKg: qty, slot: new Date(slot).toISOString(), mode, note: note.trim() });
+      toast.success(t("Demande enregistrée (démo) — rien n'a été envoyé au pêcheur."));
+      setNote("");
+    } catch (error) {
+      toast.error(error instanceof Error ? t(error.message) : t("Impossible d'enregistrer la demande."));
+    }
   };
 
   return (
