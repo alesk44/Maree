@@ -1020,4 +1020,119 @@ export const translations: Record<string, readonly [string, string, string]> = {
     "Entregar na cozinha pela entrada traseira",
     "Livrați în bucătărie prin intrarea din spate"
   ]
+  "Connexion": [
+    "Sign in",
+    "Iniciar sessão",
+    "Autentificare"
+  ],
+  "Compte sécurisé": [
+    "Secure account",
+    "Conta segura",
+    "Cont sigur"
+  ],
+  "Créez un compte restaurant ou connectez-vous pour continuer.": [
+    "Create a restaurant account or sign in to continue.",
+    "Crie uma conta de restaurante ou inicie sessão para continuar.",
+    "Creați un cont de restaurant sau autentificați-vă pentru a continua."
+  ],
+  "Entrez un e-mail valide et un mot de passe d'au moins 8 caractères.": [
+    "Enter a valid email and a password of at least 8 characters.",
+    "Introduza um e-mail válido e uma palavra-passe com pelo menos 8 caracteres.",
+    "Introduceți un e-mail valid și o parolă de cel puțin 8 caractere."
+  ],
+  "Entrez votre nom ou celui de votre établissement.": [
+    "Enter your name or your business name.",
+    "Introduza o seu nome ou o nome do estabelecimento.",
+    "Introduceți numele dvs. sau numele unității."
+  ],
+  "Compte créé. Vous êtes connecté en tant que restaurant.": [
+    "Account created. You are signed in as a restaurant.",
+    "Conta criada. Tem sessão iniciada como restaurante.",
+    "Cont creat. Sunteți autentificat ca restaurant."
+  ],
+  "Compte créé. Vérifiez votre e-mail pour confirmer l'adresse.": [
+    "Account created. Check your email to confirm your address.",
+    "Conta criada. Verifique o seu e-mail para confirmar o endereço.",
+    "Cont creat. Verificați e-mailul pentru a confirma adresa."
+  ],
+  "Connexion réussie.": [
+    "Signed in successfully.",
+    "Sessão iniciada com sucesso.",
+    "Autentificare reușită."
+  ],
+  "La connexion a échoué.": [
+    "Sign-in failed.",
+    "O início de sessão falhou.",
+    "Autentificarea a eșuat."
+  ],
+  "Vous êtes déconnecté.": [
+    "You have signed out.",
+    "Terminou a sessão.",
+    "V-ați deconectat."
+  ],
+  "Connecté en tant que": [
+    "Signed in as",
+    "Sessão iniciada como",
+    "Autentificat ca"
+  ],
+  "Les comptes créés ici reçoivent le rôle restaurant. L'accès pêcheur est accordé séparément après vérification.": [
+    "Accounts created here receive the restaurant role. Fisher access is granted separately after verification.",
+    "As contas criadas aqui recebem a função de restaurante. O acesso de pescador é atribuído separadamente após verificação.",
+    "Conturile create aici primesc rolul de restaurant. Accesul pescarilor se acordă separat după verificare."
+  ],
+  "Se déconnecter": [
+    "Sign out",
+    "Terminar sessão",
+    "Deconectare"
+  ],
+  "Créer un compte": [
+    "Create account",
+    "Criar conta",
+    "Creați cont"
+  ],
+  "Nom / établissement": [
+    "Name / business",
+    "Nome / estabelecimento",
+    "Nume / unitate"
+  ],
+  "E-mail": [
+    "Email",
+    "E-mail",
+    "E-mail"
+  ],
+  "Mot de passe": [
+    "Password",
+    "Palavra-passe",
+    "Parolă"
+  ],
+  "Patientez…": [
+    "Please wait…",
+    "Aguarde…",
+    "Așteptați…"
+  ],
+  "Créer mon compte restaurant": [
+    "Create restaurant account",
+    "Criar conta de restaurante",
+    "Creați cont de restaurant"
+  ],
+  "Se connecter": [
+    "Sign in",
+    "Iniciar sessão",
+    "Autentificare"
+  ],
+  "Ouvrez le lien reçu par e-mail pour activer votre compte.": [
+    "Open the link sent by email to activate your account.",
+    "Abra o link recebido por e-mail para ativar a sua conta.",
+    "Deschideți linkul primit prin e-mail pentru a vă activa contul."
+  ],
+  "Ne partagez jamais votre mot de passe. Les données réelles ne seront accessibles que selon les permissions de votre compte.": [
+    "Never share your password. Real data will only be accessible according to your account permissions.",
+    "Nunca partilhe a sua palavra-passe. Os dados reais só estarão acessíveis de acordo com as permissões da sua conta.",
+    "Nu partajați niciodată parola. Datele reale vor fi accesibile doar conform permisiunilor contului dvs."
+  ],
+  "Créer un compte restaurant ou connectez-vous pour continuer.": [
+    "Create a restaurant account or sign in to continue.",
+    "Crie uma conta de restaurante ou inicie sessão para continuar.",
+    "Creați un cont de restaurant sau autentificați-vă pentru a continua."
+  ],
 };
