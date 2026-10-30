@@ -35,10 +35,14 @@ function FisherSpace() {
 
   const publish = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.species || !form.zone || !form.caughtAt || !form.landedAt) return toast.error(t("Espèce, zone et horaires sont requis."));
-    actions.addCatch({ ...form, caughtAt: new Date(form.caughtAt).toISOString(), landedAt: new Date(form.landedAt).toISOString(), fisherId: fid, method: me.method, emoji: EMOJI[me.method] ?? "🐟", status: "disponible" });
-    toast.success(t("Prise publiée dans le catalogue (enregistrée localement)."));
-    setForm((f) => ({ ...f, species: "", grade: "" }));
+    if (!form.species.trim() || !form.zone.trim() || !form.caughtAt || !form.landedAt) return toast.error(t("Espèce, zone et horaires sont requis."));
+    try {
+      actions.addCatch({ ...form, species: form.species.trim(), zone: form.zone.trim(), grade: form.grade.trim(), caughtAt: new Date(form.caughtAt).toISOString(), landedAt: new Date(form.landedAt).toISOString(), fisherId: fid, method: me.method, emoji: EMOJI[me.method] ?? "🐟", status: "disponible" });
+      toast.success(t("Prise publiée dans le catalogue (enregistrée localement)."));
+      setForm((f) => ({ ...f, species: "", grade: "" }));
+    } catch (error) {
+      toast.error(error instanceof Error ? t(error.message) : t("Impossible de publier cette prise."));
+    }
   };
 
   return (
