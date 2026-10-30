@@ -8,7 +8,7 @@ alter table public.profiles
 
 alter table public.profiles
   add constraint profiles_since_year_valid
-  check (since_year is null or since_year between 1900 and extract(year from now())::integer);
+  check (since_year is null or since_year between 1900 and 2100);
 
 create policy "Public can read verified fisher profiles"
   on public.profiles for select to anon, authenticated
