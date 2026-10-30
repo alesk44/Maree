@@ -1,16 +1,16 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { translations } from "./translations";
 
-export const LANGUAGES = ["en", "fr", "pt", "ro"] as const;
+export const LANGUAGES = ["fr", "en", "ro"] as const;
 export type Language = (typeof LANGUAGES)[number];
 export const DEFAULT_LANGUAGE: Language = "en";
 export const LANGUAGE_KEY = "maree-jersey-language";
-export const locales: Record<Language, string> = { en: "en-GB", fr: "fr-FR", pt: "pt-PT", ro: "ro-RO" };
+export const locales: Record<Language, string> = { fr: "fr-FR", en: "en-GB", ro: "ro-RO" };
 export function resolveLanguage(value: string | null): Language {
   return LANGUAGES.find((language) => language === value) ?? DEFAULT_LANGUAGE;
 }
 export function translate(text: string, language: Language = DEFAULT_LANGUAGE, values?: Record<string, string | number>): string {
-  const index = language === "en" ? 0 : language === "pt" ? 1 : 2;
+  const index = language === "en" ? 0 : 2;
   const result = language === "fr" ? text : translations[text]?.[index] ?? text;
   return result.replace(/\{(\w+)\}/g, (match, key: string) => String(values?.[key] ?? match));
 }
