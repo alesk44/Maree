@@ -32,7 +32,6 @@ create table public.catches (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint catches_capture_before_landing check (caught_at <= landed_at),
-  constraint catches_landing_not_future check (landed_at <= now()),
   constraint catches_status_stock_consistency check (
     (remaining_kg = 0 and status = 'sold_out') or
     (remaining_kg > 0 and status <> 'sold_out')
@@ -44,13 +43,90 @@ create table public.orders (
   catch_id uuid not null references public.catches(id) on delete restrict,
   restaurant_id uuid not null references public.profiles(id) on delete restrict,
   quantity_kg numeric(8,2) not null check (quantity_kg >= 0.5 and mod(quantity_kg, 0.5) = 0),
-  requested_slot timestamptz not null check (requested_slot > created_at),
+  requested_slot timestamptz not null,
   fulfilment text not null check (fulfilment in ('delivery', 'collection')),
   note text check (note is null or length(note) <= 2000),
   status public.order_status not null default 'submitted',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+create schema if not exists private;
+
+create function private.set_updated_at()
+returns trigger
+language plpgsql
+set search_path = ''
+as $body$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$body$;
+
+create function private.validate_catch_timestamps()
+returns trigger
+language plpgsql
+set search_path = ''
+as $body$
+begin
+  if new.landed_at > now() then
+    raise exception 'Landing time cannot be in the future';
+  end if;
+  if new.caught_at > new.landed_at then
+    raise exception 'Catch time cannot be after landing time';
+  end if;
+  return new;
+end;
+$body$;
+
+create function private.validate_order_slot()
+returns trigger
+language plpgsql
+set search_path = ''
+as $body$
+begin
+  if new.requested_slot <= now() then
+    raise exception 'Requested slot must be in the future';
+  end if;
+  return new;
+end;
+$body$;
+
+create function private.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $body$
+begin
+  insert into public.profiles (id, role, display_name)
+  values (
+    new.id,
+    'restaurant',
+    coalesce(nullif(trim(new.raw_user_meta_data ->> 'display_name'), ''), 'New user')
+  );
+  return new;
+end;
+$body$;
+
+revoke all on function private.set_updated_at() from public, anon, authenticated;
+revoke all on function private.validate_catch_timestamps() from public, anon, authenticated;
+revoke all on function private.validate_order_slot() from public, anon, authenticated;
+revoke all on function private.handle_new_user() from public, anon, authenticated;
+
+create trigger profiles_set_updated_at before update on public.profiles
+for each row execute function private.set_updated_at();
+create trigger catches_set_updated_at before update on public.catches
+for each row execute function private.set_updated_at();
+create trigger orders_set_updated_at before update on public.orders
+for each row execute function private.set_updated_at();
+create trigger catches_validate_timestamps before insert or update on public.catches
+for each row execute function private.validate_catch_timestamps();
+create trigger orders_validate_slot before insert or update on public.orders
+for each row execute function private.validate_order_slot();
+create trigger on_auth_user_created after insert on auth.users
+for each row execute function private.handle_new_user();
 
 create index catches_available_idx on public.catches(status, landed_at desc) where status = 'available';
 create index catches_fisher_idx on public.catches(fisher_id, created_at desc);
