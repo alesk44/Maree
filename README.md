@@ -34,6 +34,10 @@ The build creates a Cloudflare Workers-compatible Nitro bundle under `.output/`.
 
 The deployment has not been performed automatically because it requires authorization to the owner's Cloudflare account. Do not treat the site as deployed until Wrangler reports success and returns a live URL.
 
+## Shared database foundation
+
+A first Supabase/PostgreSQL schema migration is included at `supabase/migrations/20261030000000_initial_schema.sql`. It defines user profiles, fish lots, orders, validation triggers, indexes, and row-level security policies. It is **not connected to the app yet** and has not been applied to a live database because no Supabase project is connected to this repository/account. The migration intentionally denies direct client order inserts until a transactional reservation RPC is implemented to lock stock and prevent race-condition overselling. New accounts are created with the `restaurant` role by default; fisher/admin roles must be assigned through a trusted administrative process.
+
 ## Current prototype limitations
 
 - Fisher profiles, catches and orders are demonstration data stored in the browser; data is not shared between devices or users.
