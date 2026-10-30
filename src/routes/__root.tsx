@@ -58,7 +58,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="fr">
       <head><HeadContent /></head>
       <body>{children}<Scripts /></body>
     </html>
@@ -93,7 +93,7 @@ function RootContent() {
               <Link key={n.to} to={n.to} className="rounded-md px-2 py-2 text-sm font-medium text-muted-foreground hover:text-primary" activeProps={{ className: "text-primary bg-secondary" }}>{t(n.label)}</Link>
             ))}
           </nav>
-          <div className="flex items-center gap-2"><select aria-label="Language" className="field w-auto max-w-32 text-sm" value={language} onChange={(e) => setLanguage(resolveLanguage(e.target.value))}><option value="en">English</option><option value="fr">Français</option><option value="pt">Português</option><option value="ro">Română</option></select><button className="btn btn-ghost lg:hidden" aria-expanded={open} aria-label={t("Menu")} onClick={() => setOpen(!open)}>☰</button></div>
+          <div className="flex items-center gap-2"><select aria-label="Language" className="field w-auto max-w-32 text-sm" value={language} onChange={(e) => setLanguage(resolveLanguage(e.target.value))}><option value="fr">Français</option><option value="en">English</option><option value="ro">Română</option></select><button className="btn btn-ghost lg:hidden" aria-expanded={open} aria-label={t("Menu")} onClick={() => setOpen(!open)}>☰</button></div>
         </div>
         {open && (
           <nav className="grid border-t px-4 py-2 lg:hidden" aria-label={t("Navigation mobile")}>

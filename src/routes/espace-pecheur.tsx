@@ -101,6 +101,5 @@ function FisherSpace() {
 }
 
 function L({ t, children }: { t: string; children: React.ReactNode }) {
-  const { t, gbp, dt } = useLanguage();
   return <label className="grid gap-1 text-sm font-medium">{t}{children}</label>;
 }
