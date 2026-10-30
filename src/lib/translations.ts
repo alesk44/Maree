@@ -1017,9 +1017,9 @@ export const translations: Record<string, readonly [string, string, string]> = {
   ],
   "Livrer en cuisine par l'arrière": [
     "Deliver to the kitchen via the back entrance",
-    "Entregar na cozinha pela entrada traseira",
+    "Livrați în bucătărie prin intrarea din spate",
     "Livrați în bucătărie prin intrarea din spate"
-  ]
+  ],
   "Connexion": [
     "Sign in",
     "Iniciar sessão",
