@@ -84,6 +84,21 @@ function AuthPage() {
     }
   };
 
+  const signInWithGoogle = async () => {
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: `${window.location.origin}/connexion` },
+      });
+      if (error) throw error;
+    } catch (error) {
+      const message = error as AuthError;
+      toast.error(message?.message ?? t("La connexion avec Google a échoué."));
+      setBusy(false);
+    }
+  };
+
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) toast.error(error.message);
@@ -115,6 +130,14 @@ function AuthPage() {
               <button type="button" className={"rounded-md px-3 py-2 text-sm font-semibold " + (mode === "signup" ? "bg-background shadow" : "")} onClick={() => setMode("signup")}>{t("Créer un compte")}</button>
               <button type="button" className={"rounded-md px-3 py-2 text-sm font-semibold " + (mode === "reset" ? "bg-background shadow" : "")} onClick={() => setMode("reset")}>{t("Mot de passe oublié")}</button>
             </div>
+            {mode !== "reset" && (
+              <>
+                <button type="button" className="btn border border-border bg-background" onClick={signInWithGoogle} disabled={busy}>
+                  <span aria-hidden="true" className="mr-2 font-bold">G</span>{t("Continuer avec Google")}
+                </button>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground"><span className="h-px flex-1 bg-border" /><span>{t("ou avec votre e-mail")}</span><span className="h-px flex-1 bg-border" /></div>
+              </>
+            )}
             <form onSubmit={submit} className="grid gap-4">
               {mode === "signup" && <label className="grid gap-1 text-sm font-medium">{t("Nom / établissement")}<input className="field" autoComplete="name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required maxLength={120} /></label>}
               <label className="grid gap-1 text-sm font-medium">{t("E-mail")}<input className="field" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
