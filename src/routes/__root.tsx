@@ -70,6 +70,7 @@ const NAV = [
   { to: "/pecheurs", label: "Pêcheurs" },
   { to: "/restaurant", label: "Restaurant" },
   { to: "/connexion", label: "Connexion" },
+  { to: "/verification", label: "Vérification" },
   { to: "/espace-pecheur", label: "Espace pêcheur" },
   { to: "/admin", label: "Admin" },
   { to: "/guide", label: "Guide" },
