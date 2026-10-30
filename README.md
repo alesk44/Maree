@@ -34,14 +34,15 @@ The build creates a Cloudflare Workers-compatible Nitro bundle under `.output/`.
 
 The deployment has not been performed automatically because it requires authorization to the owner's Cloudflare account. Do not treat the site as deployed until Wrangler reports success and returns a live URL.
 
-## Shared database foundation
+## Supabase shared database and account foundation
 
-A first Supabase/PostgreSQL schema migration is included at `supabase/migrations/20261030000000_initial_schema.sql`. It defines user profiles, fish lots, orders, validation triggers, indexes, and row-level security policies. It is **not connected to the app yet** and has not been applied to a live database because no Supabase project is connected to this repository/account. The migration intentionally denies direct client order inserts until a transactional reservation RPC is implemented to lock stock and prevent race-condition overselling. New accounts are created with the `restaurant` role by default; fisher/admin roles must be assigned through a trusted administrative process.
+A first Supabase/PostgreSQL schema migration is included at `supabase/migrations/20261030000000_initial_schema.sql`. It defines user profiles, fish lots, orders, validation triggers, indexes, and row-level security policies. It is **not connected to the app yet** and has not been applied to a live database because no Supabase project is connected to this repository/account. The schema is applied to the Supabase project `maree-jersey` in the London region. A transactional `reserve_catch` RPC locks the catch row, validates remaining stock, creates the order and decrements inventory atomically. New accounts are created with the `restaurant` role by default; fisher/admin roles must be assigned through a trusted administrative process.
 
 ## Current prototype limitations
 
-- Fisher profiles, catches and orders are demonstration data stored in the browser; data is not shared between devices or users.
-- There is no production authentication, payment processing, or live notification service.
+- Supabase client configuration and the `/connexion` sign-in / sign-up page are now present. The app's catalogue, fisher workspace and order forms still use the local demo store; they have not yet been migrated to the shared database.
+- Fisher/admin role assignment is not self-service. Do not use the demo fisher workspace for real listings until the routes are connected to authenticated user IDs and server-side permissions.
+- There is no payment processing or live notification service.
 - Before real commercial use, connect a shared database and secure authentication, then verify Jersey food-sale, traceability, data-protection and business requirements.
 
 ## Stack
@@ -50,3 +51,8 @@ A first Supabase/PostgreSQL schema migration is included at `supabase/migrations
 - React and TypeScript
 - Tailwind CSS
 - Nitro Cloudflare Workers preset
+
+
+## Supabase browser configuration
+
+The frontend uses only the public project URL and publishable key in `src/lib/supabase.ts`. These are intended for browser use; never add a Supabase `service_role` key to frontend code. Optional deployment overrides are `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. The sign-up flow creates restaurant accounts; fisher access must be granted by a trusted administrator after verification. Configure the Supabase Auth site URL and allowed redirect URLs for the final deployed domain before inviting real users.
