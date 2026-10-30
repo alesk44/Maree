@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { validateCatch, validateOrder } from "./validation";
 
 export type Status = "disponible" | "réservé" | "épuisé";
 export type OrderStatus = "envoyée" | "confirmée" | "prête" | "livrée";
@@ -71,12 +72,27 @@ export function useStore() {
 }
 
 export const actions = {
-  addCatch: (c: Omit<Catch, "id">) => set((s) => ({ ...s, catches: [{ ...c, id: "c" + Date.now() }, ...s.catches] })),
+  addCatch: (c: Omit<Catch, "id">) => {
+    const error = validateCatch(c);
+    if (error) throw new Error(error);
+    set((s) => ({ ...s, catches: [{ ...c, id: "c" + Date.now() }, ...s.catches] }));
+  },
   updateCatch: (id: string, p: Partial<Catch>) => set((s) => ({ ...s, catches: s.catches.map((c) => (c.id === id ? { ...c, ...p } : c)) })),
   addOrder: (o: Omit<Order, "id" | "status" | "createdAt">) => {
-    const id = "o" + Date.now();
-    set((s) => ({ ...s, orders: [{ ...o, id, status: "envoyée", createdAt: new Date().toISOString() }, ...s.orders] }));
-    return id;
+    let createdId = "";
+    set((s) => {
+      const selected = s.catches.find((c) => c.id === o.catchId);
+      if (!selected || selected.status !== "disponible") throw new Error("Ce lot n'est plus disponible.");
+      const reservedKg = s.orders
+        .filter((order) => order.catchId === selected.id && order.status !== "livrée")
+        .reduce((total, order) => total + order.qtyKg, 0);
+      const availableKg = Math.max(0, selected.qtyKg - reservedKg);
+      const error = validateOrder(o, availableKg);
+      if (error) throw new Error(error);
+      createdId = "o" + Date.now();
+      return { ...s, orders: [{ ...o, id: createdId, status: "envoyée", createdAt: new Date().toISOString() }, ...s.orders] };
+    });
+    return createdId;
   },
   setOrderStatus: (id: string, status: OrderStatus) => set((s) => ({ ...s, orders: s.orders.map((o) => (o.id === id ? { ...o, status } : o)) })),
   reset: () => set(() => seed()),
