@@ -62,7 +62,7 @@ function Restaurant() {
               <label className="grid gap-1 text-sm font-medium">{t("Quantité (kg)")}
                 <input className="field" type="number" min={0.5} step={0.5} value={qty} onChange={(e) => setQty(+e.target.value)} /></label>
               <label className="grid gap-1 text-sm font-medium">{t("Mode")}
-                <select className="field" value={t(mode)} onChange={(e) => setMode(e.target.value as "livraison" | "retrait")}>
+                <select className="field" value={mode} onChange={(e) => setMode(e.target.value as "livraison" | "retrait")}>
                   <option value="livraison">{t("Livraison")}</option><option value="retrait">{t("Retrait au port")}</option></select></label>
             </div>
             <label className="grid gap-1 text-sm font-medium">{t("Créneau (heure de Jersey)")}
