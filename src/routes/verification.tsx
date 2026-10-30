@@ -71,7 +71,7 @@ function VerificationPage() {
         <label className="grid gap-1 text-sm font-medium">{t("Informations de vérification")}<textarea className="field" required minLength={10} maxLength={2000} rows={4} value={form.evidence_note} onChange={e => setForm(f => ({...f,evidence_note:e.target.value}))} placeholder={t("Décrivez votre activité, port ou adresse professionnelle et les éléments que vous pourrez confirmer.")}/></label>
         <button className="btn btn-accent" disabled={busy || !email}>{busy ? t("Envoi…") : t("Envoyer la demande de vérification")}</button>
       </form>
-      <p className="text-xs text-muted-foreground">{t("Contact de vérification")} : <a className="underline" href="mailto:alexozo44760@gmail.com?subject=Mar%C3%A9e%20Jersey%20-%20V%C3%A9rification%20professionnelle">alex ozo44760@gmail.com</a>. {t("L’envoi de ce formulaire n’envoie pas automatiquement d’e-mail ; il enregistre la demande dans la base partagée.")}</p>
+      <p className="text-xs text-muted-foreground">{t("Contact de vérification")} : <a className="underline" href="mailto:alexozo44760@gmail.com?subject=Mar%C3%A9e%20Jersey%20-%20V%C3%A9rification%20professionnelle">alexozo44760@gmail.com</a>. {t("L’envoi de ce formulaire n’envoie pas automatiquement d’e-mail ; il enregistre la demande dans la base partagée.")}</p>
     </section>
     {email && <section className="card grid gap-3 p-6"><h2 className="text-xl font-semibold">{t("Mes demandes")}</h2>
       {rows.length === 0 ? <p className="text-sm text-muted-foreground">{t("Aucune demande envoyée pour le moment.")}</p> : rows.map(row => <article key={row.id} className="rounded-lg border p-3">
