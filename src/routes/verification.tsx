@@ -36,17 +36,19 @@ function VerificationPage() {
     e.preventDefault();
     if (!userId) return toast.error(t("Connectez-vous avant de demander une vérification."));
     setBusy(true);
-    const { error } = await supabase.from("verification_requests").insert({
+    const { data: inserted, error } = await supabase.from("verification_requests").insert({
       user_id: userId, ...form,
       business_name: form.business_name.trim(),
       contact_name: form.contact_name.trim(),
       phone: form.phone.trim(),
       registration_number: form.registration_number.trim() || null,
       evidence_note: form.evidence_note.trim(),
-    });
+    }).select("id").single();
     setBusy(false);
     if (error) return toast.error(error.message);
-    toast.success(t("Demande envoyée. Elle sera examinée manuellement."));
+    const { error: emailError } = await supabase.functions.invoke("notify-verification-request", { body: { request_id: inserted.id } });
+    if (emailError) toast.warning(t("Demande enregistrée, mais l’e-mail automatique n’a pas pu partir. Contactez l’équipe par e-mail."));
+    else toast.success(t("Demande envoyée et notification e-mail transmise à l’équipe. La vérification reste manuelle."));
     setForm({ requested_role: "fisher", business_name: "", contact_name: "", phone: "", registration_number: "", evidence_note: "" });
     const { data } = await supabase.from("verification_requests").select("id,requested_role,business_name,status,created_at,reviewer_note").order("created_at", { ascending: false });
     setRows((data ?? []) as RequestRow[]);
@@ -71,7 +73,7 @@ function VerificationPage() {
         <label className="grid gap-1 text-sm font-medium">{t("Informations de vérification")}<textarea className="field" required minLength={10} maxLength={2000} rows={4} value={form.evidence_note} onChange={e => setForm(f => ({...f,evidence_note:e.target.value}))} placeholder={t("Décrivez votre activité, port ou adresse professionnelle et les éléments que vous pourrez confirmer.")}/></label>
         <button className="btn btn-accent" disabled={busy || !email}>{busy ? t("Envoi…") : t("Envoyer la demande de vérification")}</button>
       </form>
-      <p className="text-xs text-muted-foreground">{t("Contact de vérification")} : <a className="underline" href="mailto:alexozo44760@gmail.com?subject=Mar%C3%A9e%20Jersey%20-%20V%C3%A9rification%20professionnelle">alexozo44760@gmail.com</a>. {t("L’envoi de ce formulaire n’envoie pas automatiquement d’e-mail ; il enregistre la demande dans la base partagée.")}</p>
+      <p className="text-xs text-muted-foreground">{t("Contact de vérification")} : <a className="underline" href="mailto:alexozo44760@gmail.com?subject=Mar%C3%A9e%20Jersey%20-%20V%C3%A9rification%20professionnelle">alexozo44760@gmail.com</a>. {t("Votre demande est enregistrée dans la base partagée. Une notification automatique est envoyée à l’équipe lorsque le service e-mail est configuré.")}</p>
     </section>
     {email && <section className="card grid gap-3 p-6"><h2 className="text-xl font-semibold">{t("Mes demandes")}</h2>
       {rows.length === 0 ? <p className="text-sm text-muted-foreground">{t("Aucune demande envoyée pour le moment.")}</p> : rows.map(row => <article key={row.id} className="rounded-lg border p-3">
