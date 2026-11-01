@@ -67,3 +67,35 @@ export async function reserveSharedCatch(input:{catchId:string;qtyKg:number;slot
   if(error) throw error;
   return data as string;
 }
+
+
+export type SharedOrderRow = {
+  id:string; catch_id:string; restaurant_id:string; quantity_kg:number|string;
+  requested_slot:string; fulfilment:"delivery"|"collection"; note:string|null;
+  status:"submitted"|"confirmed"|"ready"|"delivered"|"cancelled"; created_at:string;
+};
+
+export async function fetchMyOrders():Promise<SharedOrderRow[]> {
+  const {data:{user},error:authError}=await supabase.auth.getUser();
+  if(authError) throw authError;
+  if(!user) return [];
+  const {data,error}=await supabase.from("orders")
+    .select("id,catch_id,restaurant_id,quantity_kg,requested_slot,fulfilment,note,status,created_at")
+    .order("created_at",{ascending:false});
+  if(error) throw error;
+  return (data??[]) as SharedOrderRow[];
+}
+
+export async function updateMyCatch(id:string,patch:{remainingKg?:number;priceKg?:number;status?:"available"|"reserved"|"sold_out"}):Promise<void>{
+  const values:Record<string,unknown>={};
+  if(patch.remainingKg!==undefined) values.remaining_kg=patch.remainingKg;
+  if(patch.priceKg!==undefined) values.price_per_kg=patch.priceKg;
+  if(patch.status!==undefined) values.status=patch.status;
+  const {error}=await supabase.from("catches").update(values).eq("id",id);
+  if(error) throw error;
+}
+
+export async function updateMyOrderStatus(id:string,status:"confirmed"|"ready"|"delivered"):Promise<void>{
+  const {error}=await supabase.rpc("update_order_status",{p_order_id:id,p_status:status});
+  if(error) throw error;
+}
