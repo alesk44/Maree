@@ -39,7 +39,7 @@ export const Route = createFileRoute("/guide")({
           ["Hygiène & traçabilité", "Enregistrement des lots, températures, étiquetage espèce/zone/méthode, conservation des documents."],
           ["Conformité locale", "Se rapprocher du Government of Jersey (Marine Resources, Environmental Health) pour enregistrement et règles de vente directe."],
           ["Notifications", "Mettre en place des e-mails ou SMS réels — actuellement aucun message n'est envoyé."],
-        ].map(([t, d]) => (
+        ] as const).map(([t, d]) => (
           <li key={t} className="card flex gap-3 p-4"><span className="mt-0.5 text-accent" aria-hidden>☐</span><div><strong>{translateLabel(t)}</strong><p className="text-sm text-muted-foreground">{translateLabel(d)}</p></div></li>
         ))}
       </ul>
