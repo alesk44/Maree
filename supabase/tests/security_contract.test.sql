@@ -9,7 +9,8 @@ insert into auth.users (id, email) values
   ('00000000-0000-4000-8000-000000000002', 'maree-fisher-b@test.local'),
   ('00000000-0000-4000-8000-000000000003', 'maree-restaurant-a@test.local'),
   ('00000000-0000-4000-8000-000000000004', 'maree-restaurant-b@test.local'),
-  ('00000000-0000-4000-8000-000000000005', 'maree-admin@test.local')
+  ('00000000-0000-4000-8000-000000000005', 'maree-admin@test.local'),
+  ('00000000-0000-4000-8000-000000000006', 'maree-fisher-upgrade@test.local')
 on conflict (id) do nothing;
 
 update public.profiles set role = 'fisher', display_name = 'Fisher A'
@@ -62,7 +63,7 @@ insert into public.verification_requests (
    'restaurant', 'East Pier Kitchen', 'Test Contact B', '+441534000002',
    'Test evidence for restaurant account B.'),
   ('30000000-0000-4000-8000-000000000003',
-   '00000000-0000-4000-8000-000000000003',
+   '00000000-0000-4000-8000-000000000006',
    'fisher', 'Harbour Fishing', 'Test Contact C', '+441534000003',
    'Test evidence for a fisher role upgrade.')
 on conflict (id) do nothing;
@@ -166,7 +167,7 @@ select lives_ok(
   'admin can approve a pending verification request'
 );
 reset role;
-select is((select role::text from public.profiles where id = '00000000-0000-4000-8000-000000000003'), 'fisher', 'approval grants the requested professional role');
+select is((select role::text from public.profiles where id = '00000000-0000-4000-8000-000000000006'), 'fisher', 'approval grants the requested professional role');
 select is((select status::text from public.verification_requests where id = '30000000-0000-4000-8000-000000000003'), 'approved', 'approval marks the verification request approved');
 select is((select reviewed_by from public.verification_requests where id = '30000000-0000-4000-8000-000000000003'), '00000000-0000-4000-8000-000000000005'::uuid, 'approval records the admin reviewer');
 
