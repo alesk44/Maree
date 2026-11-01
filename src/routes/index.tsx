@@ -1,8 +1,7 @@
 import { useLanguage } from "@/lib/i18n";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import hero from "@/assets/hero.jpg";
-import { useStore } from "@/lib/store";
-import { DemoBadge } from "@/components/ui-bits";
+import { useSharedMarket } from "@/lib/shared-market";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -21,8 +20,8 @@ export const Route = createFileRoute("/")({
 function Index() {
   const { t, gbp, dt } = useLanguage();
   const translateLabel = t;
-  const { catches, fishers } = useStore();
-  const available = catches.filter((c) => c.status === "disponible").length;
+  const { catches, fishers, loading, error } = useSharedMarket();
+  const available = catches.filter((c) => c.status === "disponible" && c.qtyKg > 0).length;
   return (
     <>
       <section className="relative overflow-hidden">
@@ -39,10 +38,11 @@ function Index() {
         </div>
       </section>
       <section className="mx-auto -mt-10 grid max-w-6xl gap-4 px-4 sm:grid-cols-2 relative">
-        <Stat n={available} label="produits disponibles" />
-        <Stat n={fishers.length} label="pêcheurs partenaires" />
+        <Stat n={loading ? "—" : available} label="lots réellement disponibles" />
+        <Stat n={loading ? "—" : fishers.length} label="pêcheurs vérifiés" />
       </section>
-      <p className="mx-auto mt-3 max-w-6xl px-4 text-xs text-muted-foreground"><DemoBadge />{t("Ces chiffres reflètent un jeu de données fictif, pas des disponibilités réelles.")}</p>
+      {error && <p role="alert" className="mx-auto mt-3 max-w-6xl px-4 text-sm text-destructive">{t("Impossible de charger les données du marché.")}</p>}
+      {!loading && available === 0 && <p className="mx-auto mt-3 max-w-6xl px-4 text-sm text-muted-foreground">{t("Aucun lot disponible pour le moment. Revenez consulter la pêche du jour.")}</p>}
       <section className="mx-auto mt-16 grid max-w-6xl gap-6 px-4 md:grid-cols-3">
         {([
           ["Traçable", "Bateau, zone, heure de capture et de débarquement sur chaque lot."],
@@ -59,7 +59,7 @@ function Index() {
   );
 }
 
-function Stat({ n, label }: { n: number; label: string }) {
+function Stat({ n, label }: { n: number | string; label: string }) {
   const { t, gbp, dt } = useLanguage();
   return (
     <div className="card p-6 shadow-lg">
