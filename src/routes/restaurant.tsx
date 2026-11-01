@@ -50,10 +50,10 @@ function Restaurant() {
   const sel = catches.find((c) => c.id === catchId);
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!signedIn) return toast.error(t("Connectez-vous avec votre compte restaurant avant de réserver."));
-    if (!sel || !slot) return toast.error(t("Complétez le produit et le créneau."));
-    if (!Number.isFinite(qty) || qty < 0.5 || qty > sel.qtyKg) return toast.error(t("Quantité invalide ou supérieure au stock disponible."));
-    if (!Number.isFinite(new Date(slot).getTime())) return toast.error(t("Créneau invalide."));
+    if (!signedIn) { toast.error(t("Connectez-vous avec votre compte restaurant avant de réserver.")); return; }
+    if (!sel || !slot) { toast.error(t("Complétez le produit et le créneau.")); return; }
+    if (!Number.isFinite(qty) || qty < 0.5 || qty > sel.qtyKg) { toast.error(t("Quantité invalide ou supérieure au stock disponible.")); return; }
+    if (!Number.isFinite(new Date(slot).getTime())) { toast.error(t("Créneau invalide.")); return; }
     try {
       await reserveSharedCatch({ catchId, qtyKg: qty, slot: new Date(slot).toISOString(), mode, note: note.trim() });
       toast.success(t("Réservation envoyée au pêcheur."));
