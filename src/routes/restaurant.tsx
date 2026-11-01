@@ -64,6 +64,12 @@ function Restaurant() {
 
   return <div className="mx-auto max-w-6xl px-4 py-10">
     <PageHeader title={t("Espace restaurant")} sub={t("Réservez directement la pêche du jour. Aucun paiement dans cette version.")} />
+    <section aria-label={t("Vue d'ensemble")} className="mb-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <Metric label={t("Lots disponibles")} value={loading?"—":avail.length} detail={t("Pêche du jour")}/>
+      <Metric label={t("Réservations")} value={ordersLoading?"—":orders.length} detail={t("Demandes de votre restaurant")}/>
+      <Metric label={t("En attente")} value={ordersLoading?"—":orders.filter((o)=>o.status==="submitted").length} detail={t("À confirmer par le pêcheur")}/>
+      <Metric label={t("Quantité réservée")} value={ordersLoading?"—":orders.reduce((n,o)=>n+Number(o.quantity_kg),0).toLocaleString("fr-FR")+" kg"} detail={t("Total de vos demandes")}/>
+    </section>
     {error && <p role="alert" className="mb-4 text-sm text-destructive">{error}</p>}
     <div className="grid gap-8 lg:grid-cols-[1fr_1.1fr]">
       <form onSubmit={submit} className="card grid gap-4 p-6">
@@ -116,3 +122,5 @@ function Restaurant() {
     </div>
   </div>;
 }
+
+function Metric({label,value,detail}:{label:string;value:string|number;detail:string}){return <div className="card rounded-2xl border border-border p-5"><p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</p><p className="mt-2 font-display text-3xl font-semibold text-foreground">{value}</p><p className="mt-1 text-xs text-muted-foreground">{detail}</p></div>;}
