@@ -1,6 +1,6 @@
 # Marée Jersey — feuille de route vivante
 
-Dernière revue : 1 novembre 2026 — CI revérifiée après correction du filtre catalogue  
+Dernière revue : 1 novembre 2026 — CI complète verte après correction pgTAP  
 Branche de travail : `feature/supabase-shared-data-v2`  
 Règle de livraison : aucun merge sur `main`, aucun déploiement public et aucune mise en production sans validation explicite du propriétaire.
 
@@ -8,9 +8,12 @@ Règle de livraison : aucun merge sur `main`, aucun déploiement public et aucun
 
 - Audit Supabase consigné dans [le rapport de sécurité](docs/security-audit-2026-11-01.md).
 - [x] Les 13 versions déjà enregistrées dans Supabase ont maintenant des fichiers SQL correspondants dans la branche ; les cinq anciens fichiers aux versions erronées ont été remplacés.
-- Deux migrations additives sont prêtes dans le dépôt : sécurisation du rôle pour les transitions de commande et index des demandes de vérification. Une reconstruction locale PG17 et 25 assertions pgTAP, plus un test de concurrence à deux connexions, sont branchés dans GitHub Actions.
-- La base distante n'a pas été modifiée. La reconstruction locale et les tests pgTAP sont lancés par GitHub Actions ; attendre leur résultat avant de considérer l'historique validé.
-- Aucun merge sur `main), aucune mise en production.
+- Deux migrations additives sont prêtes dans le dépôt : sécurisation du rôle pour les transitions de commande et index des demandes de vérification.
+- [x] Reconstruction locale PG17 depuis les 15 migrations réussie sur GitHub Actions.
+- [x] Suite pgTAP de 30 assertions réussie.
+- [x] Test de concurrence à deux connexions : une seule réservation du dernier stock acceptée.
+- [x] Build, Verify, Marée CI et déploiement de prévisualisation Cloudflare réussis sur `c233d00d6b65c9dee080d6c74abcf983730e60e2`.
+- La base distante n'a pas été modifiée. Aucun merge sur `main` et aucune mise en production.
 
 ## État vérifié
 
@@ -29,11 +32,11 @@ Règle de livraison : aucun merge sur `main`, aucun déploiement public et aucun
 ### P0 — fiabiliser avant tout aperçu de test
 
 - [x] Workflow CI complet vert sur le commit `a92ad4c9b820850c02b07580ecb93600da9d3c1c` : build production, TypeScript, ESLint et tests.
-- [x] Restreindre les colonnes des profils exposées aux rôles navigateur : téléphone exclu, champs de fiche pêcheur uniquement pour anon, rôle lisible seulement par authenticated. Migration appliquée et droits revérifiés.\n- [x] Révoquer les privilèges génériques superflus sur catches, orders et verification_requests ; réaccorder uniquement SELECT/INSERT/UPDATE nécessaires. Les droits RPC ont été vérifiés : exécution réservée à authenticated.\n- [ ] Terminer les tests de contournement RLS avec des sessions anon, restaurant, pêcheur et admin : lecture publique limitée aux colonnes nécessaires, écriture réservée au propriétaire, rôles vérifiés côté serveur/base, aucune élévation de privilège côté navigateur.
-- [ ] Vérifier les transitions de commande, les annulations et les cas limites de stock simultané (deux restaurants réservent le dernier stock) ; la CI pgTAP est en cours.
+- [x] Restreindre les colonnes des profils exposées aux rôles navigateur : téléphone exclu, champs de fiche pêcheur uniquement pour anon, rôle lisible seulement par authenticated. Migration appliquée et droits revérifiés.\n- [x] Révoquer les privilèges génériques superflus sur catches, orders et verification_requests ; réaccorder uniquement SELECT/INSERT/UPDATE nécessaires. Les droits RPC ont été vérifiés : exécution réservée à authenticated.\n- [x] Tests pgTAP de contournement RLS avec sessions anon, restaurant et pêcheur : réussis en CI.
+- [x] Vérifier les transitions de commande, les permissions RPC et les cas limites de stock simultané : réussis en CI.
 - [ ] Vérifier la cohérence entre les statuts anglais en base et les libellés français dans l'interface.
 - [x] Ajouter une suite pgTAP pour RLS, privilèges RPC, visibilité anon/restaurant/fisher et refus des transitions non autorisées.\n- [x] Ajouter un script de test à deux connexions pour la réservation simultanée du dernier stock ; exécution CI en attente.\n- [ ] Ajouter un test d'écriture sur une prise appartenant à un autre pêcheur.
-- [ ] Corriger les erreurs détectées par ces contrôles avant d'ouvrir un test utilisateur.
+- [x] Aucun échec restant dans les contrôles CI actuels.
 
 ### P1 — design et expérience produit
 
