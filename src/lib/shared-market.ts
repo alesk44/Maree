@@ -88,9 +88,9 @@ export async function fetchMyOrders():Promise<SharedOrderRow[]> {
 
 export async function updateMyCatch(id:string,patch:{remainingKg?:number;priceKg?:number;status?:"available"|"reserved"|"sold_out"}):Promise<void>{
   const values:Record<string,unknown>={};
-  if(patch.remainingKg!==undefined) values.remaining_kg=patch.remainingKg;
-  if(patch.priceKg!==undefined) values.price_per_kg=patch.priceKg;
-  if(patch.status!==undefined) values.status=patch.status;
+  if(patch.remainingKg!==undefined) values["remaining_kg"]=patch.remainingKg;
+  if(patch.priceKg!==undefined) values["price_per_kg"]=patch.priceKg;
+  if(patch.status!==undefined) values["status"]=patch.status;
   const {error}=await supabase.from("catches").update(values).eq("id",id);
   if(error) throw error;
 }
