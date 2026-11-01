@@ -1,53 +1,64 @@
 # Supabase security and migration audit — 2026-11-01
 
-Scope: read-only inspection of the connected `maree-jersey` Supabase project and the `feature/supabase-shared-data-v2` GitHub branch. No database writes, migrations, production deployments, or merges were performed.
+Scope: read-only inspection of the connected `maree-jersey` Supabase project and repository work on `feature/supabase-shared-data-v2`. The remote database was not modified, no migrations were applied remotely, no production deployment was made, and no PR was merged.
 
-## Verified controls
+## Verified remote controls
 
-- Row Level Security is enabled on `profiles`, `catches`, `orders`, and `verification_requests`.
-- Public catch reads are limited by policy to available lots; authenticated fishers can insert/update only their own lots when their profile role is `fisher`.
-- Orders have a read policy for the placing restaurant and the fisher who owns the associated catch. Browser roles have SELECT only on `orders`; order creation and status changes go through RPCs.
-- Profile browser grants are column-scoped. Public access excludes the private `phone` column. The public fisher directory view is configured with `security_invoker=true` and `security_barrier=true`.
-- Verification requests are readable by their owner and admins; inserts require the authenticated user's own `user_id`; review updates are restricted by an admin RLS policy.
-- `reserve_catch` checks authentication and restaurant role, validates quantity/slot/fulfilment/note, locks the catch row with `FOR UPDATE`, checks remaining stock, inserts the order and decrements stock in one transaction.
-- `update_order_status` checks authentication, catch ownership and the sequential submitted → confirmed → ready → delivered transitions.
-- `review_verification_request` checks the admin profile role and only reviews pending requests.
-- The inspected SECURITY DEFINER functions use an empty search_path and have EXECUTE granted to authenticated (and service_role), not anon/PUBLIC.
+- RLS is enabled on `profiles`, `catches`, `orders`, and `verification_requests`.
+- Public catch reads are limited to available lots; fisher writes are scoped to the signed-in fisher and checked against the profile role.
+- Orders are readable by the placing restaurant and the fisher who owns the catch. Browser roles cannot directly insert or update orders.
+- Profile grants are column-scoped; the private `phone` field is not readable by browser roles.
+- The public fisher directory view uses `security_invoker=true` and `security_barrier=true`.
+- Verification requests are readable by their owner/admin; insertion is scoped to the current user; review is admin-only.
+- `reserve_catch` validates the restaurant role, locks the catch row with `FOR UPDATE`, checks stock and inserts/decrements within one transaction.
+- `review_verification_request` checks admin role and only reviews pending requests.
+- `update_order_status` originally checked catch ownership and sequential status transitions. The branch migration now also checks the current profile role is `fisher`, closing a role-change edge case; this correction is pending remote application.
+- SECURITY DEFINER RPCs use an empty `search_path`; browser EXECUTE is denied to anon and granted to authenticated where intended.
 
-## Items to resolve before real-user launch
+## Migration history reconciliation — branch work completed, CI pending
 
-### 1. Migration history drift — blocker
+The connected Supabase project reports 13 applied migration versions. The branch previously had five migration files with different timestamps, which made the repository history misleading and unsafe to use for a clean rebuild.
 
-The connected database reports 13 applied migration versions, while the branch currently contains only five SQL migration files. Their version numbers/names do not line up. The live database also contains `verification_requests`, `review_verification_request`, and the `public_fisher_directory` view, but the branch's migration directory does not contain the corresponding complete migration history.
+The branch has now been reorganised so the first 13 migration filenames/versions match the 13 versions recorded by Supabase:
 
-Do not run `db push`, apply migrations, reset, or attempt to baseline the project until the migration history is reconciled against the actual schema. First recover/export the missing migration definitions and establish a reproducible clean-database setup.
+1. `20261030144648_initial_schema`
+2. `20261030145326_fisher_profile_fields`
+3. `20261030145331_fix_since_year_constraint`
+4. `20261030145346_allow_public_fisher_profiles_read`
+5. `20261030151002_verification_requests`
+6. `20261030151036_admin_review_verification_rpc`
+7. `20261101185105_lock_down_public_profile_columns`
+8. `20261101185242_harden_public_table_grants`
+9. `20261101203410_public_fisher_directory_view`
+10. `20261101203432_restrict_public_fisher_directory_grants`
+11. `20261101204702_secure_public_fisher_directory_invoker`
+12. `20261101204730_grant_public_fisher_directory_columns`
+13. `20261101204742_grant_fisher_directory_filter_column`
 
-### 2. Automated adversarial tests — outstanding
+Two additive migrations follow the recorded history:
+- `20261101210000_rpc_entrypoints`: reproducible definitions for `reserve_catch` and `update_order_status`, including the fisher-role guard.
+- `20261101211000_verification_request_indexes`: indexes for `verification_requests.user_id` and non-null `reviewed_by`, addressing the performance advisor findings.
 
-No `supabase/tests` directory currently exists in the branch. Add pgTAP coverage after migration history is made reproducible. Required cases:
-- anon cannot read private profile phone numbers or orders;
-- a restaurant cannot publish catches or update another user's catch;
-- a fisher cannot reserve a catch or read another restaurant's order;
-- a restaurant cannot update order status directly or call fisher-only transitions;
-- a non-admin cannot approve/reject verification requests;
-- a user cannot submit a verification request for another user;
-- invalid order transitions are rejected;
-- two concurrent reservations cannot oversell a catch (one transaction must fail when stock is exhausted).
+The original mismatched five files were removed from the branch. A local Supabase configuration, pgTAP security-contract test suite, and GitHub Actions workflow were added. The workflow rebuilds a local database from repository migrations and runs `supabase test db`. Its result must be green before calling the reconstruction validated. The first 13 files are reconstructed from the recorded migration names, branch history and current schema inspection; they are not being replayed against the already-migrated remote database.
 
-### 3. Advisor findings
+**Do not run `db reset` or apply migrations to the connected remote project.** A future `db push` should apply only the two additive migrations after the local rebuild and tests pass and after an explicit review.
 
-- Security advisor reports three authenticated-callable SECURITY DEFINER functions: `reserve_catch`, `review_verification_request`, and `update_order_status`. These are intentional RPC entry points, but their internal role/ownership checks must remain covered by negative tests.
-- Performance advisor reports missing indexes on `verification_requests.user_id` and `verification_requests.reviewed_by`. Assess/add appropriate indexes as part of a reviewed migration.
-- Performance advisor also reports multiple permissive SELECT policies on `profiles` and `verification_requests`; these are not evidence of a bypass, but can be consolidated if useful.
+## Outstanding security and product tests
 
-## Current observed data state
+- pgTAP tests are now present for anon, restaurant and fisher visibility, role restrictions, RPC privileges, non-owner order updates and admin-only review. CI is pending.
+- A two-connection concurrency test is still required to prove that two restaurants cannot reserve the last stock simultaneously.
+- A dedicated test should also cover an authenticated user attempting to update a catch owned by another fisher.
+- Performance advisor findings for `verification_requests.user_id` and `reviewed_by` are addressed in the pending index migration, not yet applied to the remote database.
+- The performance advisor also reported multiple permissive SELECT policies on `profiles` and `verification_requests`; they are not evidence of a bypass, but can be consolidated later.
 
-The four inspected application tables reported zero rows at audit time. This means a real two-account workflow has not yet been demonstrated against populated application data.
+## Observed remote data state
 
-## Next safe sequence
+The four application tables contained zero rows at the time of the read-only audit. The two-account restaurant/fisher workflow has therefore not yet been demonstrated against real authenticated accounts.
 
-1. Reconcile the database migration history and branch SQL files without changing the live schema.
-2. Rebuild a clean local/preview database from the repository migrations.
-3. Add and run pgTAP negative tests plus reservation-concurrency tests.
-4. Run a two-account restaurant/fisher end-to-end test in an isolated preview.
-5. Re-run Supabase security/performance advisors and inspect mobile/desktop UI.
+## Safe next sequence
+
+1. Wait for local migration rebuild and pgTAP CI to finish; fix any failure.
+2. Run the separate concurrent-last-stock test against an isolated local/preview database.
+3. Re-run security/performance advisors after review of the pending additive migrations.
+4. Test a restaurant and a fisher account end-to-end in private preview.
+5. Only after explicit approval, apply the additive migrations to the remote preview environment; never merge to `main` or deploy production without approval.
