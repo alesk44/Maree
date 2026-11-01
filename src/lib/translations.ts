@@ -1239,5 +1239,9 @@ export const translations: Record<string, readonly [string, string, string]> = {
   "En attente": ["Pending","Pendentes","În așteptare"],
   "À confirmer par le pêcheur": ["Awaiting fisher confirmation","A aguardar confirmação do pescador","Așteaptă confirmarea pescarului"],
   "Quantité réservée": ["Reserved quantity","Quantidade reservada","Cantitate rezervată"],
-  "Total de vos demandes": ["Total across your requests","Total dos seus pedidos","Totalul solicitărilor dvs."]
+  "Total de vos demandes": ["Total across your requests","Total dos seus pedidos","Totalul solicitărilor dvs."],
+  "Activité des débarquements": ["Landing activity","Atividade dos desembarques","Activitatea debarcărilor"],
+  "Nombre de lots débarqués sur les sept derniers jours": ["Number of lots landed over the last seven days","Número de lotes desembarcados nos últimos sete dias","Numărul loturilor debarcate în ultimele șapte zile"],
+  "7 derniers jours": ["Last 7 days","Últimos 7 dias","Ultimele 7 zile"],
+  "Le graphique apparaîtra dès la publication de vos premières prises.": ["The chart will appear once you publish your first catches.","O gráfico aparecerá assim que publicar as suas primeiras capturas.","Graficul va apărea după ce publicați primele capturi."]
 };
