@@ -1134,7 +1134,7 @@ export const translations: Record<string, readonly [string, string, string]> = {
     "Create a restaurant account or sign in to continue.",
     "Crie uma conta de restaurante ou inicie sessão para continuar.",
     "Creați un cont de restaurant sau autentificați-vă pentru a continua."
-  ],,
+  ],
 
   "lots réellement disponibles": ["live available lots", "lotes realmente disponíveis", "loturi disponibile în timp real"],
   "pêcheurs vérifiés": ["verified fishers", "pescadores verificados", "pescari verificați"],
