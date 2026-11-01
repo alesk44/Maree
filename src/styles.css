@@ -38,36 +38,37 @@
 }
 
 :root {
-  --radius: 0.75rem;
-  --background: oklch(0.975 0.008 85);
-  --foreground: oklch(0.22 0.05 255);
-  --card: oklch(0.995 0.004 85);
-  --card-foreground: oklch(0.22 0.05 255);
-  --popover: oklch(0.995 0.004 85);
-  --popover-foreground: oklch(0.22 0.05 255);
-  --primary: oklch(0.27 0.07 255);
-  --primary-foreground: oklch(0.975 0.008 85);
-  --secondary: oklch(0.93 0.02 85);
-  --secondary-foreground: oklch(0.27 0.07 255);
-  --muted: oklch(0.94 0.012 85);
-  --muted-foreground: oklch(0.48 0.03 255);
-  --accent: oklch(0.68 0.11 195);
-  --accent-foreground: oklch(0.2 0.05 255);
-  --sand: oklch(0.86 0.06 80);
-  --sand-foreground: oklch(0.3 0.05 60);
-  --success: oklch(0.58 0.12 160);
-  --warning: oklch(0.7 0.14 70);
-  --destructive: oklch(0.55 0.2 27);
+  color-scheme: dark;
+  --radius: 0.9rem;
+  --background: oklch(0.12 0.012 255);
+  --foreground: oklch(0.94 0.012 230);
+  --card: oklch(0.17 0.014 255);
+  --card-foreground: oklch(0.94 0.012 230);
+  --popover: oklch(0.17 0.014 255);
+  --popover-foreground: oklch(0.94 0.012 230);
+  --primary: oklch(0.78 0.09 205);
+  --primary-foreground: oklch(0.13 0.025 250);
+  --secondary: oklch(0.22 0.018 255);
+  --secondary-foreground: oklch(0.92 0.012 230);
+  --muted: oklch(0.21 0.015 255);
+  --muted-foreground: oklch(0.68 0.025 235);
+  --accent: oklch(0.76 0.12 190);
+  --accent-foreground: oklch(0.12 0.025 250);
+  --sand: oklch(0.28 0.035 190);
+  --sand-foreground: oklch(0.9 0.035 190);
+  --success: oklch(0.72 0.13 160);
+  --warning: oklch(0.78 0.13 75);
+  --destructive: oklch(0.68 0.18 25);
   --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.88 0.02 85);
-  --input: oklch(0.86 0.02 85);
-  --ring: oklch(0.68 0.11 195);
-  --gradient-sea: linear-gradient(160deg, oklch(0.27 0.07 255), oklch(0.4 0.09 220) 60%, oklch(0.6 0.1 195));
+  --border: oklch(0.29 0.018 255);
+  --input: oklch(0.32 0.02 255);
+  --ring: oklch(0.76 0.12 190);
+  --gradient-sea: linear-gradient(145deg, oklch(0.15 0.035 245), oklch(0.19 0.055 220) 60%, oklch(0.22 0.06 195));
 }
 
 @layer base {
   * { border-color: var(--color-border); }
-  body { background-color: var(--color-background); color: var(--color-foreground); font-family: var(--font-sans); }
+  body { background-color: var(--color-background); color: var(--color-foreground); font-family: var(--font-sans); background-image: radial-gradient(ellipse at 15% 0%, oklch(0.2 0.045 220 / 0.25), transparent 42%); }
   h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.01em; }
 }
 
