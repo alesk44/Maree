@@ -1,7 +1,8 @@
 import { useLanguage } from "@/lib/i18n";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { useStore, type Catch } from "@/lib/store";
+import type { Catch } from "@/lib/store";
+import { useSharedMarket } from "@/lib/shared-market";
 import { DemoBadge, Empty, PageHeader, StatusPill } from "@/components/ui-bits";
 
 export const Route = createFileRoute("/catalogue")({
@@ -20,7 +21,7 @@ export const Route = createFileRoute("/catalogue")({
 
 function Catalogue() {
   const { t, gbp, dt } = useLanguage();
-  const { catches, fishers } = useStore();
+  const { catches, fishers, loading, error } = useSharedMarket();
   const [q, setQ] = useState("");
   const [species, setSpecies] = useState("");
   const [status, setStatus] = useState("");
@@ -40,7 +41,10 @@ function Catalogue() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
-      <PageHeader title={t("Pêche du jour")} sub={t("Lots publiés par les pêcheurs partenaires.")}><DemoBadge /></PageHeader>
+      <PageHeader title={t("Pêche du jour")} sub={t("Lots publiés par les pêcheurs partenaires.")} />
+      {loading && <p role="status" className="mb-4 text-sm text-muted-foreground">{t("Chargement des prises partagées…")}</p>}
+      {error && <p role="alert" className="mb-4 rounded-lg border border-destructive/40 p-3 text-sm">{t("Catalogue indisponible :")} {error}</p>}
+      {!loading && !error && catches.length === 0 && <p className="mb-4 text-sm text-muted-foreground">{t("Aucune prise réelle publiée pour le moment.")}</p>}
       <div className="card mb-6 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-6">
         <input className="field lg:col-span-2" placeholder={t("Rechercher espèce, zone…")} aria-label={t("Recherche")} value={q} onChange={(e) => setQ(e.target.value)} />
         <select className="field" aria-label={t("Espèce")} value={species} onChange={(e) => setSpecies(e.target.value)}>
