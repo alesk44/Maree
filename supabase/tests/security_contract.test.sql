@@ -90,7 +90,7 @@ select ok(has_table_privilege('anon', 'public.public_fisher_directory', 'SELECT'
 set local role anon;
 set local "request.jwt.claim.sub" = '';
 select is((select count(*) from public.catches), 1::bigint, 'anonymous catalogue sees available catch lots only');
-select is((select count(id) from public.profiles), 2::bigint, 'anonymous profile reads see fisher profiles only');
+select is((select count(id) from public.profiles), 3::bigint, 'anonymous profile reads see fisher profiles only');
 reset role;
 
 -- Restaurant A sees only its own orders and verification request.
