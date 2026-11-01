@@ -1,6 +1,6 @@
 # Marée Jersey — cadrage du module « Conditions en mer »
 
-Statut : proposition technique, non déployée  
+Statut : première version implémentée dans la branche, validation CI en cours  
 Date : 1 novembre 2026
 
 ## Objectif produit
@@ -46,6 +46,15 @@ Le vent, les marées, les courants locaux, les avis officiels et les conditions 
 - Ne pas faire dépendre la réservation ou le stock de la météo.
 - Ne pas utiliser ce module comme avis de navigation, météo officielle, ni recommandation de sécurité.
 - Les pêcheurs restent responsables de consulter les bulletins et autorités maritimes officiels.
+
+## Implémentation initiale
+
+- Endpoint serveur `GET /api/marine` pour Jersey (49.1868, -2.1066), sélection de cellule marine.
+- En-têtes de cache navigateur/CDN : 5 à 15 minutes, stale-while-revalidate.
+- Panneau sur l'accueil avec hauteur, direction et période des vagues, température de surface si disponible, et aperçu horaire.
+- Les champs optionnels manquants restent affichés comme indisponibles ; une hauteur de vague absente invalide la réponse.
+- Tests unitaires de normalisation : valeurs valides, champs optionnels manquants et réponse invalide.
+- Attribution Open-Meteo affichée dans l'interface.
 
 ## Critères d'acceptation
 
