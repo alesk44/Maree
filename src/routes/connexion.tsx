@@ -26,14 +26,27 @@ function AuthPage() {
   const [busy, setBusy] = useState(false);
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
   const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false);
+  const [profileName, setProfileName] = useState("");
+  const [profilePhone, setProfilePhone] = useState("");
+  const [profileBusy, setProfileBusy] = useState(false);
 
   useEffect(() => {
     let active = true;
-    supabase.auth.getSession().then(({ data }) => {
-      if (active) setSessionEmail(data.session?.user.email ?? null);
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (!active) return;
+      const user = data.session?.user;
+      setSessionEmail(user?.email ?? null);
+      if (user) {
+        const { data: profile } = await supabase.from("profiles").select("display_name,phone").eq("id", user.id).maybeSingle();
+        if (active && profile) { setProfileName(profile.display_name ?? ""); setProfilePhone(profile.phone ?? ""); }
+      }
     });
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       setSessionEmail(session?.user.email ?? null);
+      if (event === "SIGNED_IN" && session?.user) {
+        void supabase.from("profiles").select("display_name,phone").eq("id", session.user.id).maybeSingle()
+          .then(({ data }) => { if (data) { setProfileName(data.display_name ?? ""); setProfilePhone(data.phone ?? ""); } });
+      }
       if (event === "PASSWORD_RECOVERY") setMode("update");
     });
     return () => {
@@ -108,6 +121,18 @@ function AuthPage() {
     }
   };
 
+  const saveRestaurantProfile = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { toast.error(t("Connectez-vous pour enregistrer votre profil.")); return; }
+    if (profileName.trim().length < 2) { toast.error(t("Entrez le nom de votre restaurant.")); return; }
+    setProfileBusy(true);
+    const { error } = await supabase.from("profiles").update({ display_name: profileName.trim(), phone: profilePhone.trim() || null }).eq("id", user.id);
+    setProfileBusy(false);
+    if (error) toast.error(error.message);
+    else toast.success(t("Profil restaurant enregistré."));
+  };
+
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) toast.error(error.message);
@@ -128,9 +153,16 @@ function AuthPage() {
         {sessionEmail && mode !== "update" ? (
           <div className="grid gap-4">
             <p className="rounded-lg bg-secondary p-4 text-sm">{t("Connecté en tant que")} <strong>{sessionEmail}</strong></p>
-            <p className="text-sm text-muted-foreground">{t("Les comptes créés ici reçoivent le rôle restaurant. L'accès pêcheur est accordé séparément après vérification.")}</p>
+            <p className="text-sm text-muted-foreground">{t("Votre compte est créé. Complétez les coordonnées de votre restaurant ci-dessous. Pour devenir pêcheur, envoyez une demande de vérification professionnelle.")}</p>
+            <form onSubmit={saveRestaurantProfile} className="grid gap-3 rounded-lg border border-border p-4">
+              <h2 className="font-semibold">{t("Profil restaurant")}</h2>
+              <label className="grid gap-1 text-sm font-medium">{t("Nom du restaurant / établissement")}<input className="field" value={profileName} onChange={(e) => setProfileName(e.target.value)} minLength={2} maxLength={120} required /></label>
+              <label className="grid gap-1 text-sm font-medium">{t("Téléphone professionnel")}<input className="field" type="tel" value={profilePhone} onChange={(e) => setProfilePhone(e.target.value)} maxLength={40} /></label>
+              <button className="btn btn-accent" disabled={profileBusy}>{profileBusy ? t("Enregistrement…") : t("Enregistrer mon profil restaurant")}</button>
+            </form>
+            <Link to="/verification" className="btn border border-accent text-foreground">{t("Demander la vérification comme pêcheur")}</Link>
+            <Link to="/catalogue" className="btn">{t("Voir la pêche du jour")}</Link>
             <button className="btn" onClick={signOut}>{t("Se déconnecter")}</button>
-            <Link to="/catalogue" className="btn btn-accent">{t("Voir la pêche du jour")}</Link>
           </div>
         ) : (
           <>
