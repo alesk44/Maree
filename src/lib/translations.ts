@@ -1141,5 +1141,18 @@ export const translations: Record<string, readonly [string, string, string]> = {
   "Impossible de charger les données du marché.": ["Unable to load market data.", "Não foi possível carregar os dados do mercado.", "Nu s-au putut încărca datele pieței."],
   "Aucun lot disponible pour le moment. Revenez consulter la pêche du jour.": ["No lots are available right now. Check back for today's catch.", "Não há lotes disponíveis neste momento. Volte a consultar a pesca do dia.", "Nu există loturi disponibile momentan. Reveniți pentru captura zilei."],
   "Les disponibilités et commandes affichées proviennent du marché partagé. Les réservations sont des demandes : aucun paiement en ligne n’est activé dans cette version.": ["Availability and orders shown come from the shared marketplace. Reservations are requests; online payments are not enabled in this version.", "As disponibilidades e encomendas apresentadas vêm do mercado partilhado. As reservas são pedidos; os pagamentos online não estão ativos nesta versão.", "Disponibilitățile și comenzile afișate provin din piața comună. Rezervările sunt solicitări; plățile online nu sunt activate în această versiune."]
+,
+
+  "Découvrez les pêcheurs vérifiés qui publient leur pêche du jour.": ["Meet verified fishers publishing their daily catch.", "Conheça os pescadores verificados que publicam a pesca do dia.", "Descoperiți pescarii verificați care publică captura zilei."],
+  "Chargement des pêcheurs…": ["Loading fishers…", "A carregar pescadores…", "Se încarcă pescarii…"],
+  "Aucun pêcheur vérifié n'est encore inscrit.": ["No verified fishers have joined yet.", "Ainda não há pescadores verificados inscritos.", "Nu s-a înscris încă niciun pescar verificat."],
+  "Chargement du profil pêcheur…": ["Loading fisher profile…", "A carregar o perfil do pescador…", "Se încarcă profilul pescarului…"],
+  "Ce profil pêcheur n'est pas disponible.": ["This fisher profile is unavailable.", "Este perfil de pescador não está disponível.", "Acest profil de pescar nu este disponibil."],
+  "Pêcheur vérifié": ["Verified fisher", "Pescador verificado", "Pescar verificat"],
+  "Informations de contact": ["Contact information", "Informações de contacto", "Informații de contact"],
+  "Les coordonnées privées ne sont pas affichées publiquement. Utilisez une demande de réservation pour contacter le pêcheur.": ["Private contact details are not displayed publicly. Use a reservation request to contact the fisher.", "Os dados de contacto privados não são apresentados publicamente. Utilize um pedido de reserva para contactar o pescador.", "Datele private de contact nu sunt afișate public. Folosiți o solicitare de rezervare pentru a contacta pescarul."],
+  "Voir les prises disponibles": ["View available catch", "Ver capturas disponíveis", "Vezi captura disponibilă"],
+  "Prises disponibles": ["Available catch", "Capturas disponíveis", "Capturi disponibile"],
+  "Aucune prise publiée pour le moment.": ["No catch has been published yet.", "Ainda não foi publicada nenhuma captura.", "Nu a fost publicată încă nicio captură."]
 
 };
