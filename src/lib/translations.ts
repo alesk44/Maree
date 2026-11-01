@@ -1134,5 +1134,12 @@ export const translations: Record<string, readonly [string, string, string]> = {
     "Create a restaurant account or sign in to continue.",
     "Crie uma conta de restaurante ou inicie sessão para continuar.",
     "Creați un cont de restaurant sau autentificați-vă pentru a continua."
-  ],
+  ],,
+
+  "lots réellement disponibles": ["live available lots", "lotes realmente disponíveis", "loturi disponibile în timp real"],
+  "pêcheurs vérifiés": ["verified fishers", "pescadores verificados", "pescari verificați"],
+  "Impossible de charger les données du marché.": ["Unable to load market data.", "Não foi possível carregar os dados do mercado.", "Nu s-au putut încărca datele pieței."],
+  "Aucun lot disponible pour le moment. Revenez consulter la pêche du jour.": ["No lots are available right now. Check back for today's catch.", "Não há lotes disponíveis neste momento. Volte a consultar a pesca do dia.", "Nu există loturi disponibile momentan. Reveniți pentru captura zilei."],
+  "Les disponibilités et commandes affichées proviennent du marché partagé. Les réservations sont des demandes : aucun paiement en ligne n’est activé dans cette version.": ["Availability and orders shown come from the shared marketplace. Reservations are requests; online payments are not enabled in this version.", "As disponibilidades e encomendas apresentadas vêm do mercado partilhado. As reservas são pedidos; os pagamentos online não estão ativos nesta versão.", "Disponibilitățile și comenzile afișate provin din piața comună. Rezervările sunt solicitări; plățile online nu sunt activate în această versiune."]
+
 };
