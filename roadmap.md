@@ -20,7 +20,7 @@ Règle de livraison : aucun merge sur `main`, aucun déploiement public et aucun
 
 ### P0 — fiabiliser avant tout aperçu de test
 
-- [ ] Confirmer que le workflow CI complet (`ci.yml`) passe sur le dernier commit après la refonte du shell et des tableaux de bord ; les workflows précédents étaient verts, les nouveaux contrôles sont en cours.
+- [x] Workflow CI complet vert sur le commit `5c0c2540364f47a55b88e23c4a2764637af4f346` : build production, TypeScript, ESLint et tests.
 - [x] Restreindre les colonnes des profils exposées aux rôles navigateur : téléphone exclu, champs de fiche pêcheur uniquement pour anon, rôle lisible seulement par authenticated. Migration appliquée et droits revérifiés.\n- [x] Révoquer les privilèges génériques superflus sur catches, orders et verification_requests ; réaccorder uniquement SELECT/INSERT/UPDATE nécessaires. Les droits RPC ont été vérifiés : exécution réservée à authenticated.\n- [ ] Terminer les tests de contournement RLS avec des sessions anon, restaurant, pêcheur et admin : lecture publique limitée aux colonnes nécessaires, écriture réservée au propriétaire, rôles vérifiés côté serveur/base, aucune élévation de privilège côté navigateur.
 - [ ] Vérifier les transitions de commande, les annulations et les cas limites de stock simultané (deux restaurants réservent le dernier stock).
 - [ ] Vérifier la cohérence entre les statuts anglais en base et les libellés français dans l'interface.
@@ -30,10 +30,10 @@ Règle de livraison : aucun merge sur `main`, aucun déploiement public et aucun
 ### P1 — design et expérience produit
 
 - [x] Appliquer le thème sombre premium inspiré de la référence : fond nuit, panneaux anthracite arrondis, accents turquoise/océan et composants adaptés.
-- [x] Ajouter une navigation mobile compacte en menu déroulant et barre inférieure fixe pour les quatre destinations principales ; les cartes et formulaires se réorganisent en colonnes sur petits écrans.\n- [ ] Vérifier visuellement les espacements et la lisibilité sur vrais écrans mobiles.
+- [x] Ajouter une navigation mobile compacte en menu déroulant et barre inférieure fixe pour les quatre destinations principales ; les cartes et formulaires se réorganisent en colonnes sur petits écrans.\n- [ ] Vérifier visuellement les espacements et la lisibilité sur vrais écrans mobiles et desktop avec un aperçu de la branche.
 - [x] Harmoniser l'identité Marée : bleu océan, anthracite, turquoise et typographie Fraunces/Manrope.
 - [x] Accueil : chiffres reliés au marché Supabase partagé, états vides explicites, aucun volume de ventes/transactions fictif. Annuaire et profils pêcheurs basculés des profils démo vers les profils vérifiés partagés.
-- [ ] Faire une revue manuelle page par page des états chargement, erreur, absence de résultats et confirmation.
+- [ ] Faire une revue manuelle page par page des états chargement, erreur, absence de résultats et confirmation dans l'aperçu.
 - [x] Langues proposées confirmées : français, anglais et roumain. Le portugais n'est pas proposé dans le sélecteur. Audit automatisé des appels t(\"…\") dans toutes les routes : 0 libellé littéral manquant dans le dictionnaire anglais/roumain.
 - [ ] Vérifier le sélecteur de langue, sa persistance et le rendu SSR/hydratation.
 
