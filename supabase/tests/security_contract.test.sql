@@ -163,7 +163,7 @@ reset role;
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000005';
 select lives_ok(
-  $select public.review_verification_request('30000000-0000-4000-8000-000000000003'::uuid, 'approved'::public.verification_status, 'Approved by test admin')$,
+  $$select public.review_verification_request('30000000-0000-4000-8000-000000000003'::uuid, 'approved'::public.verification_status, 'Approved by test admin')$$,
   'admin can approve a pending verification request'
 );
 reset role;
