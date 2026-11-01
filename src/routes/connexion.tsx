@@ -139,7 +139,7 @@ function AuthPage() {
             </div>
             {mode !== "reset" && mode !== "update" && (
               <>
-                <button type="button" className="btn border border-border bg-background" onClick={signInWithGoogle} disabled={busy}>
+                <button type="button" className="btn border border-border bg-background text-foreground" onClick={signInWithGoogle} disabled={busy}>
                   <span aria-hidden="true" className="mr-2 font-bold">G</span>{t("Continuer avec Google")}
                 </button>
                 <div className="flex items-center gap-3 text-xs text-muted-foreground"><span className="h-px flex-1 bg-border" /><span>{t("ou avec votre e-mail")}</span><span className="h-px flex-1 bg-border" /></div>
