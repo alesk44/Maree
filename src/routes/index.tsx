@@ -1,6 +1,7 @@
 import { useLanguage } from "@/lib/i18n";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSharedMarket } from "@/lib/shared-market";
+import { MarineConditionsPanel } from "@/components/marine-conditions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -43,6 +44,7 @@ function Index() {
       </section>
       {error && <p role="alert" className="mx-auto mt-3 max-w-6xl px-4 text-sm text-destructive">{t("Impossible de charger les données du marché.")}</p>}
       {!loading && available === 0 && <p className="mx-auto mt-3 max-w-6xl px-4 text-sm text-muted-foreground">{t("Aucun lot disponible pour le moment. Revenez consulter la pêche du jour.")}</p>}
+      <MarineConditionsPanel />
       <section className="mx-auto mt-16 grid max-w-6xl gap-6 px-4 md:grid-cols-3">
         {([
           ["Traçable", "Bateau, zone, heure de capture et de débarquement sur chaque lot."],
