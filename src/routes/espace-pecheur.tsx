@@ -47,7 +47,7 @@ function FisherSpace() {
         if(profile.role!=="fisher") throw new Error("Ce compte n'est pas vérifié comme pêcheur.");
         setOrders(await fetchMyOrders());
       }
-    } catch(e) { toast.error(e instanceof Error?t(e.message):t("Impossible de charger le profil.")); }
+    } catch(e) { toast.error(e instanceof Error?t(e.message):t("Impossible de charger le profil.")); return; }
     finally { setProfileLoading(false); }
   };
   useEffect(()=>{void load();},[]);
