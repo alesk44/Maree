@@ -54,11 +54,11 @@ function FisherSpace() {
 
   const publish = async (e:React.FormEvent) => {
     e.preventDefault();
-    if(!me || !userId) return toast.error(t("Connectez-vous avec un compte pêcheur vérifié."));
-    if(!form.species.trim()||!form.zone.trim()||!form.caughtAt||!form.landedAt) return toast.error(t("Espèce, zone et horaires sont requis."));
+    if(!me || !userId) { toast.error(t("Connectez-vous avec un compte pêcheur vérifié.")); return; }
+    if(!form.species.trim()||!form.zone.trim()||!form.caughtAt||!form.landedAt) { toast.error(t("Espèce, zone et horaires sont requis.")); return; }
     const caught=new Date(form.caughtAt), landed=new Date(form.landedAt);
-    if(!Number.isFinite(caught.getTime())||!Number.isFinite(landed.getTime())||landed<caught) return toast.error(t("Les horaires de capture et de débarquement sont invalides."));
-    if(!Number.isFinite(form.qtyKg)||form.qtyKg<0.5||!Number.isFinite(form.priceKg)||form.priceKg<0) return toast.error(t("Quantité ou prix invalide."));
+    if(!Number.isFinite(caught.getTime())||!Number.isFinite(landed.getTime())||landed<caught) { toast.error(t("Les horaires de capture et de débarquement sont invalides.")); return; }
+    if(!Number.isFinite(form.qtyKg)||form.qtyKg<0.5||!Number.isFinite(form.priceKg)||form.priceKg<0) { toast.error(t("Quantité ou prix invalide.")); return; }
     try {
       await createSharedCatch({species:form.species.trim(),zone:form.zone.trim(),qtyKg:form.qtyKg,priceKg:form.priceKg,grade:form.grade.trim(),storage:form.storage,caughtAt:caught.toISOString(),landedAt:landed.toISOString(),fisherId:userId,method:me.method,emoji:EMOJI[me.method]??"🐟",status:"disponible"});
       toast.success(t("Prise publiée dans le catalogue partagé."));
