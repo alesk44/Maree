@@ -27,6 +27,8 @@ jobs:
         run: supabase db reset
       - name: Run pgTAP security contract tests
         run: supabase test db
+      - name: Verify concurrent last-stock reservations
+        run: bash supabase/tests/reservation_concurrency.sh
       - name: Stop local Supabase
         if: always()
         run: supabase stop --no-backup
