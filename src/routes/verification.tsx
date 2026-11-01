@@ -34,7 +34,7 @@ function VerificationPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userId) return toast.error(t("Connectez-vous avant de demander une vérification."));
+    if (!userId) { toast.error(t("Connectez-vous avant de demander une vérification.")); return; }
     setBusy(true);
     const { data: inserted, error } = await supabase.from("verification_requests").insert({
       user_id: userId, ...form,
@@ -45,7 +45,7 @@ function VerificationPage() {
       evidence_note: form.evidence_note.trim(),
     }).select("id").single();
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     const { error: emailError } = await supabase.functions.invoke("notify-verification-request", { body: { request_id: inserted.id } });
     if (emailError) toast.warning(t("Demande enregistrée, mais l’e-mail automatique n’a pas pu partir. Contactez l’équipe par e-mail."));
     else toast.success(t("Demande envoyée et notification e-mail transmise à l’équipe. La vérification reste manuelle."));
