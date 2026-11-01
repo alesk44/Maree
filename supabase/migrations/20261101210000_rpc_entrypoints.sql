@@ -108,6 +108,13 @@ begin
   if not found then
     raise exception 'Order not found';
   end if;
+  if not exists (
+    select 1 from public.profiles p
+    where p.id = v_user_id and p.role = 'fisher'::public.app_role
+  ) then
+    raise exception 'Only fisher accounts can update orders';
+  end if;
+
   if v_fisher_id <> v_user_id then
     raise exception 'Only the lot owner can update this order';
   end if;
