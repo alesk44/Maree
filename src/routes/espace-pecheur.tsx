@@ -110,14 +110,16 @@ function FisherSpace() {
       <div><h2 className="text-xl font-semibold">{t("Mes ventes et relevés")}</h2><p className="text-sm text-muted-foreground">{t("Synthèse calculée sur les commandes marquées livrées. Aucun paiement n'est encaissé ni confirmé dans cette version.")}</p></div>
       <div className="grid gap-3 sm:grid-cols-3">
         <Metric label={t("Ventes livrées")} value={myOrders.filter(o=>o.status==="delivered").length} detail={t("Commandes terminées")}/>
-        <Metric label={t("Chiffre d'affaires indicatif")} value={gbp(myOrders.filter(o=>o.status==="delivered").reduce((sum,o)=>{const lot=mine.find(c=>c.id===o.catch_id);return sum+(lot?.priceKg??0)*Number(o.quantity_kg);},0))} detail={t("Avant frais et taxes")}/>
+        <Metric label={t("Ventes livrées (prix de base)")} value={gbp(myOrders.filter(o=>o.status==="delivered").reduce((sum,o)=>{const lot=mine.find(c=>c.id===o.catch_id);return sum+(lot?.priceKg??0)*Number(o.quantity_kg);},0))} detail={t("Avant commission")}/>
+        <Metric label={t("Commission pêcheur estimée (6,5 %)")} value={gbp(myOrders.filter(o=>o.status==="delivered").reduce((sum,o)=>{const lot=mine.find(c=>c.id===o.catch_id);return sum+(lot?.priceKg??0)*Number(o.quantity_kg)*0.065;},0))} detail={t("Déduite du prix de base")}/>
         <Metric label={t("En attente")} value={myOrders.filter(o=>o.status!=="delivered"&&o.status!=="cancelled").length} detail={t("Commandes à traiter")}/>
       </div>
       {myOrders.filter(o=>o.status==="delivered").length===0?<Empty>{t("Aucune vente livrée pour le moment.")}</Empty>:
         <ul className="grid gap-2">{myOrders.filter(o=>o.status==="delivered").map(o=>{const lot=mine.find(c=>c.id===o.catch_id);const total=(lot?.priceKg??0)*Number(o.quantity_kg);return <li key={o.id} className="rounded-xl border border-border p-4">
           <div className="flex flex-wrap justify-between gap-2"><strong>{lot?.emoji} {t(lot?.species??"Produit")} · {Number(o.quantity_kg)} kg</strong><strong>{gbp(total)}</strong></div>
           <p className="text-xs text-muted-foreground">{t("Livrée")} · {dt(o.requested_slot)} · Réf. {o.id.slice(0,8).toUpperCase()}</p>
-          <p className="mt-1 text-xs text-muted-foreground">{t("Relevé indicatif — ne constitue pas une facture fiscale ni une preuve de paiement.")}</p>
+          <p className="mt-1 text-sm">{t("Commission Marée Jersey (6,5 %)")} : <strong>{gbp(total*0.065)}</strong> · {t("Votre net estimé")} : <strong>{gbp(total*0.935)}</strong></p>
+          <p className="mt-1 text-xs text-muted-foreground">{t("Relevé indicatif — commission non prélevée à ce stade ; ne constitue pas une facture fiscale ni une preuve de paiement.")}</p>
         </li>})}</ul>}
     </section>}
     {accountTab==="profile" && <section className="card mb-8 grid gap-2 p-5">
