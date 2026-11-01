@@ -130,6 +130,7 @@ function FisherSpace() {
       <a className="btn btn-accent w-fit" href="/verification">{t("Gérer mes informations professionnelles")}</a>
     </section>}
 
+    {accountTab==="activity" && <>
     <section aria-label={t("Vue d'ensemble")} className="mb-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       <Metric label={t("Lots publiés")} value={mine.length} detail={t("Toutes vos prises")}/>
       <Metric label={t("Stock disponible")} value={mine.filter((c)=>c.status==="disponible").reduce((n,c)=>n+c.qtyKg,0).toLocaleString("fr-FR")+" kg"} detail={t("Quantité actuellement en vente")}/>
@@ -190,7 +191,7 @@ function FisherSpace() {
         })}</ul>}
       </section>
     </div>
-    {accountTab!=="activity" ? null : null}
+    </>}
   </div>;
 }
 
