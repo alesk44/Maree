@@ -1,6 +1,6 @@
 # Marée Jersey — feuille de route vivante
 
-Dernière revue : 1 novembre 2026  
+Dernière revue : 1 novembre 2026 — CI revérifiée après correction du filtre catalogue  
 Branche de travail : `feature/supabase-shared-data-v2`  
 Règle de livraison : aucun merge sur `main`, aucun déploiement public et aucune mise en production sans validation explicite du propriétaire.
 
@@ -20,7 +20,7 @@ Règle de livraison : aucun merge sur `main`, aucun déploiement public et aucun
 
 ### P0 — fiabiliser avant tout aperçu de test
 
-- [x] Workflow CI complet vert sur le commit `5c0c2540364f47a55b88e23c4a2764637af4f346` : build production, TypeScript, ESLint et tests.
+- [x] Workflow CI complet vert sur le commit `a92ad4c9b820850c02b07580ecb93600da9d3c1c` : build production, TypeScript, ESLint et tests.
 - [x] Restreindre les colonnes des profils exposées aux rôles navigateur : téléphone exclu, champs de fiche pêcheur uniquement pour anon, rôle lisible seulement par authenticated. Migration appliquée et droits revérifiés.\n- [x] Révoquer les privilèges génériques superflus sur catches, orders et verification_requests ; réaccorder uniquement SELECT/INSERT/UPDATE nécessaires. Les droits RPC ont été vérifiés : exécution réservée à authenticated.\n- [ ] Terminer les tests de contournement RLS avec des sessions anon, restaurant, pêcheur et admin : lecture publique limitée aux colonnes nécessaires, écriture réservée au propriétaire, rôles vérifiés côté serveur/base, aucune élévation de privilège côté navigateur.
 - [ ] Vérifier les transitions de commande, les annulations et les cas limites de stock simultané (deux restaurants réservent le dernier stock).
 - [ ] Vérifier la cohérence entre les statuts anglais en base et les libellés français dans l'interface.
