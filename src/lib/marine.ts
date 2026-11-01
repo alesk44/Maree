@@ -16,8 +16,8 @@ function finite(value: unknown): number | null {
 }
 export function normalizeMarinePayload(payload: OpenMeteoPayload, fetchedAt = new Date().toISOString()): MarineConditions {
   const current = payload.current;
-  if (!current || typeof current.time !== "string") throw new Error("Marine current conditions are missing");
-  const waveHeightM = finite(current.wave_height);
+  if (!current || typeof current["time"] !== "string") throw new Error("Marine current conditions are missing");
+  const waveHeightM = finite(current["wave_height"]);
   if (waveHeightM === null || waveHeightM < 0) throw new Error("Marine wave height is unavailable");
   const times = payload.hourly?.time;
   const heights = payload.hourly?.wave_height;
@@ -32,11 +32,11 @@ export function normalizeMarinePayload(payload: OpenMeteoPayload, fetchedAt = ne
     location: "Jersey (zone côtière centrale)",
     timezone: typeof payload.timezone === "string" ? payload.timezone : "Europe/Jersey",
     current: {
-      time: current.time,
+      time: current["time"],
       waveHeightM,
-      waveDirectionDeg: finite(current.wave_direction),
-      wavePeriodS: finite(current.wave_period),
-      seaTemperatureC: finite(current.sea_surface_temperature),
+      waveDirectionDeg: finite(current["wave_direction"]),
+      wavePeriodS: finite(current["wave_period"]),
+      seaTemperatureC: finite(current["sea_surface_temperature"]),
     },
     nextHours,
     fetchedAt,
