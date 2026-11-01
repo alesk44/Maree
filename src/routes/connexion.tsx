@@ -17,6 +17,8 @@ export const Route = createFileRoute("/connexion")({
 
 function AuthPage() {
   const { t } = useLanguage();
+  // OAuth/email links must return to the deployed preview, never the local dev origin.
+  const authRedirectUrl = "https://maree-jersey-preview.alexozo44760.workers.dev/connexion";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -54,7 +56,7 @@ function AuthPage() {
     setNeedsEmailConfirmation(false);
     try {
       if (mode === "reset") {
-        const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: `${window.location.origin}/connexion?flow=recovery` });
+        const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: `${authRedirectUrl}?flow=recovery` });
         if (error) throw error;
         toast.success(t("Si cette adresse correspond à un compte, un e-mail de réinitialisation va être envoyé."));
       } else if (mode === "update") {
@@ -67,7 +69,7 @@ function AuthPage() {
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
-          options: { data: { display_name: displayName.trim() }, emailRedirectTo: `${window.location.origin}/connexion` },
+          options: { data: { display_name: displayName.trim() }, emailRedirectTo: authRedirectUrl },
         });
         if (error) throw error;
         if (data.session) {
