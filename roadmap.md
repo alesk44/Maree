@@ -6,6 +6,11 @@ Règle de livraison : aucun merge sur `main`, aucun déploiement public et aucun
 
 ## Dernier audit — 1 novembre 2026
 
+- [x] Après correction de l'assertion de visibilité des profils anonymes, le workflow Supabase a réussi : reconstruction des 15 migrations, suite pgTAP et test concurrent du dernier stock.
+- [x] Les workflows `Verify`, `Marée CI` et `Build verification` ont également réussi sur `c0bef40a51c4a4d52fbf8da9f385e10503bee189`.
+- [ ] Le contrôle visuel de l'aperçu et les parcours avec deux comptes restent à faire ; succès CI ne vaut pas validation utilisateur réelle.
+- [ ] Étudier l'ajout d'un panneau informatif « Conditions en mer » via Open-Meteo Marine API, sans utiliser ces données comme conseil de sécurité ou de navigation.
+
 - Audit Supabase consigné dans [le rapport de sécurité](docs/security-audit-2026-11-01.md).
 - [x] Les 13 versions déjà enregistrées dans Supabase ont maintenant des fichiers SQL correspondants dans la branche ; les cinq anciens fichiers aux versions erronées ont été remplacés.
 - Deux migrations additives sont prêtes dans le dépôt : sécurisation du rôle pour les transitions de commande et index des demandes de vérification.
