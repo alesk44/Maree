@@ -89,10 +89,10 @@ function RootContent() {
       <a href="#main" className="sr-only focus:not-sr-only">{t("Aller au contenu")}</a>
       <header className="sticky top-0 z-30 border-b bg-background/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-          <Link to="/" className="font-display text-xl font-semibold text-primary">Marée <span className="text-accent">Jersey</span></Link>
+          <Link to="/" className="font-display text-xl font-semibold text-foreground">Marée <span className="text-accent">Jersey</span></Link>
           <nav className="hidden gap-1 lg:flex" aria-label={t("Navigation principale")}>
             {NAV.map((n) => (
-              <Link key={n.to} to={n.to} className="rounded-md px-2 py-2 text-sm font-medium text-muted-foreground hover:text-primary" activeProps={{ className: "text-primary bg-secondary" }}>{t(n.label)}</Link>
+              <Link key={n.to} to={n.to} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground" activeProps={{ className: "text-accent bg-secondary" }}>{t(n.label)}</Link>
             ))}
           </nav>
           <div className="flex items-center gap-2">
@@ -118,7 +118,7 @@ function RootContent() {
       <footer className="mt-16 border-t bg-primary text-primary-foreground">
         <div className="mx-auto max-w-6xl px-4 py-8 text-sm opacity-90">
           <p className="font-display text-lg">Marée Jersey</p>
-          <p className="mt-1">{t("Prototype — toutes les disponibilités, pêcheurs et commandes sont des données de démonstration enregistrées uniquement dans votre navigateur. Aucun paiement, aucune notification réelle. Prix en £ · heure de Jersey.")}</p>
+          <p className="mt-1">{t("Les disponibilités et commandes affichées proviennent du marché partagé. Les réservations sont des demandes : aucun paiement en ligne n’est activé dans cette version.")}</p>
         </div>
       </footer>
       <Toaster />
