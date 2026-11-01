@@ -44,7 +44,7 @@ function Index() {
       </section>
       <p className="mx-auto mt-3 max-w-6xl px-4 text-xs text-muted-foreground"><DemoBadge />{t("Ces chiffres reflètent un jeu de données fictif, pas des disponibilités réelles.")}</p>
       <section className="mx-auto mt-16 grid max-w-6xl gap-6 px-4 md:grid-cols-3">
-        {[
+        {([
           ["Traçable", "Bateau, zone, heure de capture et de débarquement sur chaque lot."],
           ["Frais", "Tri par fraîcheur et conseils de conservation de la chaîne du froid."],
           ["Local", "Des pêcheurs côtiers de Gorey, St Helier, St Aubin et Rozel."],
