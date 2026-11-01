@@ -4,13 +4,21 @@ Dernière revue : 1 novembre 2026 — CI revérifiée après correction du filtr
 Branche de travail : `feature/supabase-shared-data-v2`  
 Règle de livraison : aucun merge sur `main`, aucun déploiement public et aucune mise en production sans validation explicite du propriétaire.
 
-## Dernier audit — 1 novembre 2026\n\n- Audit Supabase en lecture seule consigné dans [`docs/security-audit-2026-11-01.md`](docs/security-audit-2026-11-01.md).\n- RLS activée sur les quatre tables applicatives ; contrôles de rôles et de propriété présents dans les politiques et RPC examinées.\n- Blocage P0 : historique de migrations distant (13 versions) non réconcilié avec les cinq fichiers présents dans la branche ; les migrations du répertoire ne permettent pas encore de reconstruire à l'identique le schéma distant. Ne pas pousser/appliquer de migrations avant réconciliation.\n- Aucun fichier `supabase/tests` n'existe encore ; tests adversariaux pgTAP et concurrence toujours à écrire et exécuter.\n- Les trois alertes Security Advisor sur les fonctions `SECURITY DEFINER` concernent des RPC authentifiées prévues ; leur sécurité doit être verrouillée par des tests négatifs.\n\n## État vérifié
+## Dernier audit — 1 novembre 2026
+
+- Audit Supabase consigné dans [le rapport de sécurité](docs/security-audit-2026-11-01.md).
+- Les 13 versions déjà enregistrées dans Supabase ont maintenant des fichiers SQL correspondants dans la branche.
+- Deux migrations additives sont prêtes dans le dépôt : sécurisation du rôle pour les transitions de commande et index des demandes de vérification.
+- La base distante n'a pas été modifiée. La reconstruction locale et les tests pgTAP sont lancés par GitHub Actions ; attendre leur résultat avant de considérer l'historique validé.
+- Aucun merge sur `main), aucune mise en production.
+
+## État vérifié
 
 - [x] Catalogue public connecté aux prises et profils pêcheurs Supabase, avec actualisation temps réel.
 - [x] Espace restaurant connecté : authentification, réservation via RPC transactionnelle `reserve_catch`, consultation des commandes du compte.
 - [x] Espace pêcheur connecté : contrôle du rôle, publication d'une prise, modification de stock/prix/statut, consultation des commandes entrantes.
 - [x] RPC `update_order_status` ajoutée pour les transitions de commande autorisées par le pêcheur propriétaire.
-- [ ] RPC `update_order_status` présente dans la base et permissions vérifiées (`authenticated` autorisé, `anon` refusé) ; son historique de migration n'est pas aligné avec les versions enregistrées dans Supabase, à réconcilier avant toute nouvelle migration.
+- [x] Fichier de migration `update_order_status` réaligné dans la branche ; garde explicite sur le rôle `fisher` ajoutée. Application à la base distante en attente de validation CI et d'approbation.
 - [x] Corrections TypeScript/JSX et génération des routes TanStack avant vérification.
 - [x] Contrôle GitHub `Verify` réussi sur le commit `da674ace7b8afb20756c5b2cd2392faad25340e3`.
 - [x] Contrôle GitHub `Build verification` réussi sur ce même commit.
@@ -22,9 +30,9 @@ Règle de livraison : aucun merge sur `main`, aucun déploiement public et aucun
 
 - [x] Workflow CI complet vert sur le commit `a92ad4c9b820850c02b07580ecb93600da9d3c1c` : build production, TypeScript, ESLint et tests.
 - [x] Restreindre les colonnes des profils exposées aux rôles navigateur : téléphone exclu, champs de fiche pêcheur uniquement pour anon, rôle lisible seulement par authenticated. Migration appliquée et droits revérifiés.\n- [x] Révoquer les privilèges génériques superflus sur catches, orders et verification_requests ; réaccorder uniquement SELECT/INSERT/UPDATE nécessaires. Les droits RPC ont été vérifiés : exécution réservée à authenticated.\n- [ ] Terminer les tests de contournement RLS avec des sessions anon, restaurant, pêcheur et admin : lecture publique limitée aux colonnes nécessaires, écriture réservée au propriétaire, rôles vérifiés côté serveur/base, aucune élévation de privilège côté navigateur.
-- [ ] Vérifier les transitions de commande, les annulations et les cas limites de stock simultané (deux restaurants réservent le dernier stock).
+- [ ] Vérifier les transitions de commande, les annulations et les cas limites de stock simultané (deux restaurants réservent le dernier stock) ; la CI pgTAP est en cours.
 - [ ] Vérifier la cohérence entre les statuts anglais en base et les libellés français dans l'interface.
-- [ ] Ajouter des tests ciblés pour réservation concurrente, refus d'accès sans session, mauvais rôle, stock insuffisant, mise à jour d'une prise étrangère et transition de commande interdite.
+- [x] Ajouter une suite pgTAP pour RLS, privilèges RPC, visibilité anon/restaurant/fisher et refus des transitions non autorisées.\n- [ ] Ajouter et exécuter un test à deux connexions pour la réservation simultanée du dernier stock et un test d'écriture sur une prise appartenant à un autre pêcheur.
 - [ ] Corriger les erreurs détectées par ces contrôles avant d'ouvrir un test utilisateur.
 
 ### P1 — design et expérience produit
