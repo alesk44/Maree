@@ -114,7 +114,7 @@ select throws_ok(
   'user cannot submit a verification request for another account'
 );
 select throws_ok(
-  $select public.update_order_status('20000000-0000-4000-8000-000000000001'::uuid, 'confirmed'::public.order_status)$$,
+  $$select public.update_order_status('20000000-0000-4000-8000-000000000001'::uuid, 'confirmed'::public.order_status)$$,
   'P0001', 'Only fisher accounts can update orders',
   'restaurant account cannot advance order status'
 );
@@ -135,22 +135,22 @@ select is((
   select count(*) from changed
 ), 0::bigint, 'fisher cannot update another fisher catch');
 select throws_ok(
-  $select public.update_order_status('20000000-0000-4000-8000-000000000002'::uuid, 'delivered'::public.order_status)$$,
+  $$select public.update_order_status('20000000-0000-4000-8000-000000000002'::uuid, 'delivered'::public.order_status)$$,
   'P0001', 'Invalid order status transition',
   'fisher cannot skip required order status transitions'
 );
 select throws_ok(
-  $$select public.update_order_status('20000000-0000-4000-8000-000000000001'::uuid, 'confirmed'::public.order_status)$$$,
+  $$select public.update_order_status('20000000-0000-4000-8000-000000000001'::uuid, 'confirmed'::public.order_status)$$,
   'P0001', 'Only the lot owner can update this order',
   'fisher cannot update another fisher order'
 );
 select throws_ok(
-  $$select public.reserve_catch('10000000-0000-4000-8000-000000000001'::uuid, 0.5, now() + interval '1 day', 'collection', null)$$$,
+  $$select public.reserve_catch('10000000-0000-4000-8000-000000000001'::uuid, 0.5, now() + interval '1 day', 'collection', null)$$,
   'P0001', 'Only restaurant accounts can place orders',
   'fisher cannot reserve a catch'
 );
 select throws_ok(
-  $$select public.review_verification_request('30000000-0000-4000-8000-000000000001'::uuid, 'approved'::public.verification_status, null)$$$,
+  $$select public.review_verification_request('30000000-0000-4000-8000-000000000001'::uuid, 'approved'::public.verification_status, null)$$,
   'P0001', 'Admin access required',
   'fisher cannot review verification requests'
 );
