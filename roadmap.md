@@ -20,6 +20,16 @@ Règle de livraison : aucun merge sur `main`, aucun déploiement public et aucun
 - [x] Build, Verify, Marée CI et déploiement de prévisualisation Cloudflare réussis sur `c233d00d6b65c9dee080d6c74abcf983730e60e2`.
 - La base distante n'a pas été modifiée. Aucun merge sur `main` et aucune mise en production.
 
+
+## Pistes IA — audit open source
+
+- [x] Audit des outils IA auto-hébergeables consigné dans [docs/ai-opportunities.md](docs/ai-opportunities.md).
+- [x] Priorité retenue : assistant facultatif de rédaction/traduction des annonces de prises, sans pouvoir modifier les champs structurés ni publier sans validation humaine.
+- [x] Garde-fous définis : pas d'invention de prix/stock/espèce/origine, pas de diagnostic de fraîcheur, pas de décision automatique sur les comptes ou commandes.
+- [ ] Prototype Ollama sur machine locale avec données fictives uniquement.
+- [ ] Évaluer les sorties FR/EN/RO et les refus d'invention avant tout branchement.
+- Décision actuelle : aucun service IA supplémentaire installé ; le mode sans IA reste le comportement par défaut. LocalAI/Ollama demanderaient une machine séparée du Cloudflare Worker.
+
 ## État vérifié
 
 - [x] Catalogue public connecté aux prises et profils pêcheurs Supabase, avec actualisation temps réel.
