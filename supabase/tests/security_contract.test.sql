@@ -92,29 +92,29 @@ set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000003';
 select is((select count(*) from public.orders), 1::bigint, 'restaurant sees only its own order');
 select is((select count(*) from public.verification_requests), 1::bigint, 'restaurant sees only its own verification request');
 select throws_ok(
-  $insert into public.catches (
+  $$insert into public.catches (
     fisher_id, species, zone, caught_at, landed_at, quantity_kg, remaining_kg,
     price_per_kg, method, storage_instructions
   ) values (
     '00000000-0000-4000-8000-000000000003'::uuid, 'Bass', 'South coast',
     now() - interval '2 hours', now() - interval '1 hour',
     1, 1, 9, 'Line caught', 'Keep chilled'
-  )$,
+  )$$,
   '42501', null,
   'restaurant cannot publish a catch'
 );
 select throws_ok(
-  $insert into public.verification_requests (
+  $$insert into public.verification_requests (
     user_id, requested_role, business_name, contact_name, phone, evidence_note
   ) values (
     '00000000-0000-4000-8000-000000000004'::uuid, 'restaurant',
     'Other Restaurant', 'Other Contact', '+441534000099', 'Evidence note for another account.'
-  )$,
+  )$$,
   '42501', null,
   'user cannot submit a verification request for another account'
 );
 select throws_ok(
-  $select public.update_order_status('20000000-0000-4000-8000-000000000001'::uuid, 'confirmed'::public.order_status)$,
+  $select public.update_order_status('20000000-0000-4000-8000-000000000001'::uuid, 'confirmed'::public.order_status)$$,
   'P0001', 'Only fisher accounts can update orders',
   'restaurant account cannot advance order status'
 );
@@ -135,22 +135,22 @@ select is((
   select count(*) from changed
 ), 0::bigint, 'fisher cannot update another fisher catch');
 select throws_ok(
-  $select public.update_order_status('20000000-0000-4000-8000-000000000002'::uuid, 'delivered'::public.order_status)$,
+  $select public.update_order_status('20000000-0000-4000-8000-000000000002'::uuid, 'delivered'::public.order_status)$$,
   'P0001', 'Invalid order status transition',
   'fisher cannot skip required order status transitions'
 );
 select throws_ok(
-  $$select public.update_order_status('20000000-0000-4000-8000-000000000001'::uuid, 'confirmed'::public.order_status)$$,
+  $$select public.update_order_status('20000000-0000-4000-8000-000000000001'::uuid, 'confirmed'::public.order_status)$$$,
   'P0001', 'Only the lot owner can update this order',
   'fisher cannot update another fisher order'
 );
 select throws_ok(
-  $$select public.reserve_catch('10000000-0000-4000-8000-000000000001'::uuid, 0.5, now() + interval '1 day', 'collection', null)$$,
+  $$select public.reserve_catch('10000000-0000-4000-8000-000000000001'::uuid, 0.5, now() + interval '1 day', 'collection', null)$$$,
   'P0001', 'Only restaurant accounts can place orders',
   'fisher cannot reserve a catch'
 );
 select throws_ok(
-  $$select public.review_verification_request('30000000-0000-4000-8000-000000000001'::uuid, 'approved'::public.verification_status, null)$$,
+  $$select public.review_verification_request('30000000-0000-4000-8000-000000000001'::uuid, 'approved'::public.verification_status, null)$$$,
   'P0001', 'Admin access required',
   'fisher cannot review verification requests'
 );
