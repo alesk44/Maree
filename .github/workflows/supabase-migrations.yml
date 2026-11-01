@@ -1,16 +1,16 @@
 name: Supabase migration tests
 
 on:
-  push:
-    branches: [feature/supabase-shared-data-v2]
-    paths:
-      - "supabase/**"
-      - ".github/workflows/supabase-migrations.yml"
   pull_request:
     branches: [main]
     paths:
       - "supabase/**"
       - ".github/workflows/supabase-migrations.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: supabase-db-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   database-tests:
