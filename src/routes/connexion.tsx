@@ -43,7 +43,7 @@ function AuthPage() {
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       setSessionEmail(session?.user.email ?? null);
       if (event === "SIGNED_IN" && session?.user) {
-        void supabase.from("profiles").select("display_name,phone").eq("id", session.user.id).maybeSingle()
+        void supabase.from("profiles").select("display_name").eq("id", session.user.id).maybeSingle()
           .then(({ data }) => { if (data) { setProfileName(data.display_name ?? ""); } });
       }
       if (event === "PASSWORD_RECOVERY") setMode("update");
