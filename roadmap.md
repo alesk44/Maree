@@ -4,13 +4,13 @@ Dernière revue : 1 novembre 2026 — CI revérifiée après correction du filtr
 Branche de travail : `feature/supabase-shared-data-v2`  
 Règle de livraison : aucun merge sur `main`, aucun déploiement public et aucune mise en production sans validation explicite du propriétaire.
 
-## État vérifié
+## Dernier audit — 1 novembre 2026\n\n- Audit Supabase en lecture seule consigné dans [`docs/security-audit-2026-11-01.md`](docs/security-audit-2026-11-01.md).\n- RLS activée sur les quatre tables applicatives ; contrôles de rôles et de propriété présents dans les politiques et RPC examinées.\n- Blocage P0 : historique de migrations distant (13 versions) non réconcilié avec les cinq fichiers présents dans la branche ; les migrations du répertoire ne permettent pas encore de reconstruire à l'identique le schéma distant. Ne pas pousser/appliquer de migrations avant réconciliation.\n- Aucun fichier `supabase/tests` n'existe encore ; tests adversariaux pgTAP et concurrence toujours à écrire et exécuter.\n- Les trois alertes Security Advisor sur les fonctions `SECURITY DEFINER` concernent des RPC authentifiées prévues ; leur sécurité doit être verrouillée par des tests négatifs.\n\n## État vérifié
 
 - [x] Catalogue public connecté aux prises et profils pêcheurs Supabase, avec actualisation temps réel.
 - [x] Espace restaurant connecté : authentification, réservation via RPC transactionnelle `reserve_catch`, consultation des commandes du compte.
 - [x] Espace pêcheur connecté : contrôle du rôle, publication d'une prise, modification de stock/prix/statut, consultation des commandes entrantes.
 - [x] RPC `update_order_status` ajoutée pour les transitions de commande autorisées par le pêcheur propriétaire.
-- [x] Migration SQL additive de cette RPC appliquée au projet Supabase et permissions vérifiées : rôle `authenticated` autorisé, rôle `anon` refusé.
+- [ ] RPC `update_order_status` présente dans la base et permissions vérifiées (`authenticated` autorisé, `anon` refusé) ; son historique de migration n'est pas aligné avec les versions enregistrées dans Supabase, à réconcilier avant toute nouvelle migration.
 - [x] Corrections TypeScript/JSX et génération des routes TanStack avant vérification.
 - [x] Contrôle GitHub `Verify` réussi sur le commit `da674ace7b8afb20756c5b2cd2392faad25340e3`.
 - [x] Contrôle GitHub `Build verification` réussi sur ce même commit.
