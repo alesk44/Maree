@@ -34,6 +34,12 @@ function FisherSpace() {
   const me = fishers.find((f)=>f.id===userId);
   const mine = catches.filter((c)=>c.fisherId===userId);
   const myOrders = orders.filter((o)=>mine.some((c)=>c.id===o.catch_id));
+  const weeklyActivity = Array.from({length:7},(_,index)=>{
+    const day=new Date(); day.setHours(0,0,0,0); day.setDate(day.getDate()-(6-index));
+    const next=new Date(day); next.setDate(next.getDate()+1);
+    return {key:day.toISOString().slice(0,10),label:day.toLocaleDateString(undefined,{weekday:"short"}),count:mine.filter((item)=>{const landed=new Date(item.landedAt);return landed>=day&&landed<next;}).length};
+  });
+  const maxDailyActivity=Math.max(1,...weeklyActivity.map((day)=>day.count));
 
   const load = async () => {
     setProfileLoading(true);
@@ -99,6 +105,20 @@ function FisherSpace() {
       <Metric label={t("Stock disponible")} value={mine.filter((c)=>c.status==="disponible").reduce((n,c)=>n+c.qtyKg,0).toLocaleString("fr-FR")+" kg"} detail={t("Quantité actuellement en vente")}/>
       <Metric label={t("Demandes reçues")} value={myOrders.length} detail={t("Réservations de restaurants")}/>
       <Metric label={t("À traiter")} value={myOrders.filter((o)=>o.status==="submitted").length} detail={t("Nouvelles demandes")}/>
+    </section>
+    <section className="card mb-8 p-5 sm:p-6">
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-2">
+        <div><h2 className="text-lg font-semibold">{t("Activité des débarquements")}</h2><p className="text-xs text-muted-foreground">{t("Nombre de lots débarqués sur les sept derniers jours")}</p></div>
+        <span className="rounded-full bg-secondary px-3 py-1 text-xs text-muted-foreground">{t("7 derniers jours")}</span>
+      </div>
+      <div className="grid grid-cols-7 items-end gap-2" role="img" aria-label={weeklyActivity.map((day)=>day.label+": "+day.count).join(", ")}>
+        {weeklyActivity.map((day)=><div key={day.key} className="flex min-w-0 flex-col items-center gap-2">
+          <span className="text-xs font-semibold tabular-nums text-muted-foreground">{day.count}</span>
+          <div className="flex h-24 w-full items-end rounded-lg bg-secondary p-1"><div className="w-full rounded-md bg-accent" style={{height:(day.count/maxDailyActivity*100)+"%"}} /></div>
+          <span className="text-[10px] capitalize text-muted-foreground">{day.label}</span>
+        </div>)}
+      </div>
+      {mine.length===0&&<p className="mt-3 text-xs text-muted-foreground">{t("Le graphique apparaîtra dès la publication de vos premières prises.")}</p>}
     </section>
     {error&&<p role="alert" className="mb-4 text-sm text-destructive">{error}</p>}
     <div className="grid gap-8 lg:grid-cols-2">
