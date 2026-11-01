@@ -1,88 +1,159 @@
-import { useLanguage } from "@/lib/i18n";
-import { createFileRoute } from "@tanstack/react-router";
+import { useCallback, useEffect, useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { actions, useStore } from "@/lib/store";
-import { DemoBadge, PageHeader } from "@/components/ui-bits";
+import { useLanguage } from "@/lib/i18n";
+import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
     meta: [
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { title: "Tableau de bord — Marée Jersey" },
-      { name: "description", content: "Tableau de bord de démonstration, traçabilité et chaîne du froid." },
-      { property: "og:title", content: "Tableau de bord — Marée Jersey" },
-      { property: "og:description", content: "Indicateurs et bonnes pratiques de fraîcheur." },
+      { title: "Administration — Marée Jersey" },
+      { name: "description", content: "Gestion sécurisée des demandes de vérification Marée Jersey." },
     ],
   }),
   component: Admin,
 });
 
+type VerificationRequest = {
+  id: string;
+  user_id: string;
+  requested_role: "fisher" | "restaurant";
+  business_name: string;
+  contact_name: string;
+  phone: string;
+  registration_number: string | null;
+  evidence_note: string;
+  created_at: string;
+};
+
 function Admin() {
-  const { t, gbp } = useLanguage();
-  const { catches, orders, fishers } = useStore();
-  const kg = catches.filter((c) => c.status === "disponible").reduce((sum, item) => sum + item.qtyKg, 0);
-  const value = orders.reduce((sum, order) => sum + order.qtyKg * (catches.find((item) => item.id === order.catchId)?.priceKg ?? 0), 0);
-  const stats: [string, string | number][] = [
-    ["Lots publiés", catches.length],
-    ["Kg disponibles", kg],
-    ["Demandes", orders.length],
-    ["Valeur indicative", gbp(value)],
-    ["Pêcheurs", fishers.length],
-    ["Épuisés", catches.filter((item) => item.status === "épuisé").length],
-  ];
-
-  return (
-    <div className="mx-auto max-w-6xl px-4 py-10">
-      <PageHeader title={t("Tableau de bord")} sub={t("Vue d'ensemble de démonstration.")}>
-        <DemoBadge />
-      </PageHeader>
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-        {stats.map(([label, value]) => (
-          <div key={label} className="card p-5">
-            <p className="text-sm text-muted-foreground">{t(label)}</p>
-            <p className="font-display text-3xl font-semibold text-primary">{value}</p>
-          </div>
-        ))}
-      </div>
-      <button
-        className="btn btn-ghost mt-4"
-        onClick={() => {
-          actions.reset();
-          toast(t("Données de démonstration réinitialisées."));
-        }}
-      >
-        {t("Réinitialiser les données de démo")}
-      </button>
-      <div className="mt-10 grid gap-5 md:grid-cols-3">
-        <Info title={t("Traçabilité")} items={[
-          "Chaque lot indique bateau, pêcheur, zone, heure de capture et de débarquement.",
-          "Conserver les bons de débarquement et numéros de lot.",
-          "Afficher espèce (nom commercial et scientifique) et méthode de pêche.",
-        ]} />
-        <Info title={t("Fraîcheur")} items={[
-          "Œil bombé et brillant, branchies rouges, odeur marine légère.",
-          "Crustacés et coquillages vendus vivants.",
-          "Privilégier un délai capture → cuisine inférieur à 24 h.",
-        ]} />
-        <Info title={t("Chaîne du froid")} items={[
-          "Poisson sur glace pilée, 0–2 °C, jamais au contact de l'eau de fonte.",
-          "Crustacés vivants 4–8 °C, sous linge humide.",
-          "Transport en caisses isothermes, températures relevées à la remise.",
-        ]} />
-      </div>
-    </div>
-  );
-}
-
-function Info({ title, items }: { title: string; items: string[] }) {
   const { t } = useLanguage();
+  const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [requests, setRequests] = useState<VerificationRequest[]>([]);
+  const [notes, setNotes] = useState<Record<string, string>>({});
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadRequests = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
+      if (!user) {
+        setIsAdmin(false);
+        setRequests([]);
+        return;
+      }
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles").select("role").eq("id", user.id).single();
+      if (profileError) throw profileError;
+      if (profile.role !== "admin") {
+        setIsAdmin(false);
+        setRequests([]);
+        setError(t("Accès réservé à l’équipe d’administration."));
+        return;
+      }
+      setIsAdmin(true);
+      const { data, error: requestsError } = await supabase
+        .from("verification_requests")
+        .select("id,user_id,requested_role,business_name,contact_name,phone,registration_number,evidence_note,created_at")
+        .eq("status", "pending")
+        .order("created_at", { ascending: true });
+      if (requestsError) throw requestsError;
+      setRequests((data ?? []) as VerificationRequest[]);
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : t("Impossible de charger les demandes.");
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }, [t]);
+
+  useEffect(() => { void loadRequests(); }, [loadRequests]);
+
+  const review = async (requestId: string, status: "approved" | "rejected") => {
+    setBusyId(requestId);
+    const { error: reviewError } = await supabase.rpc("review_verification_request", {
+      p_request_id: requestId,
+      p_status: status,
+      p_reviewer_note: notes[requestId]?.trim() || null,
+    });
+    setBusyId(null);
+    if (reviewError) {
+      toast.error(reviewError.message);
+      return;
+    }
+    toast.success(status === "approved" ? t("Demande approuvée. Le rôle professionnel a été attribué.") : t("Demande refusée."));
+    setRequests((current) => current.filter((request) => request.id !== requestId));
+  };
+
   return (
-    <div className="card p-6">
-      <h2 className="text-xl font-semibold text-primary">{title}</h2>
-      <ul className="mt-3 list-disc space-y-2 pl-5 text-sm">
-        {items.map((item) => <li key={item}>{t(item)}</li>)}
-      </ul>
-    </div>
+    <main className="mx-auto grid max-w-5xl gap-6 px-4 py-10">
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-widest text-accent">Marée Jersey · Admin</p>
+          <h1 className="mt-2 font-display text-3xl font-semibold">{t("Vérifications professionnelles")}</h1>
+          <p className="mt-2 text-sm text-muted-foreground">{t("Examinez les demandes avant d’accorder les droits pêcheur ou restaurant.")}</p>
+        </div>
+        <button className="btn" type="button" onClick={() => void loadRequests()} disabled={loading}>{t("Actualiser")}</button>
+      </header>
+
+      {loading ? (
+        <p role="status" className="card p-6 text-sm text-muted-foreground">{t("Chargement des demandes…")}</p>
+      ) : !isAdmin ? (
+        <section className="card grid gap-3 p-6">
+          <p role="alert" className="text-sm">{error ?? t("Connectez-vous avec un compte administrateur.")}</p>
+          <Link className="btn btn-accent w-fit" to="/connexion">{t("Connexion")}</Link>
+        </section>
+      ) : (
+        <>
+          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+          <section className="card grid gap-2 p-5">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("Demandes en attente")}</p>
+            <p className="font-display text-3xl font-semibold">{requests.length}</p>
+          </section>
+          {requests.length === 0 ? (
+            <div className="card p-8 text-center text-sm text-muted-foreground">{t("Aucune demande en attente.")}</div>
+          ) : requests.map((request) => (
+            <article key={request.id} className="card grid gap-4 p-5 sm:p-6">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-xl font-semibold">{request.business_name}</h2>
+                  <p className="text-sm text-muted-foreground">
+                    {request.requested_role === "fisher" ? t("Pêcheur / pêcheuse") : t("Restaurant")} · {new Date(request.created_at).toLocaleString()}
+                  </p>
+                </div>
+                <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold">{t("En attente")}</span>
+              </div>
+              <dl className="grid gap-3 text-sm sm:grid-cols-2">
+                <div><dt className="text-muted-foreground">{t("Responsable")}</dt><dd className="font-medium">{request.contact_name}</dd></div>
+                <div><dt className="text-muted-foreground">{t("Téléphone professionnel")}</dt><dd className="font-medium">{request.phone}</dd></div>
+                <div><dt className="text-muted-foreground">{t("Numéro d’enregistrement")}</dt><dd className="font-medium">{request.registration_number || "—"}</dd></div>
+                <div><dt className="text-muted-foreground">{t("Identifiant du compte")}</dt><dd className="break-all font-mono text-xs">{request.user_id}</dd></div>
+              </dl>
+              <div className="rounded-lg bg-secondary p-4 text-sm">
+                <p className="mb-1 font-semibold">{t("Informations fournies")}</p>
+                <p className="whitespace-pre-wrap">{request.evidence_note}</p>
+              </div>
+              <label className="grid gap-1 text-sm font-medium">
+                {t("Note à l’utilisateur (facultatif)")}
+                <textarea className="field" rows={2} maxLength={2000} value={notes[request.id] ?? ""} onChange={(event) => setNotes((current) => ({ ...current, [request.id]: event.target.value }))} />
+              </label>
+              <div className="flex flex-wrap gap-2">
+                <button className="btn btn-accent" type="button" disabled={busyId !== null} onClick={() => void review(request.id, "approved")}>
+                  {busyId === request.id ? t("Traitement…") : t("Approuver et attribuer le rôle")}
+                </button>
+                <button className="btn border border-destructive/40 text-destructive" type="button" disabled={busyId !== null} onClick={() => void review(request.id, "rejected")}>
+                  {t("Refuser")}
+                </button>
+              </div>
+            </article>
+          ))}
+        </>
+      )}
+      <p className="text-xs text-muted-foreground">{t("Les décisions sont vérifiées côté base de données. Seul un administrateur autorisé peut traiter une demande.")}</p>
+    </main>
   );
 }
