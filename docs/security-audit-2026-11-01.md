@@ -15,7 +15,7 @@ Scope: read-only inspection of the connected `maree-jersey` Supabase project and
 - `update_order_status` originally checked catch ownership and sequential status transitions. The branch migration now also checks the current profile role is `fisher`, closing a role-change edge case; this correction is pending remote application.
 - SECURITY DEFINER RPCs use an empty `search_path`; browser EXECUTE is denied to anon and granted to authenticated where intended.
 
-## Migration history reconciliation — branch work completed, CI pending
+## Migration history reconciliation — branch work and local CI validation completed
 
 The connected Supabase project reports 13 applied migration versions. The branch previously had five migration files with different timestamps, which made the repository history misleading and unsafe to use for a clean rebuild.
 
@@ -39,15 +39,15 @@ Two additive migrations follow the recorded history:
 - `20261101210000_rpc_entrypoints`: reproducible definitions for `reserve_catch` and `update_order_status`, including the fisher-role guard.
 - `20261101211000_verification_request_indexes`: indexes for `verification_requests.user_id` and non-null `reviewed_by`, addressing the performance advisor findings.
 
-The original mismatched five files were removed from the branch. A local Supabase configuration targeting PostgreSQL 17 (matching the connected project), a 25-assertion pgTAP security-contract suite, a two-session last-stock concurrency script, and a GitHub Actions workflow were added. The workflow rebuilds a local database from repository migrations, runs `supabase test db`, then runs the concurrency script. The latest run is still in progress; its result must be green before calling the reconstruction validated. The first 13 files are reconstructed from the recorded migration names, branch history and current schema inspection; they are not being replayed against the already-migrated remote database.
+The original mismatched five files were removed from the branch. A local Supabase configuration targeting PostgreSQL 17 (matching the connected project), a 30-assertion pgTAP security-contract suite, a two-session last-stock concurrency script, and a GitHub Actions workflow were added. On commit `c233d00d6b65c9dee080d6c74abcf983730e60e2`, GitHub Actions successfully rebuilt the local database from all 15 repository migrations, ran `supabase test db` with all 30 assertions passing, and completed the concurrent-last-stock test successfully. Build verification, Verify, Marée CI and the private Cloudflare preview deployment also succeeded. The first 13 files are reconstructed from the recorded migration names, branch history and current schema inspection; they are not being replayed against the already-migrated remote database.
 
 **Do not run `db reset` or apply migrations to the connected remote project.** A future `db push` should apply only the two additive migrations after the local rebuild and tests pass and after an explicit review.
 
 ## Outstanding security and product tests
 
-- pgTAP tests are now present for anon, restaurant and fisher visibility, role restrictions, RPC privileges, non-owner order updates and admin-only review. CI is pending.
-- A two-connection concurrency test script is now present; its execution in GitHub Actions is pending.
-- A dedicated test should also cover an authenticated user attempting to update a catch owned by another fisher.
+- [x] pgTAP tests passed for anon, restaurant and fisher visibility, role restrictions, RPC privileges, non-owner order updates, admin-only review, and attempted updates to another fisher's catch.
+- [x] Two-connection last-stock concurrency test passed in GitHub Actions.
+- [ ] Admin-specific session coverage can be expanded in a follow-up test suite; current pgTAP explicitly verifies that a fisher cannot review verification requests.
 - Performance advisor findings for `verification_requests.user_id` and `reviewed_by` are addressed in the pending index migration, not yet applied to the remote database.
 - The performance advisor also reported multiple permissive SELECT policies on `profiles` and `verification_requests`; they are not evidence of a bypass, but can be consolidated later.
 
@@ -57,8 +57,7 @@ The four application tables contained zero rows at the time of the read-only aud
 
 ## Safe next sequence
 
-1. Wait for local migration rebuild and pgTAP CI to finish; fix any failure.
-2. Run the separate concurrent-last-stock test against an isolated local/preview database.
-3. Re-run security/performance advisors after review of the pending additive migrations.
-4. Test a restaurant and a fisher account end-to-end in private preview.
-5. Only after explicit approval, apply the additive migrations to the remote preview environment; never merge to `main` or deploy production without approval.
+1. [x] Local migration rebuild, 30 pgTAP assertions and concurrency test passed in GitHub Actions.
+2. [ ] Re-run security/performance advisors after review of the pending additive migrations.
+3. [ ] Test a restaurant and a fisher account end-to-end in private preview.
+4. [ ] Only after explicit approval, apply the additive migrations to the remote preview environment; never merge to `main` or deploy production without approval.
