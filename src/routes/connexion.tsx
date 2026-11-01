@@ -27,7 +27,6 @@ function AuthPage() {
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
   const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false);
   const [profileName, setProfileName] = useState("");
-  const [profilePhone, setProfilePhone] = useState("");
   const [profileBusy, setProfileBusy] = useState(false);
 
   useEffect(() => {
@@ -37,15 +36,15 @@ function AuthPage() {
       const user = data.session?.user;
       setSessionEmail(user?.email ?? null);
       if (user) {
-        const { data: profile } = await supabase.from("profiles").select("display_name,phone").eq("id", user.id).maybeSingle();
-        if (active && profile) { setProfileName(profile.display_name ?? ""); setProfilePhone(profile.phone ?? ""); }
+        const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle();
+        if (active && profile) { setProfileName(profile.display_name ?? ""); }
       }
     });
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       setSessionEmail(session?.user.email ?? null);
       if (event === "SIGNED_IN" && session?.user) {
         void supabase.from("profiles").select("display_name,phone").eq("id", session.user.id).maybeSingle()
-          .then(({ data }) => { if (data) { setProfileName(data.display_name ?? ""); setProfilePhone(data.phone ?? ""); } });
+          .then(({ data }) => { if (data) { setProfileName(data.display_name ?? ""); } });
       }
       if (event === "PASSWORD_RECOVERY") setMode("update");
     });
@@ -127,7 +126,7 @@ function AuthPage() {
     if (!user) { toast.error(t("Connectez-vous pour enregistrer votre profil.")); return; }
     if (profileName.trim().length < 2) { toast.error(t("Entrez le nom de votre restaurant.")); return; }
     setProfileBusy(true);
-    const { error } = await supabase.from("profiles").update({ display_name: profileName.trim(), phone: profilePhone.trim() || null }).eq("id", user.id);
+    const { error } = await supabase.from("profiles").update({ display_name: profileName.trim() }).eq("id", user.id);
     setProfileBusy(false);
     if (error) toast.error(error.message);
     else toast.success(t("Profil restaurant enregistré."));
@@ -157,8 +156,7 @@ function AuthPage() {
             <form onSubmit={saveRestaurantProfile} className="grid gap-3 rounded-lg border border-border p-4">
               <h2 className="font-semibold">{t("Profil restaurant")}</h2>
               <label className="grid gap-1 text-sm font-medium">{t("Nom du restaurant / établissement")}<input className="field" value={profileName} onChange={(e) => setProfileName(e.target.value)} minLength={2} maxLength={120} required /></label>
-              <label className="grid gap-1 text-sm font-medium">{t("Téléphone professionnel")}<input className="field" type="tel" value={profilePhone} onChange={(e) => setProfilePhone(e.target.value)} maxLength={40} /></label>
-              <button className="btn btn-accent" disabled={profileBusy}>{profileBusy ? t("Enregistrement…") : t("Enregistrer mon profil restaurant")}</button>
+                <button className="btn btn-accent" disabled={profileBusy}>{profileBusy ? t("Enregistrement…") : t("Enregistrer mon profil restaurant")}</button>
             </form>
             <Link to="/verification" className="btn border border-accent text-foreground">{t("Demander la vérification comme pêcheur")}</Link>
             <Link to="/catalogue" className="btn">{t("Voir la pêche du jour")}</Link>
