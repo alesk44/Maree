@@ -7,8 +7,8 @@ Règle de livraison : aucun merge sur `main`, aucun déploiement public et aucun
 ## Dernier audit — 1 novembre 2026
 
 - Audit Supabase consigné dans [le rapport de sécurité](docs/security-audit-2026-11-01.md).
-- Les 13 versions déjà enregistrées dans Supabase ont maintenant des fichiers SQL correspondants dans la branche.
-- Deux migrations additives sont prêtes dans le dépôt : sécurisation du rôle pour les transitions de commande et index des demandes de vérification.
+- [x] Les 13 versions déjà enregistrées dans Supabase ont maintenant des fichiers SQL correspondants dans la branche ; les cinq anciens fichiers aux versions erronées ont été remplacés.
+- Deux migrations additives sont prêtes dans le dépôt : sécurisation du rôle pour les transitions de commande et index des demandes de vérification. Une reconstruction locale PG17 et 25 assertions pgTAP, plus un test de concurrence à deux connexions, sont branchés dans GitHub Actions.
 - La base distante n'a pas été modifiée. La reconstruction locale et les tests pgTAP sont lancés par GitHub Actions ; attendre leur résultat avant de considérer l'historique validé.
 - Aucun merge sur `main), aucune mise en production.
 
@@ -32,7 +32,7 @@ Règle de livraison : aucun merge sur `main`, aucun déploiement public et aucun
 - [x] Restreindre les colonnes des profils exposées aux rôles navigateur : téléphone exclu, champs de fiche pêcheur uniquement pour anon, rôle lisible seulement par authenticated. Migration appliquée et droits revérifiés.\n- [x] Révoquer les privilèges génériques superflus sur catches, orders et verification_requests ; réaccorder uniquement SELECT/INSERT/UPDATE nécessaires. Les droits RPC ont été vérifiés : exécution réservée à authenticated.\n- [ ] Terminer les tests de contournement RLS avec des sessions anon, restaurant, pêcheur et admin : lecture publique limitée aux colonnes nécessaires, écriture réservée au propriétaire, rôles vérifiés côté serveur/base, aucune élévation de privilège côté navigateur.
 - [ ] Vérifier les transitions de commande, les annulations et les cas limites de stock simultané (deux restaurants réservent le dernier stock) ; la CI pgTAP est en cours.
 - [ ] Vérifier la cohérence entre les statuts anglais en base et les libellés français dans l'interface.
-- [x] Ajouter une suite pgTAP pour RLS, privilèges RPC, visibilité anon/restaurant/fisher et refus des transitions non autorisées.\n- [ ] Ajouter et exécuter un test à deux connexions pour la réservation simultanée du dernier stock et un test d'écriture sur une prise appartenant à un autre pêcheur.
+- [x] Ajouter une suite pgTAP pour RLS, privilèges RPC, visibilité anon/restaurant/fisher et refus des transitions non autorisées.\n- [x] Ajouter un script de test à deux connexions pour la réservation simultanée du dernier stock ; exécution CI en attente.\n- [ ] Ajouter un test d'écriture sur une prise appartenant à un autre pêcheur.
 - [ ] Corriger les erreurs détectées par ces contrôles avant d'ouvrir un test utilisateur.
 
 ### P1 — design et expérience produit
