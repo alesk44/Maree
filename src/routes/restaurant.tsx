@@ -79,7 +79,8 @@ function Restaurant() {
       <div><h2 className="text-xl font-semibold">{t("Facturation et relevés")}</h2><p className="text-sm text-muted-foreground">{t("Historique des commandes livrées. Les montants sont calculés à partir du prix du lot au moment de l'affichage ; aucun paiement n'est encaissé dans cette version.")}</p></div>
       <div className="grid gap-3 sm:grid-cols-3">
         <Metric label={t("Commandes livrées")} value={orders.filter(o=>o.status==="delivered").length} detail={t("Historique")}/>
-        <Metric label={t("Total des achats livrés")} value={gbp(orders.filter(o=>o.status==="delivered").reduce((sum,o)=>sum+(catches.find(c=>c.id===o.catch_id)?.priceKg??0)*Number(o.quantity_kg),0))} detail={t("Montant indicatif, non payé")}/>
+        <Metric label={t("Achats livrés (prix de base)")} value={gbp(orders.filter(o=>o.status==="delivered").reduce((sum,o)=>sum+(catches.find(c=>c.id===o.catch_id)?.priceKg??0)*Number(o.quantity_kg),0))} detail={t("Avant commission restaurant")}/>
+        <Metric label={t("Commission restaurant estimée (6,5 %)")} value={gbp(orders.filter(o=>o.status==="delivered").reduce((sum,o)=>sum+(catches.find(c=>c.id===o.catch_id)?.priceKg??0)*Number(o.quantity_kg)*0.065,0))} detail={t("Non prélevée à ce stade")}/>
         <Metric label={t("En attente de livraison")} value={orders.filter(o=>o.status!=="delivered"&&o.status!=="cancelled").length} detail={t("Commandes ouvertes")}/>
       </div>
       {orders.filter(o=>o.status==="delivered").length===0 ? <Empty>{t("Aucune commande livrée à afficher pour le moment.")}</Empty> :
@@ -133,6 +134,9 @@ function Restaurant() {
           {sel && <div className="rounded-lg bg-secondary p-4 text-sm">
             <p className="font-semibold">{t("Résumé")}</p>
             <p>{qty} kg de {t(sel.species)} × {gbp(sel.priceKg)} = <strong>{gbp(qty * sel.priceKg)}</strong></p>
+            <p>{t("Commission Marée Jersey côté restaurant (6,5 %)")} : <strong>{gbp(qty * sel.priceKg * 0.065)}</strong></p>
+            <p>{t("Total estimé pour le restaurant")} : <strong>{gbp(qty * sel.priceKg * 1.065)}</strong></p>
+            <p className="text-xs text-muted-foreground">{t("Commission pêcheur (6,5 %) déduite de son prix de vente. Les deux parts représentent 13 % du prix de base. Calcul indicatif, non prélevé à ce stade.")}</p>
             <p className="text-muted-foreground">{fishers.find((f) => f.id === sel.fisherId)?.boat} · {t(mode)}</p>
           </div>}
           <button className="btn" disabled={!signedIn}>{t("Envoyer la réservation")}</button>
