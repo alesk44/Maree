@@ -19,7 +19,7 @@ Scope: read-only inspection of the connected `maree-jersey` Supabase project and
 
 The connected Supabase project reports 13 applied migration versions. The branch previously had five migration files with different timestamps, which made the repository history misleading and unsafe to use for a clean rebuild.
 
-The branch has now been reorganised so the first 13 migration filenames/versions match the 13 versions recorded by Supabase:
+The branch has now been reorganised so the first 13 migration filenames/versions match the 13 versions recorded by Supabase. Two additional additive migrations follow those 13:
 
 1. `20261030144648_initial_schema`
 2. `20261030145326_fisher_profile_fields`
@@ -39,14 +39,14 @@ Two additive migrations follow the recorded history:
 - `20261101210000_rpc_entrypoints`: reproducible definitions for `reserve_catch` and `update_order_status`, including the fisher-role guard.
 - `20261101211000_verification_request_indexes`: indexes for `verification_requests.user_id` and non-null `reviewed_by`, addressing the performance advisor findings.
 
-The original mismatched five files were removed from the branch. A local Supabase configuration, pgTAP security-contract test suite, and GitHub Actions workflow were added. The workflow rebuilds a local database from repository migrations and runs `supabase test db`. Its result must be green before calling the reconstruction validated. The first 13 files are reconstructed from the recorded migration names, branch history and current schema inspection; they are not being replayed against the already-migrated remote database.
+The original mismatched five files were removed from the branch. A local Supabase configuration targeting PostgreSQL 17 (matching the connected project), a 25-assertion pgTAP security-contract suite, a two-session last-stock concurrency script, and a GitHub Actions workflow were added. The workflow rebuilds a local database from repository migrations, runs `supabase test db`, then runs the concurrency script. The latest run is still in progress; its result must be green before calling the reconstruction validated. The first 13 files are reconstructed from the recorded migration names, branch history and current schema inspection; they are not being replayed against the already-migrated remote database.
 
 **Do not run `db reset` or apply migrations to the connected remote project.** A future `db push` should apply only the two additive migrations after the local rebuild and tests pass and after an explicit review.
 
 ## Outstanding security and product tests
 
 - pgTAP tests are now present for anon, restaurant and fisher visibility, role restrictions, RPC privileges, non-owner order updates and admin-only review. CI is pending.
-- A two-connection concurrency test is still required to prove that two restaurants cannot reserve the last stock simultaneously.
+- A two-connection concurrency test script is now present; its execution in GitHub Actions is pending.
 - A dedicated test should also cover an authenticated user attempting to update a catch owned by another fisher.
 - Performance advisor findings for `verification_requests.user_id` and `reviewed_by` are addressed in the pending index migration, not yet applied to the remote database.
 - The performance advisor also reported multiple permissive SELECT policies on `profiles` and `verification_requests`; they are not evidence of a bypass, but can be consolidated later.
