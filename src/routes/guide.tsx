@@ -13,7 +13,7 @@ export const Route = createFileRoute("/guide")({
       { property: "og:description", content: "Mise en route et étapes avant le lancement." },
     ],
   }),
-  component: () => {
+  component: function GuidePage() {
     const { t: translateLabel } = useLanguage();
     const t = translateLabel;
     return (
