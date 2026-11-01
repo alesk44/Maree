@@ -34,7 +34,7 @@ Règle de livraison : aucun merge sur `main`, aucun déploiement public et aucun
 - [ ] Harmoniser l'identité Marée (bleu océan, turquoise, ivoire) avec le thème sombre de la référence.
 - [x] Accueil : chiffres reliés au marché Supabase partagé, états vides explicites, aucun volume de ventes/transactions fictif. Annuaire et profils pêcheurs basculés des profils démo vers les profils vérifiés partagés.
 - [ ] Vérifier les états de chargement, erreur, absence de résultats et confirmation sur toutes les pages.
-- [x] Langues proposées confirmées : français, anglais et roumain. Le portugais n'est pas proposé dans le sélecteur. Traductions ajoutées pour les nouveaux libellés du marché et des profils ; une revue exhaustive des libellés de toutes les pages reste à faire.
+- [x] Langues proposées confirmées : français, anglais et roumain. Le portugais n'est pas proposé dans le sélecteur. Audit automatisé des appels t(\"…\") dans toutes les routes : 0 libellé littéral manquant dans le dictionnaire anglais/roumain.
 - [ ] Vérifier le sélecteur de langue, sa persistance et le rendu SSR/hydratation.
 
 ### P2 — tests réels avec deux comptes
