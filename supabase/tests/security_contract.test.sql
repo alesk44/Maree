@@ -23,6 +23,8 @@ update public.profiles set role = 'restaurant', display_name = 'Restaurant B'
 where id = '00000000-0000-4000-8000-000000000004';
 update public.profiles set role = 'admin', display_name = 'Marée Admin'
 where id = '00000000-0000-4000-8000-000000000005';
+update public.profiles set role = 'fisher', display_name = 'Fisher Upgrade'
+where id = '00000000-0000-4000-8000-000000000006';
 
 insert into public.catches (
   id, fisher_id, species, zone, caught_at, landed_at, quantity_kg,
