@@ -14,7 +14,7 @@ export const Route = createFileRoute("/pecheurs/")({
       { property: "og:description", content: "Découvrez les bateaux et méthodes de pêche." },
     ],
   }),
-  component: () => {
+  component: function FishersPage() {
     const { t } = useLanguage();
     const { fishers, catches } = useStore();
     return (
