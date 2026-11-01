@@ -48,7 +48,7 @@ function Index() {
           ["Traçable", "Bateau, zone, heure de capture et de débarquement sur chaque lot."],
           ["Frais", "Tri par fraîcheur et conseils de conservation de la chaîne du froid."],
           ["Local", "Des pêcheurs côtiers de Gorey, St Helier, St Aubin et Rozel."],
-        ].map(([t, d]) => (
+        ] as const).map(([t, d]) => (
           <div key={t} className="card p-6">
             <h2 className="text-xl font-semibold text-primary">{translateLabel(t)}</h2>
             <p className="mt-2 text-muted-foreground">{translateLabel(d)}</p>
