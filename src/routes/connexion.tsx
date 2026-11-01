@@ -42,7 +42,7 @@ function AuthPage() {
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!email.trim() || (mode !== "reset" && password.length < 8)) {
+    if ((mode !== "update" && !email.trim()) || (mode !== "reset" && password.length < 8)) {
       toast.error(t("Entrez un e-mail valide et un mot de passe d'au moins 8 caractères."));
       return;
     }
@@ -147,8 +147,8 @@ function AuthPage() {
             )}
             <form onSubmit={submit} className="grid gap-4">
               {mode === "signup" && <label className="grid gap-1 text-sm font-medium">{t("Nom / établissement")}<input className="field" autoComplete="name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required maxLength={120} /></label>}
-              <label className="grid gap-1 text-sm font-medium">{t("E-mail")}<input className="field" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
-              {mode !== "reset" && <label className="grid gap-1 text-sm font-medium">{t(mode === "update" ? "Nouveau mot de passe" : "Mot de passe")}<input className="field" type="password" autoComplete={mode === "signup" ? "new-password" : "current-password"} value={password} onChange={(e) => setPassword(e.target.value)} minLength={8} required /></label>}
+              {mode !== "update" && <label className="grid gap-1 text-sm font-medium">{t("E-mail")}<input className="field" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>}
+              {mode !== "reset" && <label className="grid gap-1 text-sm font-medium">{t(mode === "update" ? "Nouveau mot de passe" : "Mot de passe")}<input className="field" type="password" autoComplete={mode === "signup" || mode === "update" ? "new-password" : "current-password"} value={password} onChange={(e) => setPassword(e.target.value)} minLength={8} required /></label>}
               <button className="btn btn-accent" disabled={busy}>{busy ? t("Patientez…") : mode === "signup" ? t("Créer mon compte restaurant") : mode === "reset" ? t("Envoyer le lien de réinitialisation") : mode === "update" ? t("Enregistrer le nouveau mot de passe") : t("Se connecter")}</button>
             </form>
             {mode === "update" && <p className="text-sm text-muted-foreground">{t("Choisissez un nouveau mot de passe de huit caractères minimum.")}</p>}
