@@ -94,6 +94,12 @@ function FisherSpace() {
 
   return <div className="mx-auto max-w-6xl px-4 py-10">
     <PageHeader title={t("Espace pêcheur")} sub={t("Connecté en tant que {name} — {boat}",{name:me.name,boat:me.boat})}/>
+    <section aria-label={t("Vue d'ensemble")} className="mb-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <Metric label={t("Lots publiés")} value={mine.length} detail={t("Toutes vos prises")}/>
+      <Metric label={t("Stock disponible")} value={mine.filter((c)=>c.status==="disponible").reduce((n,c)=>n+c.qtyKg,0).toLocaleString("fr-FR")+" kg"} detail={t("Quantité actuellement en vente")}/>
+      <Metric label={t("Demandes reçues")} value={myOrders.length} detail={t("Réservations de restaurants")}/>
+      <Metric label={t("À traiter")} value={myOrders.filter((o)=>o.status==="submitted").length} detail={t("Nouvelles demandes")}/>
+    </section>
     {error&&<p role="alert" className="mb-4 text-sm text-destructive">{error}</p>}
     <div className="grid gap-8 lg:grid-cols-2">
       <form onSubmit={publish} className="card grid gap-3 p-6">
@@ -136,5 +142,7 @@ function FisherSpace() {
     </div>
   </div>;
 }
+
+function Metric({label,value,detail}:{label:string;value:string|number;detail:string}){return <div className="card rounded-2xl border border-border p-5"><p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</p><p className="mt-2 font-display text-3xl font-semibold text-foreground">{value}</p><p className="mt-1 text-xs text-muted-foreground">{detail}</p></div>;}
 
 function L({t,children}:{t:string;children:React.ReactNode}){return <label className="grid gap-1 text-sm font-medium">{t}{children}</label>;}
