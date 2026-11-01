@@ -17,7 +17,7 @@ export function useSharedMarket():MarketData {
     setLoading(true);
     try {
       const [{data:lots,error:lotsError},{data:people,error:peopleError}]=await Promise.all([
-        supabase.from("catches").select("id,fisher_id,species,zone,caught_at,landed_at,remaining_kg,price_per_kg,grade,method,storage_instructions,status").eq("status","available").gt("remaining_kg",0).order("landed_at",{ascending:false}),
+        supabase.from("catches").select("id,fisher_id,species,zone,caught_at,landed_at,remaining_kg,price_per_kg,grade,method,storage_instructions,status").gt("remaining_kg",0).order("landed_at",{ascending:false}),
         supabase.from("profiles").select("id,display_name,boat_name,home_port,fishing_method,bio,since_year").eq("role","fisher")
       ]);
       if(lotsError) throw lotsError;
