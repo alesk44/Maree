@@ -136,6 +136,8 @@ function RootContent() {
           <p className="mt-1">{t("Les disponibilités et commandes affichées proviennent du marché partagé. Les réservations sont des demandes : aucun paiement en ligne n’est activé dans cette version.")}</p>
         </div>
       </footer>
+        </div>
+      </div>
       <Toaster />
     </QueryClientProvider>
   );
