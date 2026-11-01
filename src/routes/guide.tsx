@@ -29,7 +29,7 @@ export const Route = createFileRoute("/guide")({
       <h2 className="mt-12 text-2xl font-semibold">{t("Avant le lancement")}</h2>
       <p className="mt-1 text-muted-foreground">{t("Rien n'est en production : voici ce qu'il faut pour rendre les données réelles.")}</p>
       <ul className="mt-4 grid gap-3">
-        {[
+        {([
           ["Comptes authentifiés", "Connexion séparée pêcheurs / restaurants / admin, rôles et permissions."],
           ["Base de données", "Remplacer le stockage local par une base partagée (un backend gratuit suffit pour démarrer)."],
           ["Validation des pêcheurs", "Vérifier licence de pêche, immatriculation du bateau et identité avant publication."],
