@@ -28,7 +28,7 @@ bun run lint
 bun run test
 ```
 
-Le workflow GitHub Actions exécute ces contrôles sur la branche de travail. Le build et les workflows de vérification dédiés sont actuellement verts sur le dernier commit audité ; le workflow CI complet doit encore être confirmé.
+Le workflow GitHub Actions exécute ces contrôles sur la branche de travail. Sur le commit `a92ad4c9b820850c02b07580ecb93600da9d3c1c`, les workflows `Build verification`, `Verify` et `Marée CI` sont terminés avec succès : build production, TypeScript, ESLint et tests.
 
 ## Fonctionnalités connectées à Supabase sur la branche de travail
 
