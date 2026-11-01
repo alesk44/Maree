@@ -129,7 +129,14 @@ function RootContent() {
               {links.map((n) => <Link key={n.to} to={n.to} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-3 font-medium text-muted-foreground" activeProps={{ className: "bg-secondary text-accent" }}><span aria-hidden="true">{n.icon}</span>{t(n.label)}</Link>)}
             </nav>}
           </header>
-      <main id="main" className="min-h-[70vh] pb-8"><Outlet /></main>
+          <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-border bg-card/95 px-2 py-2 shadow-2xl backdrop-blur lg:hidden" aria-label={t("Navigation rapide")}>
+            {([{to:"/",label:"Accueil",icon:"⌂"},{to:"/catalogue",label:"Pêche du jour",icon:"♧"},{to:"/restaurant",label:"Restaurant",icon:"▣"},{to:"/espace-pecheur",label:"Pêcheur",icon:"≈"}] as const).map((item)=>(
+              <Link key={item.to} to={item.to} className="flex min-w-0 flex-col items-center gap-1 rounded-lg px-1 py-1 text-[10px] font-semibold text-muted-foreground" activeProps={{className:"text-accent"}}>
+                <span className="text-lg leading-none" aria-hidden="true">{item.icon}</span><span className="truncate">{t(item.label)}</span>
+              </Link>
+            ))}
+          </nav>
+      <main id="main" className="min-h-[70vh] pb-24 lg:pb-8"><Outlet /></main>
       <footer className="mt-12 border-t border-border bg-card text-card-foreground">
         <div className="mx-auto max-w-7xl px-4 py-8 text-sm text-muted-foreground lg:px-8">
           <p className="font-display text-lg">Marée Jersey</p>
