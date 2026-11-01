@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(30);
+select plan(34);
 
 -- Isolated auth users; the auth trigger creates their initial restaurant profiles.
 insert into auth.users (id, email) values
@@ -60,7 +60,11 @@ insert into public.verification_requests (
   ('30000000-0000-4000-8000-000000000002',
    '00000000-0000-4000-8000-000000000004',
    'restaurant', 'East Pier Kitchen', 'Test Contact B', '+441534000002',
-   'Test evidence for restaurant account B.')
+   'Test evidence for restaurant account B.'),
+  ('30000000-0000-4000-8000-000000000003',
+   '00000000-0000-4000-8000-000000000003',
+   'fisher', 'Harbour Fishing', 'Test Contact C', '+441534000003',
+   'Test evidence for a fisher role upgrade.')
 on conflict (id) do nothing;
 
 -- Table-level security posture and least-privilege grants.
@@ -153,6 +157,18 @@ select throws_ok(
   'fisher cannot review verification requests'
 );
 reset role;
+
+-- Admin approval must update the request and grant the requested role atomically.
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000005';
+select lives_ok(
+  $select public.review_verification_request('30000000-0000-4000-8000-000000000003'::uuid, 'approved'::public.verification_status, 'Approved by test admin')$,
+  'admin can approve a pending verification request'
+);
+reset role;
+select is((select role::text from public.profiles where id = '00000000-0000-4000-8000-000000000003'), 'fisher', 'approval grants the requested professional role');
+select is((select status::text from public.verification_requests where id = '30000000-0000-4000-8000-000000000003'), 'approved', 'approval marks the verification request approved');
+select is((select reviewed_by from public.verification_requests where id = '30000000-0000-4000-8000-000000000003'), '00000000-0000-4000-8000-000000000005'::uuid, 'approval records the admin reviewer');
 
 select ok(to_regclass('public.verification_requests_user_id_idx') is not null, 'verification request owner index exists');
 select ok(to_regclass('public.verification_requests_reviewed_by_idx') is not null, 'verification reviewer index exists');
