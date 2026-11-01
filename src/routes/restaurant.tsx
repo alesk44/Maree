@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { Empty, OrderSteps, PageHeader } from "@/components/ui-bits";
 
 export const Route = createFileRoute("/restaurant")({
-  validateSearch: (s: Record<string, unknown>) => ({ produit: typeof s.produit === "string" ? s.produit : undefined }),
+  validateSearch: (s: Record<string, unknown>) => ({ produit: typeof s["produit"] === "string" ? s["produit"] : undefined }),
   head: () => ({ meta: [
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary_large_image" },
@@ -44,7 +44,7 @@ function Restaurant() {
   };
 
   useEffect(() => { void loadOrders(); }, []);
-  useEffect(() => { if (!catchId && catches.length) setCatchId(produit ?? catches[0].id); }, [catches, catchId, produit]);
+  useEffect(() => { if (!catchId && catches.length) setCatchId(produit ?? catches[0]?.id ?? ""); }, [catches, catchId, produit]);
 
   const avail = catches.filter((c) => c.status === "disponible" && c.qtyKg > 0);
   const sel = catches.find((c) => c.id === catchId);
@@ -59,7 +59,7 @@ function Restaurant() {
       toast.success(t("Réservation envoyée au pêcheur."));
       setNote("");
       await Promise.all([refresh(), loadOrders()]);
-    } catch (e) { toast.error(e instanceof Error ? t(e.message) : t("Impossible d'envoyer la réservation.")); }
+    } catch (e) { toast.error(e instanceof Error ? t(e.message) : t("Impossible d'envoyer la réservation.")); return; }
   };
 
   return <div className="mx-auto max-w-6xl px-4 py-10">
