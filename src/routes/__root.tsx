@@ -117,7 +117,7 @@ function RootContent() {
                 <p className="hidden text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground lg:block">{t("Marché de la mer · Jersey")}</p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="hidden text-xs text-muted-foreground sm:inline">{t("Heure locale de Jersey")}</span>
+                <span className="hidden text-xs text-muted-foreground sm:inline">{t("Marché de la mer · Jersey")}</span>
                 <div role="group" aria-label={t("Langue")} className="inline-flex shrink-0 items-center rounded-lg border border-border bg-card p-1">
                   {([{ code: "fr", label: "FR" }, { code: "en", label: "EN" }, { code: "ro", label: "RO" }] as const).map((item) => (
                     <button key={item.code} type="button" lang={item.code} aria-pressed={language === item.code} onClick={() => setLanguage(item.code)} className={"rounded-md px-2 py-1.5 text-xs font-semibold transition-colors " + (language === item.code ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary hover:text-foreground")}>{item.label}</button>
