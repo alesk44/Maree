@@ -54,7 +54,7 @@ function Catalogue() {
           <option value="">{t("Tous statuts")}</option><option value="disponible">{t("Disponible")}</option><option value="réservé">{t("Réservé")}</option><option value="épuisé">{t("Épuisé")}</option>
         </select>
         <select className="field" aria-label={t("Méthode")} value={method} onChange={(e) => setMethod(e.target.value)}>
-          <option value="">{t("Toutes méthodes")}</option>{methods.map((s) => <option key={t(s)}>{t(s)}</option>)}
+          <option value="">{t("Toutes méthodes")}</option>{methods.map((s) => <option key={s} value={s}>{t(s)}</option>)}
         </select>
         <select className="field" aria-label={t("Tri")} value={sort} onChange={(e) => setSort(e.target.value as "fresh" | "price")}>
           <option value="fresh">{t("Plus frais d'abord")}</option><option value="price">{t("Prix croissant")}</option>
