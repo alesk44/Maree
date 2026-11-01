@@ -29,12 +29,12 @@ Règle de livraison : aucun merge sur `main`, aucun déploiement public et aucun
 
 ### P1 — design et expérience produit
 
-- [ ] Refaire l'interface selon la référence fournie : tableau de bord sombre, fond noir, panneaux anthracite arrondis, navigation latérale, statistiques, stock illustré, commandes et journal d'activité.
+- [x] Appliquer la première passe du thème sombre premium inspiré de la référence : fond nuit, panneaux anthracite arrondis, accents turquoise/océan, navigation et composants adaptés au thème. Les tableaux de bord pêcheur/restaurant héritent du thème ; les améliorations de densité visuelle, graphiques et navigation latérale restent à peaufiner.
 - [ ] Adapter le design mobile : navigation compacte, cartes empilées, tableaux transformés en listes lisibles.
 - [ ] Harmoniser l'identité Marée (bleu océan, turquoise, ivoire) avec le thème sombre de la référence.
-- [ ] Remplacer les chiffres de démonstration par des états vides et des données réelles ; ne jamais afficher de faux volume de ventes/transactions.
+- [x] Accueil : chiffres reliés au marché Supabase partagé, états vides explicites, aucun volume de ventes/transactions fictif. Annuaire et profils pêcheurs basculés des profils démo vers les profils vérifiés partagés.
 - [ ] Vérifier les états de chargement, erreur, absence de résultats et confirmation sur toutes les pages.
-- [ ] Vérifier toutes les langues annoncées. La feuille de route initiale mentionnait FR/EN/PT/RO alors que le README indiquait FR/EN/RO : décider si le portugais est requis, puis couvrir chaque libellé et message.
+- [x] Langues proposées confirmées : français, anglais et roumain. Le portugais n'est pas proposé dans le sélecteur. Traductions ajoutées pour les nouveaux libellés du marché et des profils ; une revue exhaustive des libellés de toutes les pages reste à faire.
 - [ ] Vérifier le sélecteur de langue, sa persistance et le rendu SSR/hydratation.
 
 ### P2 — tests réels avec deux comptes
