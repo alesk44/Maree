@@ -96,6 +96,7 @@ function Restaurant() {
       <a className="btn btn-accent w-fit" href="/connexion">{t("Modifier mon profil")}</a>
     </section>}
 
+    {accountTab==="activity" && <>
     <section aria-label={t("Vue d'ensemble")} className="mb-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       <Metric label={t("Lots disponibles")} value={loading?"—":avail.length} detail={t("Pêche du jour")}/>
       <Metric label={t("Réservations")} value={ordersLoading?"—":orders.length} detail={t("Demandes de votre restaurant")}/>
@@ -152,6 +153,7 @@ function Restaurant() {
           })}</ul>}
       </section>
     </div>
+    </>}
   </div>;
 }
 
