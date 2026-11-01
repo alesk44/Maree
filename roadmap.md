@@ -20,7 +20,7 @@ Règle de livraison : aucun merge sur `main`, aucun déploiement public et aucun
 
 ### P0 — fiabiliser avant tout aperçu de test
 
-- [ ] Confirmer que le workflow CI complet (`ci.yml`) passe aussi sur le dernier commit ; les workflows Verify et Build sont verts, mais cela ne prouve pas encore que typecheck, lint et tests du workflow complet sont tous verts.
+- [ ] Confirmer que le workflow CI complet (`ci.yml`) passe sur le dernier commit après la refonte du shell et des tableaux de bord ; les workflows précédents étaient verts, les nouveaux contrôles sont en cours.
 - [x] Restreindre les colonnes des profils exposées aux rôles navigateur : téléphone exclu, champs de fiche pêcheur uniquement pour anon, rôle lisible seulement par authenticated. Migration appliquée et droits revérifiés.\n- [x] Révoquer les privilèges génériques superflus sur catches, orders et verification_requests ; réaccorder uniquement SELECT/INSERT/UPDATE nécessaires. Les droits RPC ont été vérifiés : exécution réservée à authenticated.\n- [ ] Terminer les tests de contournement RLS avec des sessions anon, restaurant, pêcheur et admin : lecture publique limitée aux colonnes nécessaires, écriture réservée au propriétaire, rôles vérifiés côté serveur/base, aucune élévation de privilège côté navigateur.
 - [ ] Vérifier les transitions de commande, les annulations et les cas limites de stock simultané (deux restaurants réservent le dernier stock).
 - [ ] Vérifier la cohérence entre les statuts anglais en base et les libellés français dans l'interface.
@@ -29,11 +29,11 @@ Règle de livraison : aucun merge sur `main`, aucun déploiement public et aucun
 
 ### P1 — design et expérience produit
 
-- [x] Appliquer la première passe du thème sombre premium inspiré de la référence : fond nuit, panneaux anthracite arrondis, accents turquoise/océan, navigation et composants adaptés au thème. Les tableaux de bord pêcheur/restaurant héritent du thème ; les améliorations de densité visuelle, graphiques et navigation latérale restent à peaufiner.
-- [ ] Adapter le design mobile : navigation compacte, cartes empilées, tableaux transformés en listes lisibles.
-- [ ] Harmoniser l'identité Marée (bleu océan, turquoise, ivoire) avec le thème sombre de la référence.
+- [x] Appliquer le thème sombre premium inspiré de la référence : fond nuit, panneaux anthracite arrondis, accents turquoise/océan et composants adaptés.
+- [x] Ajouter une navigation mobile compacte en menu déroulant et barre inférieure fixe pour les quatre destinations principales ; les cartes et formulaires se réorganisent en colonnes sur petits écrans.\n- [ ] Vérifier visuellement les espacements et la lisibilité sur vrais écrans mobiles.
+- [x] Harmoniser l'identité Marée : bleu océan, anthracite, turquoise et typographie Fraunces/Manrope.
 - [x] Accueil : chiffres reliés au marché Supabase partagé, états vides explicites, aucun volume de ventes/transactions fictif. Annuaire et profils pêcheurs basculés des profils démo vers les profils vérifiés partagés.
-- [ ] Vérifier les états de chargement, erreur, absence de résultats et confirmation sur toutes les pages.
+- [ ] Faire une revue manuelle page par page des états chargement, erreur, absence de résultats et confirmation.
 - [x] Langues proposées confirmées : français, anglais et roumain. Le portugais n'est pas proposé dans le sélecteur. Audit automatisé des appels t(\"…\") dans toutes les routes : 0 libellé littéral manquant dans le dictionnaire anglais/roumain.
 - [ ] Vérifier le sélecteur de langue, sa persistance et le rendu SSR/hydratation.
 
@@ -63,7 +63,7 @@ Règle de livraison : aucun merge sur `main`, aucun déploiement public et aucun
 - La base contient actuellement zéro prise et zéro commande selon le dernier contrôle connu ; l'intégration ne peut pas être considérée comme validée en conditions réelles.
 - L'aperçu Cloudflare existant et l'ancien aperçu Lovable ne doivent pas être présentés comme la version de cette branche tant qu'un déploiement de prévisualisation de cette branche n'a pas été confirmé.
 - Les paramètres Supabase Auth, SMTP/Resend et Cloudflare nécessitent l'accès/autorisation du propriétaire.
-- La référence visuelle du tableau de bord a été fournie ; le redesign correspondant reste à réaliser.
+- La référence visuelle du tableau de bord a été fournie ; la structure principale est implémentée, la revue visuelle sur appareils réels reste à faire.
 
 ## Définition de « prêt à publier »
 
