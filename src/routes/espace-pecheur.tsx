@@ -28,6 +28,7 @@ function FisherSpace() {
   const { fishers, catches, loading, error, refresh } = useSharedMarket();
   const [userId,setUserId] = useState<string|null>(null);
   const [profileLoading,setProfileLoading] = useState(true);
+  const [accountTab,setAccountTab] = useState<"activity"|"sales"|"profile">("activity");
   const [orders,setOrders] = useState<SharedOrderRow[]>([]);
   const [form,setForm] = useState({ species:"", zone:"", qtyKg:10, priceKg:15, grade:"", storage:"Sur glace pilée 0–2 °C", caughtAt:"", landedAt:"" });
   const up = (k:string,v:string|number) => setForm((f)=>({...f,[k]:v}));
@@ -100,6 +101,35 @@ function FisherSpace() {
 
   return <div className="mx-auto max-w-6xl px-4 py-10">
     <PageHeader title={t("Espace pêcheur")} sub={t("Connecté en tant que {name} — {boat}",{name:me.name,boat:me.boat})}/>
+    <section className="mb-6 grid gap-2 sm:grid-cols-3" aria-label={t("Navigation espace pêcheur")}>
+      <button type="button" className={"btn "+(accountTab==="activity"?"btn-accent":"")} onClick={()=>setAccountTab("activity")}>{t("Activité & commandes")}</button>
+      <button type="button" className={"btn "+(accountTab==="sales"?"btn-accent":"")} onClick={()=>setAccountTab("sales")}>{t("Ventes & relevés")}</button>
+      <button type="button" className={"btn "+(accountTab==="profile"?"btn-accent":"")} onClick={()=>setAccountTab("profile")}>{t("Mon profil professionnel")}</button>
+    </section>
+    {accountTab==="sales" && <section className="card mb-8 grid gap-4 p-5">
+      <div><h2 className="text-xl font-semibold">{t("Mes ventes et relevés")}</h2><p className="text-sm text-muted-foreground">{t("Synthèse calculée sur les commandes marquées livrées. Aucun paiement n'est encaissé ni confirmé dans cette version.")}</p></div>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Metric label={t("Ventes livrées")} value={myOrders.filter(o=>o.status==="delivered").length} detail={t("Commandes terminées")}/>
+        <Metric label={t("Chiffre d'affaires indicatif")} value={gbp(myOrders.filter(o=>o.status==="delivered").reduce((sum,o)=>{const lot=mine.find(c=>c.id===o.catch_id);return sum+(lot?.priceKg??0)*Number(o.quantity_kg);},0))} detail={t("Avant frais et taxes")}/>
+        <Metric label={t("En attente")} value={myOrders.filter(o=>o.status!=="delivered"&&o.status!=="cancelled").length} detail={t("Commandes à traiter")}/>
+      </div>
+      {myOrders.filter(o=>o.status==="delivered").length===0?<Empty>{t("Aucune vente livrée pour le moment.")}</Empty>:
+        <ul className="grid gap-2">{myOrders.filter(o=>o.status==="delivered").map(o=>{const lot=mine.find(c=>c.id===o.catch_id);const total=(lot?.priceKg??0)*Number(o.quantity_kg);return <li key={o.id} className="rounded-xl border border-border p-4">
+          <div className="flex flex-wrap justify-between gap-2"><strong>{lot?.emoji} {t(lot?.species??"Produit")} · {Number(o.quantity_kg)} kg</strong><strong>{gbp(total)}</strong></div>
+          <p className="text-xs text-muted-foreground">{t("Livrée")} · {dt(o.requested_slot)} · Réf. {o.id.slice(0,8).toUpperCase()}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{t("Relevé indicatif — ne constitue pas une facture fiscale ni une preuve de paiement.")}</p>
+        </li>})}</ul>}
+    </section>}
+    {accountTab==="profile" && <section className="card mb-8 grid gap-2 p-5">
+      <h2 className="text-xl font-semibold">{t("Mon profil professionnel")}</h2>
+      <p><span className="text-muted-foreground">{t("Nom")} :</span> <strong>{me.name}</strong></p>
+      <p><span className="text-muted-foreground">{t("Bateau")} :</span> <strong>{me.boat||t("Non renseigné")}</strong></p>
+      <p><span className="text-muted-foreground">{t("Port")} :</span> <strong>{me.port||t("Non renseigné")}</strong></p>
+      <p><span className="text-muted-foreground">{t("Méthode")} :</span> <strong>{t(me.method)}</strong></p>
+      <p className="text-sm text-muted-foreground">{t("Les coordonnées légales, l'adresse professionnelle et le numéro GST devront être complétés avant l'émission de factures officielles.")}</p>
+      <a className="btn btn-accent w-fit" href="/verification">{t("Gérer mes informations professionnelles")}</a>
+    </section>}
+
     <section aria-label={t("Vue d'ensemble")} className="mb-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       <Metric label={t("Lots publiés")} value={mine.length} detail={t("Toutes vos prises")}/>
       <Metric label={t("Stock disponible")} value={mine.filter((c)=>c.status==="disponible").reduce((n,c)=>n+c.qtyKg,0).toLocaleString("fr-FR")+" kg"} detail={t("Quantité actuellement en vente")}/>
@@ -160,6 +190,7 @@ function FisherSpace() {
         })}</ul>}
       </section>
     </div>
+    {accountTab!=="activity" ? null : null}
   </div>;
 }
 
