@@ -1,9 +1,10 @@
 -- Public fisher directory and safe order-status transitions.
 -- Keep private contact data out of the public profile API.
 drop policy if exists "Public fisher directory" on public.profiles;
+drop policy if exists "Public can read verified fisher profiles" on public.profiles;
 create policy "Public fisher directory"
   on public.profiles for select to anon, authenticated
-  using (role = 'fisher'::public.app_role);
+  using (role = 'fisher'::public.app_role or id = (select auth.uid()));
 
 revoke select on public.profiles from anon, authenticated;
 grant select (id, role, display_name, boat_name, home_port, fishing_method, bio, since_year)
