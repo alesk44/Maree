@@ -18,7 +18,7 @@ export function useSharedMarket():MarketData {
     try {
       const [{data:lots,error:lotsError},{data:people,error:peopleError}]=await Promise.all([
         supabase.from("catches").select("id,fisher_id,species,zone,caught_at,landed_at,remaining_kg,price_per_kg,grade,method,storage_instructions,status").gt("remaining_kg",0).order("landed_at",{ascending:false}),
-        supabase.from("profiles").select("id,display_name,boat_name,home_port,fishing_method,bio,since_year").eq("role","fisher")
+        supabase.from("public_fisher_directory").select("id,display_name,boat_name,home_port,fishing_method,bio,since_year")
       ]);
       if(lotsError) throw lotsError;
       if(peopleError) throw peopleError;
@@ -33,7 +33,6 @@ export function useSharedMarket():MarketData {
     void refresh();
     const channel=supabase.channel("maree-public-market")
       .on("postgres_changes",{event:"*",schema:"public",table:"catches"},()=>void refresh())
-      .on("postgres_changes",{event:"*",schema:"public",table:"profiles"},()=>void refresh())
       .subscribe();
     return ()=>{void supabase.removeChannel(channel);};
   },[refresh]);
