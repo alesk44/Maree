@@ -1,18 +1,21 @@
-name: Deploy to Cloudflare Workers
+name: Deploy private preview to Cloudflare Workers
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: maree-private-preview
+  cancel-in-progress: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: preview
     steps:
-      - name: Check deployment secrets
+      - name: Check preview deployment secrets
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -23,12 +26,14 @@ jobs:
         uses: actions/checkout@v4
       - name: Install Bun
         uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
       - name: Install dependencies
         run: bun install
       - name: Build application
         run: bun run build
-      - name: Deploy to Cloudflare Workers
-        run: bunx wrangler deploy
+      - name: Deploy isolated preview Worker
+        run: bunx wrangler deploy --name maree-jersey-preview
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
