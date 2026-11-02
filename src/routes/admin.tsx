@@ -14,7 +14,7 @@ export const Route = createFileRoute("/admin")({
   component: Admin,
 });
 
-type AdminOrder = { id: string; catch_id: string; quantity_kg: number; status: string; created_at: string; product_subtotal:number|string|null; maree_fee:number|string|null; delivery_fee:number|string|null };
+type AdminOrder = { id: string; catch_id: string; quantity_kg: number; status: string; created_at: string; product_subtotal:number|string|null; maree_fee:number|string|null; delivery_fee:number|string|null; tip_amount:number|string; fisher_payment_status:"unpaid"|"paid"|"waived" };
 type AdminCommissionInvoice = { id:string; restaurant_id:string; period_start:string; period_end:string; due_date:string; commission_total:number|string; delivery_total:number|string; status:"open"|"declared_paid"|"paid"|"void"; declared_at:string|null; payment_method:string|null; payment_reference:string|null };
 type VerificationDocument = { id:string; request_id:string; original_filename:string; document_type:string; file_path:string; expires_at:string|null; review_status:string; reviewer_note:string|null; signed_url?:string|null };
 
@@ -43,6 +43,7 @@ function Admin() {
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [reportingError,setReportingError] = useState<string|null>(null);
 
   const documentTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
@@ -124,15 +125,16 @@ function Admin() {
       } else setDocuments([]);
 
       // Dashboard figures are secondary: a metrics/RLS issue must not block approvals.
-      let { data: orderRows, error: orderError } = await supabase.from("orders")
-        .select("id,catch_id,quantity_kg,status,created_at,product_subtotal,maree_fee,delivery_fee")
+      const { data: orderRows, error: orderError } = await supabase.from("orders")
+        .select("id,catch_id,quantity_kg,status,created_at,product_subtotal,maree_fee,delivery_fee,tip_amount,fisher_payment_status")
         .order("created_at", { ascending: false });
-      if (orderError && ["42703","PGRST204","PGRST200"].includes(orderError.code ?? "")) {
-        const legacy = await supabase.from("orders").select("id,catch_id,quantity_kg,status,created_at").order("created_at", { ascending: false });
-        orderError = legacy.error;
-        orderRows = (legacy.data ?? []).map((row) => ({ ...row, product_subtotal:null, maree_fee:0, delivery_fee:0 })) as typeof orderRows;
+      if (!orderError) {
+        setAllOrders((orderRows ?? []) as AdminOrder[]);
+        setReportingError(null);
+      } else {
+        setAllOrders([]);
+        setReportingError(t("Données financières indisponibles : vérifiez la synchronisation du schéma Supabase."));
       }
-      if (!orderError) setAllOrders((orderRows ?? []) as AdminOrder[]);
       const { data: commissionRows, error: commissionError } = await supabase
         .from("maree_monthly_commission_invoices")
         .select("id,restaurant_id,period_start,period_end,due_date,commission_total,delivery_total,status,declared_at,payment_method,payment_reference")
@@ -192,22 +194,32 @@ function Admin() {
       {isAdmin && !loading && (() => {
         const deliveredOrders = allOrders.filter((order) => order.status === "delivered");
         const deliveredBase = deliveredOrders.reduce((sum, order) => sum + Number(order.product_subtotal ?? 0), 0);
+        const tips = deliveredOrders.reduce((sum,order)=>sum+Number(order.tip_amount??0),0);
+        const fisherDue = deliveredOrders.filter(order=>order.fisher_payment_status==="unpaid").reduce((sum,order)=>sum+Number(order.product_subtotal??0)+Number(order.tip_amount??0),0);
+        const fisherPaid = deliveredOrders.filter(order=>order.fisher_payment_status==="paid").reduce((sum,order)=>sum+Number(order.product_subtotal??0)+Number(order.tip_amount??0),0);
         const mareeCommission = deliveredOrders.reduce((sum, order) => sum + Number(order.maree_fee ?? 0), 0);
         const mareeDelivery = deliveredOrders.reduce((sum, order) => sum + Number(order.delivery_fee ?? 0), 0);
+        const mareeOutstanding = commissionInvoices.filter(invoice=>invoice.status==="open"||invoice.status==="declared_paid").reduce((sum,invoice)=>sum+Number(invoice.commission_total)+Number(invoice.delivery_total),0);
+        const mareePaid = commissionInvoices.filter(invoice=>invoice.status==="paid").reduce((sum,invoice)=>sum+Number(invoice.commission_total)+Number(invoice.delivery_total),0);
         const fmt = (value: number) => new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(value);
         return <section className="grid gap-4">
           <div><h2 className="font-display text-2xl font-semibold">{t("Vue d’ensemble de la plateforme")}</h2><p className="text-sm text-muted-foreground">{t("Montants calculés à partir des snapshots de commande ; aucun encaissement réel n’est activé.")}</p></div>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {reportingError&&<p role="alert" className="text-sm text-destructive">{reportingError}</p>}
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             <div className="card p-4"><p className="text-xs text-muted-foreground">{t("Commandes totales")}</p><p className="mt-1 text-2xl font-semibold">{allOrders.length}</p></div>
             <div className="card p-4"><p className="text-xs text-muted-foreground">{t("Volume livré (base)")}</p><p className="mt-1 text-2xl font-semibold">{fmt(deliveredBase)}</p></div>
-            <div className="card p-4"><p className="text-xs text-muted-foreground">{t("Produits dus aux pêcheurs")}</p><p className="mt-1 text-2xl font-semibold">{fmt(deliveredBase)}</p></div>
+            <div className="card p-4"><p className="text-xs text-muted-foreground">{t("Pourboires")}</p><p className="mt-1 text-2xl font-semibold">{fmt(tips)}</p></div>
+            <div className="card p-4"><p className="text-xs text-muted-foreground">{t("Dette pêcheurs")}</p><p className="mt-1 text-2xl font-semibold">{fmt(fisherDue)}</p></div>
+            <div className="card p-4"><p className="text-xs text-muted-foreground">{t("Paiements pêcheurs confirmés")}</p><p className="mt-1 text-2xl font-semibold">{fmt(fisherPaid)}</p></div>
             <div className="card p-4"><p className="text-xs text-muted-foreground">{t("Commission Marée (6,5 %)")}</p><p className="mt-1 text-2xl font-semibold">{fmt(mareeCommission)}</p></div>
           </div>
-          <div className="card flex flex-wrap items-center justify-between gap-3 p-5">
+          <div className="card grid gap-3 p-5 sm:grid-cols-2">
             <div><p className="text-sm text-muted-foreground">{t("Frais de livraison Marée (20 %)")}</p><p className="font-display text-3xl font-semibold text-accent">{fmt(mareeDelivery)}</p></div>
+            <div><p className="text-sm text-muted-foreground">{t("Dette Marée à régler")}</p><p className="font-display text-3xl font-semibold">{fmt(mareeOutstanding)}</p></div>
+            <div><p className="text-sm text-muted-foreground">{t("Paiements Marée vérifiés")}</p><p className="font-display text-3xl font-semibold">{fmt(mareePaid)}</p></div>
             <div className="text-sm text-muted-foreground">{t("En attente")}: <strong>{allOrders.filter((order) => !["delivered", "cancelled"].includes(order.status)).length}</strong></div>
           </div>
-          <p className="text-xs text-muted-foreground">{t("Les montants proviennent des prix et frais figés à la réservation : le pêcheur reçoit le sous-total produits, Marée facture 6,5 % au restaurant sur chaque achat et les frais de livraison de 20 % ne s’appliquent qu’en livraison. Aucun paiement réel n’est activé.")}</p>
+          <p className="text-xs text-muted-foreground">{t("Les montants proviennent des prix et frais figés à la réservation : le pêcheur reçoit le sous-total produits et les pourboires ; Marée facture 6,5 % au restaurant sur chaque achat et les frais de livraison de 20 % ne s’appliquent qu’en livraison. Aucun paiement en ligne n’est activé.")}</p>
         </section>;
       })()}
       {isAdmin && !loading && <section className="card grid gap-3 p-5">
