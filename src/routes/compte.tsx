@@ -28,11 +28,12 @@ function AccountPage() {
       setUserId(data.user.id);
       setEmail(data.user.email ?? "");
       const { data: profile, error: profileError } = await supabase.from("profiles")
-        .select("display_name, phone, avatar_url").eq("id", data.user.id).maybeSingle();
+        .select("display_name, avatar_url").eq("id", data.user.id).maybeSingle();
+      const { data: privateProfile } = await supabase.rpc("get_my_business_profile").maybeSingle();
       if (!active) return;
       if (profileError) toast.error(profileError.message);
       setName(profile?.display_name ?? String(data.user.user_metadata?.display_name ?? ""));
-      setPhone(profile?.phone ?? "");
+      setPhone(privateProfile?.phone ?? "");
       setAvatarUrl(profile?.avatar_url ?? null);
       setLoading(false);
     });
