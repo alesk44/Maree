@@ -32,7 +32,7 @@ function AccountPage() {
       const { data: privateProfile } = await supabase.rpc("get_my_business_profile").maybeSingle();
       if (!active) return;
       if (profileError) toast.error(profileError.message);
-      setName(profile?.["display_name"] ?? String(data.user.user_metadata?.display_name ?? ""));
+      setName(profile?.["display_name"] ?? String(data.user.user_metadata?.["display_name"] ?? ""));
       setPhone((privateProfile as { phone?: string | null } | null)?.phone ?? "");
       setAvatarUrl(profile?.["avatar_url"] ?? null);
       setLoading(false);
