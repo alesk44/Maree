@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(93);
+select plan(97);
 
 -- Isolated auth users; the auth trigger creates their initial restaurant profiles.
 insert into auth.users (id, email) values
@@ -41,7 +41,7 @@ insert into public.catches (
   ('10000000-0000-4000-8000-000000000001',
    '00000000-0000-4000-8000-000000000001',
    'Pollock', 'North coast', now() - interval '3 hours', now() - interval '2 hours',
-   2, 2, 8.50, 'Line caught', 'Keep chilled at 0–4°C', 'available'),
+   2, 1.5, 8.50, 'Line caught', 'Keep chilled at 0–4°C', 'available'),
   ('10000000-0000-4000-8000-000000000002',
    '00000000-0000-4000-8000-000000000002',
    'Crab', 'East coast', now() - interval '3 hours', now() - interval '2 hours',
@@ -177,6 +177,30 @@ select throws_ok(
   $$select public.review_verification_request('30000000-0000-4000-8000-000000000001'::uuid, 'approved'::public.verification_status, null)$$,
   'P0001', 'Admin access required',
   'fisher cannot review verification requests'
+);
+reset role;
+
+-- Fisher refusal must atomically cancel the submitted order and restore its reserved stock.
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
+select lives_ok(
+  $select public.update_order_status('20000000-0000-4000-8000-000000000001'::uuid, 'cancelled'::public.order_status)$,
+  'owning fisher can refuse a submitted order'
+);
+select is(
+  (select status from public.orders where id='20000000-0000-4000-8000-000000000001'),
+  'cancelled'::public.order_status,
+  'refused order is marked cancelled'
+);
+select is(
+  (select remaining_kg from public.catches where id='10000000-0000-4000-8000-000000000001'),
+  2.00::numeric,
+  'refusing an order restores the reserved catch quantity'
+);
+select is(
+  (select status from public.catches where id='10000000-0000-4000-8000-000000000001'),
+  'available'::public.catch_status,
+  'restored catch becomes available again'
 );
 reset role;
 
