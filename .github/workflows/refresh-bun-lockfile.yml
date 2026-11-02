@@ -1,0 +1,43 @@
+name: Refresh Bun lockfile
+
+on:
+  push:
+    branches: ["feature/**"]
+    paths:
+      - "package.json"
+      - "bun.lock"
+      - ".github/workflows/refresh-bun-lockfile.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bun-lockfile-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+      - name: Regenerate lockfile from package.json
+        run: bun install --lockfile-only
+      - name: Verify reproducible frozen install
+        run: bun install --frozen-lockfile --dry-run
+      - name: Commit lockfile only when changed
+        run: |
+          if git diff --quiet -- bun.lock; then
+            echo "bun.lock is already synchronized."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add bun.lock
+          git commit -m "chore: synchronize Bun lockfile"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
