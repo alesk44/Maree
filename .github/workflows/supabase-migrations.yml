@@ -21,10 +21,10 @@ jobs:
       - uses: supabase/setup-cli@v1
         with:
           version: latest
-      # Database tests do not send email; skipping Inbucket avoids binding its
-      # default host port (54324), which can already be occupied on hosted runners.
+      # Database tests do not send email; Mailpit is not needed.
+      # Excluding it also avoids binding its default host port (54324).
       - name: Start local Supabase
-        run: supabase start --exclude inbucket
+        run: supabase start --exclude mailpit
       - name: Rebuild database from repository migrations
         run: supabase db reset
       - name: Run pgTAP security contract tests
