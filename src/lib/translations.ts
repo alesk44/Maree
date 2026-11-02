@@ -1241,7 +1241,7 @@ export const translations: Record<string, readonly [string, string, string]> = {
   "Activité des débarquements": ["Landing activity","Atividade dos desembarques","Activitatea debarcărilor"],
   "Nombre de lots débarqués sur les sept derniers jours": ["Number of lots landed over the last seven days","Número de lotes desembarcados nos últimos sete dias","Numărul loturilor debarcate în ultimele șapte zile"],
   "7 derniers jours": ["Last 7 days","Últimos 7 dias","Ultimele 7 zile"],
-  "Le graphique apparaîtra dès la publication de vos premières prises.": ["The chart will appear once you publish your first catches.","O gráfico aparecerá assim que publicar as suas primeiras capturas.","Graficul va apărea după ce publicați primele capturi."]
+  "Le graphique apparaîtra dès la publication de vos premières prises.": ["The chart will appear once you publish your first catches.","O gráfico aparecerá assim que publicar as suas primeiras capturas.","Graficul va apărea după ce publicați primele capturi."],
   "Accès réservé à l’équipe d’administration.": ["Access restricted to the administration team.", "Access restricted to the administration team.", "Access restricted to the administration team."],
   "Impossible de charger les demandes.": ["Could not load requests.", "Could not load requests.", "Could not load requests."],
   "Demande approuvée. Le rôle professionnel a été attribué.": ["Request approved. The professional role has been assigned.", "Request approved. The professional role has been assigned.", "Request approved. The professional role has been assigned."],
