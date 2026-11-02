@@ -38,7 +38,8 @@ function AuthPage() {
       const user = data.session?.user;
       setSessionEmail(user?.email ?? null);
       if (user) {
-        const { data: profile } = await supabase.from("profiles").select("display_name,phone,business_address,business_postcode,business_city,business_email").eq("id", user.id).maybeSingle();
+        const { data: profile, error: profileError } = await supabase.rpc("get_my_business_profile").maybeSingle();
+        if (profileError) toast.error(t("Impossible de charger les coordonnées professionnelles."));
         if (active && profile) {
           setProfileName(profile.display_name ?? "");
           setBusinessProfile({ phone: profile.phone ?? "", business_address: profile.business_address ?? "", business_postcode: profile.business_postcode ?? "", business_city: profile.business_city ?? "", business_email: profile.business_email ?? user.email ?? "" });
@@ -48,8 +49,8 @@ function AuthPage() {
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       setSessionEmail(session?.user.email ?? null);
       if (event === "SIGNED_IN" && session?.user) {
-        void supabase.from("profiles").select("display_name,phone,business_address,business_postcode,business_city,business_email").eq("id", session.user.id).maybeSingle()
-          .then(({ data }) => { if (data) {
+        void supabase.rpc("get_my_business_profile").maybeSingle()
+          .then(({ data, error }) => { if (error) { toast.error(t("Impossible de charger les coordonnées professionnelles.")); return; } if (data) {
             setProfileName(data.display_name ?? "");
             setBusinessProfile({ phone: data.phone ?? "", business_address: data.business_address ?? "", business_postcode: data.business_postcode ?? "", business_city: data.business_city ?? "", business_email: data.business_email ?? session.user.email ?? "" });
           } });
