@@ -1325,7 +1325,6 @@ export const translations: Record<string, readonly [string, string, string]> = {
   "Relevé indicatif — commission non prélevée à ce stade ; ne constitue pas une facture fiscale ni une preuve de paiement.": ["Indicative statement — commission has not been collected; this is not a tax invoice or proof of payment.", "Indicative statement — commission has not been collected; this is not a tax invoice or proof of payment.", "Indicative statement — commission has not been collected; this is not a tax invoice or proof of payment."],
   "Complétez les informations de votre bateau et de votre activité après validation du compte.": ["Complete your boat and business details after your account is approved.", "Complete your boat and business details after your account is approved.", "Complete your boat and business details after your account is approved."],
   "Nom du bateau": ["Boat name", "Boat name", "Boat name"],
-  "Port d’attache": ["Home port", "Home port", "Home port"],
   "Type de bateau": ["Boat type", "Boat type", "Boat type"],
   "Ex. chalutier, vedette, open boat": ["e.g. trawler, motorboat, open boat", "e.g. trawler, motorboat, open boat", "e.g. trawler, motorboat, open boat"],
   "Méthode de pêche": ["Fishing method", "Fishing method", "Fishing method"],
