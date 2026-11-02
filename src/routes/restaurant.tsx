@@ -68,8 +68,6 @@ function Restaurant() {
     return () => { active = false; };
   }, [signedIn, sel?.fisherId]);
 
-  const avail = catches.filter((c) => c.status === "disponible" && c.qtyKg > 0);
-  const sel = catches.find((c) => c.id === catchId);
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!signedIn) { toast.error(t("Connectez-vous avec votre compte restaurant avant de réserver.")); return; }
