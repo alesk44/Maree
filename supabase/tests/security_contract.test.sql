@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(119);
+select plan(128);
 
 -- Isolated auth users; the auth trigger creates their initial restaurant profiles.
 insert into auth.users (id, email) values
@@ -614,9 +614,9 @@ select throws_ok(
 );
 reset role;
 
-set local role anon;
-set local "request.jwt.claim.sub" = '';
-select is((select count(*) from public.traceability_records), 0::bigint, 'anonymous catalogue cannot see traceability records');
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
+select is((select count(*) from public.traceability_records), 2::bigint, 'owning fisher can inspect all traceability records linked to their catch');
 reset role;
 
 select * from finish();
