@@ -96,3 +96,16 @@ Règle de livraison : aucun merge sur `main`, aucun déploiement public et aucun
 ## Définition de « prêt à publier »
 
 Le build, les tests, le lint et le typecheck sont verts ; les tests RLS et les tests inter-comptes passent ; aucune donnée fictive n'est visible ; les parcours mobile/desktop et les langues sont vérifiés ; les obligations locales et les réglages e-mail sont confirmés ; le propriétaire a donné son accord explicite.
+
+
+## Audit technique — 2 novembre 2026
+
+- [x] Corriger les liens de confirmation, OAuth et récupération de mot de passe : ils utilisent désormais l'origine de l'application ouverte (preview ou futur domaine de production) au lieu d'être forcés vers la prévisualisation.
+- [x] Les workflows CI et preview utilisent le même mode d'installation Bun que le projet utilisait déjà.
+- [ ] Réconcilier `bun.lock` avec `package.json` : l'essai `--frozen-lockfile` a révélé que `@supabase/supabase-js` est déclaré dans `package.json` mais absent du lockfile. Le mode strict a été retiré pour ne pas bloquer les builds ; le lockfile doit être régénéré et commité depuis un environnement Bun.
+- [ ] Configurer les URL d'origine et de redirection autorisées dans Supabase Auth pour chaque domaine (preview et production) avant les tests de confirmation et de récupération.
+- [ ] Revoir les politiques RLS SELECT redondantes sur catches, orders, profiles et verification_requests. Les politiques admin et utilisateur se cumulent volontairement en OR ; ne les fusionner qu'après des tests couvrant les rôles anon, restaurant, pêcheur et admin.
+- [ ] Le linter signale `private.admin_users` avec RLS sans policy. La table est volontairement privée et aucun droit n'est accordé à anon/authenticated ; confirmer le comportement avec le catalogue des privilèges avant de décider si une policy explicite restrictive est nécessaire.
+- [ ] Le linter signale les trois RPC SECURITY DEFINER exécutables par authenticated. C'est intentionnel pour les transactions et le contrôle d'accès est dans le corps des fonctions ; conserver `search_path = ''`, les vérifications de rôle/propriété et les tests pgTAP.
+- [ ] Activer la protection des mots de passe compromis dans Supabase Auth avant ouverture publique, via le réglage Auth pris en charge.
+- [ ] Effectuer le parcours manuel mobile/desktop et le test réel avec deux comptes et un lot ; la base distante contient encore zéro lot et zéro commande.
