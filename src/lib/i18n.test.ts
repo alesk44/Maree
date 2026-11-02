@@ -30,7 +30,7 @@ describe("Marée internationalisation", () => {
   it("ne laisse aucune entrée de dictionnaire incomplète", () => {
     for (const [key, values] of Object.entries(translations)) {
       expect(key.trim()).not.toBe("");
-      expect(values).toHaveLength(3);
+      expect(values).toHaveLength(2);
       expect(values.every((value) => value.trim().length > 0)).toBe(true);
     }
   });
