@@ -217,12 +217,37 @@ begin
       and o.delivered_at>=v_start_at and o.delivered_at<v_end_at
     group by o.restaurant_id,coalesce(o.fisher_id_snapshot,c.fisher_id)
   loop
-    insert into public.fisher_monthly_invoices(restaurant_id,fisher_id,period_start,period_end,due_date,subtotal,tip_total)
-    values(v_group.restaurant_id,v_group.fisher_id,v_start,v_end,v_end+7,v_group.subtotal,v_group.tip_total)
-    on conflict(restaurant_id,fisher_id,period_start) do update
-      set subtotal=excluded.subtotal,tip_total=excluded.tip_total
-      where public.fisher_monthly_invoices.status='open'
-    returning id into v_invoice;
+    v_invoice:=null;
+    select i.id into v_invoice from public.fisher_monthly_invoices i
+    where i.restaurant_id=v_group.restaurant_id and i.fisher_id=v_group.fisher_id
+      and i.period_start=v_start and i.status='open'
+    for update;
+    if found then
+      update public.fisher_monthly_invoices
+      set subtotal=v_group.subtotal,tip_total=v_group.tip_total
+      where id=v_invoice;
+    else
+      insert into public.fisher_monthly_invoices(restaurant_id,fisher_id,period_start,period_end,due_date,subtotal,tip_total)
+      values(v_group.restaurant_id,v_group.fisher_id,v_start,v_end,v_end+7,v_group.subtotal,v_group.tip_total)
+      on conflict(restaurant_id,fisher_id,period_start) do nothing
+      returning id into v_invoice;
+      if v_invoice is not null then
+        v_count:=v_count+1;
+      else
+        select i.id into v_invoice from public.fisher_monthly_invoices i
+        where i.restaurant_id=v_group.restaurant_id and i.fisher_id=v_group.fisher_id
+          and i.period_start=v_start and i.status='open'
+        for update;
+        if found then
+          update public.fisher_monthly_invoices
+          set subtotal=v_group.subtotal,tip_total=v_group.tip_total
+          where id=v_invoice;
+        else
+          v_invoice:=null;
+        end if;
+      end if;
+    end if;
+
     if v_invoice is not null then
       insert into public.fisher_monthly_invoice_items(invoice_id,order_id,product_subtotal,quantity_kg,unit_price,tip_amount)
       select v_invoice,o.id,o.product_subtotal,o.quantity_kg,o.unit_price_snapshot,o.tip_amount
@@ -233,9 +258,7 @@ begin
       on conflict(invoice_id,order_id) do update set
         product_subtotal=excluded.product_subtotal,quantity_kg=excluded.quantity_kg,
         unit_price=excluded.unit_price,tip_amount=excluded.tip_amount;
-      v_count:=v_count+1;
     end if;
-    v_invoice:=null;
   end loop;
   return v_count;
 end;
