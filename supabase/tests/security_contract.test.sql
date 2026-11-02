@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(161);
+select plan(163);
 
 -- Isolated auth users; the auth trigger creates their initial restaurant profiles.
 insert into auth.users (id, email) values
@@ -213,6 +213,24 @@ select throws_ok(
   $$select public.review_verification_request('30000000-0000-4000-8000-000000000001'::uuid, 'approved'::public.verification_status, null)$$,
   'P0001', 'Admin access required',
   'fisher cannot review verification requests'
+);
+reset role;
+
+-- A restaurant retains access to the lot details for its own order after the
+-- catch is no longer publicly available, but cannot inspect another restaurant's lot.
+update public.catches set status='reserved'
+where id='10000000-0000-4000-8000-000000000001';
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000003';
+select is(
+  (select count(*) from public.catches where id='10000000-0000-4000-8000-000000000001'),
+  1::bigint,
+  'restaurant can read catch details for its own reserved order'
+);
+select is(
+  (select count(*) from public.catches where id='10000000-0000-4000-8000-000000000002'),
+  0::bigint,
+  'restaurant cannot read another restaurant reserved catch'
 );
 reset role;
 
