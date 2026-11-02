@@ -72,7 +72,7 @@ function Restaurant() {
       channel = supabase
         .channel(`restaurant-orders-${data.user.id}`)
         .on("postgres_changes", {
-          event: "UPDATE",
+          event: "*",
           schema: "public",
           table: "orders",
           filter: `restaurant_id=eq.${data.user.id}`,
