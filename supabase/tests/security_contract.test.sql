@@ -187,7 +187,7 @@ select is(public.is_current_user_admin(), true, 'separate admin grant is recogni
 select is((select role::text from public.profiles where id = '00000000-0000-4000-8000-000000000007'), 'restaurant', 'separate admin grant preserves the restaurant business role');
 select is((select count(*) from public.verification_requests), 4::bigint, 'separate admin can read all verification requests');
 select lives_ok(
-  $select public.review_verification_request('30000000-0000-4000-8000-000000000004'::uuid, 'approved'::public.verification_status, 'Approved by separate admin')$,
+  $$select public.review_verification_request('30000000-0000-4000-8000-000000000004'::uuid, 'approved'::public.verification_status, 'Approved by separate admin')$$,
   'separate admin can approve a pending verification request'
 );
 reset role;
