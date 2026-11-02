@@ -27,7 +27,19 @@ Deno.serve(async (req: Request) => {
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const resendKey = Deno.env.get("RESEND_API_KEY");
   const from = Deno.env.get("MAREE_FROM_EMAIL");
-  if (!resendKey || !from) return json({ error: "Email provider is not configured. Add RESEND_API_KEY and MAREE_FROM_EMAIL secrets." }, 503);
+  const adminEmail = Deno.env.get("MAREE_ADMIN_EMAIL");
+  const configuredAppUrl = Deno.env.get("MAREE_APP_URL");
+  if (!resendKey || !from || !adminEmail || !configuredAppUrl) {
+    return json({ error: "Verification email is not configured. Add RESEND_API_KEY, MAREE_FROM_EMAIL, MAREE_ADMIN_EMAIL and MAREE_APP_URL secrets." }, 503);
+  }
+  let appUrl: string;
+  try {
+    const parsed = new URL(configuredAppUrl);
+    if (parsed.protocol !== "https:" || parsed.username || parsed.password) throw new Error("Invalid app origin");
+    appUrl = parsed.origin;
+  } catch {
+    return json({ error: "MAREE_APP_URL must be a valid HTTPS application origin." }, 503);
+  }
 
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) return json({ error: "Unauthorized" }, 401);
@@ -55,7 +67,6 @@ Deno.serve(async (req: Request) => {
   });
   if (tokenError) return json({ error: "Could not prepare secure email actions" }, 500);
 
-  const appUrl = (Deno.env.get("MAREE_APP_URL") ?? "https://maree-jersey-preview.alexozo44760.workers.dev").replace(/\/$/, "");
   const actionUrl = (token: string, action: string) =>
     `${appUrl}/admin/email-review?token=${encodeURIComponent(token)}&action=${action}`;
   const roleLabel = row.requested_role === "fisher" ? "Pêcheur / Fisher" : "Restaurant";
@@ -74,7 +85,7 @@ Deno.serve(async (req: Request) => {
     method: "POST",
     headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      from, to: ["alexozo44760@gmail.com"],
+      from, to: [adminEmail],
       subject: `Marée Jersey — demande de vérification : ${row.business_name}`,
       html, reply_to: userData.user.email ? [userData.user.email] : undefined,
     }),
