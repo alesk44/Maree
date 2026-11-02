@@ -65,10 +65,14 @@ function Restaurant() {
   const deliveredOrders = orders.filter(o=>o.status==="delivered");
   const immediateUnpaid = deliveredOrders.filter(o=>o.billing_mode==="immediate" && o.fisher_payment_status==="unpaid");
   const monthlyUnpaid = monthlyInvoices.filter(i=>i.status==="open");
+  const openMonthlyOrderIds = new Set(monthlyUnpaid.flatMap(i=>i.items?.map(item=>item.order_id)??[]));
+  const monthlyUnbilled = deliveredOrders.filter(o=>o.billing_mode==="monthly"&&o.fisher_payment_status==="unpaid"&&!openMonthlyOrderIds.has(o.id));
   const fisherDebt = immediateUnpaid.reduce((sum,o)=>sum+Number(o.product_subtotal??0)+Number(o.tip_amount??0),0)
-    + monthlyUnpaid.reduce((sum,i)=>sum+Number(i.subtotal)+Number(i.tip_total??0),0);
+    + monthlyUnpaid.reduce((sum,i)=>sum+Number(i.subtotal)+Number(i.tip_total??0),0)
+    + monthlyUnbilled.reduce((sum,o)=>sum+Number(o.product_subtotal??0)+Number(o.tip_amount??0),0);
   const fisherTipDebt = immediateUnpaid.reduce((sum,o)=>sum+Number(o.tip_amount??0),0)
-    + monthlyUnpaid.reduce((sum,i)=>sum+Number(i.tip_total??0),0);
+    + monthlyUnpaid.reduce((sum,i)=>sum+Number(i.tip_total??0),0)
+    + monthlyUnbilled.reduce((sum,o)=>sum+Number(o.tip_amount??0),0);
   const fisherPaid = deliveredOrders.filter(o=>o.fisher_payment_status==="paid").reduce((sum,o)=>sum+Number(o.product_subtotal??0)+Number(o.tip_amount??0),0);
   const mareeOutstanding = mareeInvoices.filter(i=>i.status==="open"||i.status==="declared_paid").reduce((sum,i)=>sum+Number(i.commission_total)+Number(i.delivery_total),0);
   const mareeSettled = mareeInvoices.filter(i=>i.status==="paid").reduce((sum,i)=>sum+Number(i.commission_total)+Number(i.delivery_total),0);
