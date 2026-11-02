@@ -238,6 +238,9 @@ as $function$
 declare
   v_start date := date_trunc('month', p_month)::date;
   v_end date := (date_trunc('month', p_month) + interval '1 month - 1 day')::date;
+  -- Invoice periods follow Jersey civil time, independent of the database session timezone.
+  v_start_at timestamptz := (v_start::timestamp at time zone 'Europe/Jersey');
+  v_end_at timestamptz := ((v_end + 1)::timestamp at time zone 'Europe/Jersey');
   v_count integer := 0;
   v_group record;
   v_invoice uuid;
@@ -250,8 +253,8 @@ begin
       sum(o.product_subtotal)::numeric(10,2) as subtotal
     from public.orders o join public.catches c on c.id = o.catch_id
     where o.status = 'delivered' and o.billing_mode = 'monthly'
-      and o.delivered_at >= v_start::timestamptz
-      and o.delivered_at < (v_end + 1)::timestamptz
+      and o.delivered_at >= v_start_at
+      and o.delivered_at < v_end_at
     group by o.restaurant_id, coalesce(o.fisher_id_snapshot, c.fisher_id)
   loop
     insert into public.fisher_monthly_invoices(restaurant_id,fisher_id,period_start,period_end,due_date,subtotal)
@@ -264,7 +267,7 @@ begin
       from public.orders o join public.catches c on c.id=o.catch_id
       where o.restaurant_id=v_group.restaurant_id and coalesce(o.fisher_id_snapshot,c.fisher_id)=v_group.fisher_id
         and o.status='delivered' and o.billing_mode='monthly'
-        and o.delivered_at >= v_start::timestamptz and o.delivered_at < (v_end+1)::timestamptz;
+        and o.delivered_at >= v_start_at and o.delivered_at < v_end_at;
       v_count := v_count + 1;
     end if;
     v_invoice := null;
@@ -383,6 +386,9 @@ as $function$
 declare
   v_start date := date_trunc('month', p_month)::date;
   v_end date := (date_trunc('month', p_month) + interval '1 month - 1 day')::date;
+  -- Invoice periods follow Jersey civil time, independent of the database session timezone.
+  v_start_at timestamptz := (v_start::timestamp at time zone 'Europe/Jersey');
+  v_end_at timestamptz := ((v_end + 1)::timestamp at time zone 'Europe/Jersey');
   v_count integer := 0;
   v_group record;
   v_invoice uuid;
@@ -393,8 +399,8 @@ begin
   for v_group in
     select o.restaurant_id, sum(o.maree_fee)::numeric(10,2) as commission_total
     from public.orders o
-    where o.status = 'delivered' and o.delivered_at >= v_start::timestamptz
-      and o.delivered_at < (v_end + 1)::timestamptz and coalesce(o.maree_fee,0) > 0
+    where o.status = 'delivered' and o.delivered_at >= v_start_at
+      and o.delivered_at < v_end_at and coalesce(o.maree_fee,0) > 0
     group by o.restaurant_id
   loop
     insert into public.maree_monthly_commission_invoices
@@ -408,7 +414,7 @@ begin
       select v_invoice,o.id,o.maree_fee,o.product_subtotal,o.fulfilment,o.delivered_at
       from public.orders o
       where o.restaurant_id=v_group.restaurant_id and o.status='delivered'
-        and o.delivered_at >= v_start::timestamptz and o.delivered_at < (v_end+1)::timestamptz
+        and o.delivered_at >= v_start_at and o.delivered_at < v_end_at
         and coalesce(o.maree_fee,0) > 0;
       v_count := v_count + 1;
     end if;
