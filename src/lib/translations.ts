@@ -749,3 +749,8 @@ Object.assign(translations, {
   "GST pour les entreprises": ["GST for businesses","GST pentru întreprinderi"],
   "enregistrement des entreprises alimentaires et Eat Safe": ["Food business registration and Eat Safe","Înregistrarea întreprinderilor alimentare și Eat Safe"],
 });
+
+
+Object.assign(translations, {
+  "Une erreur technique est survenue. Réessayez.": ["A technical error occurred. Please try again.", "A apărut o eroare tehnică. Încercați din nou."],
+});
