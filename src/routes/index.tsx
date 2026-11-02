@@ -1,8 +1,7 @@
 import { useLanguage } from "@/lib/i18n";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import hero from "@/assets/hero.jpg";
-import { useStore } from "@/lib/store";
-import { DemoBadge } from "@/components/ui-bits";
+import { useSharedMarket } from "@/lib/shared-market";
+import { MarineConditionsPanel } from "@/components/marine-conditions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -21,34 +20,37 @@ export const Route = createFileRoute("/")({
 function Index() {
   const { t, gbp, dt } = useLanguage();
   const translateLabel = t;
-  const { catches, fishers } = useStore();
-  const available = catches.filter((c) => c.status === "disponible").length;
+  const { catches, fishers, loading, error } = useSharedMarket();
+  const available = catches.filter((c) => c.status === "disponible" && c.qtyKg > 0).length;
   return (
     <>
       <section className="relative overflow-hidden">
-        <img src={hero} alt={t("Port de Jersey au petit matin avec bateaux de pêche")} className="absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-sea opacity-80" />
-        <div className="relative mx-auto max-w-6xl px-4 py-24 text-primary-foreground md:py-36">
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sand">{t("Jersey · Îles Anglo-Normandes")}</p>
+        <div aria-hidden="true" className="absolute inset-0 bg-sea" />
+        <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(ellipse_at_78%_18%,rgba(54,190,185,0.24),transparent_48%)]" />
+        <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-background/35 via-transparent to-black/10" />
+        <div className="relative mx-auto max-w-6xl px-4 py-24 text-foreground md:py-36">
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sand-foreground">{t("Jersey · Îles Anglo-Normandes")}</p>
           <h1 className="mt-4 max-w-2xl text-4xl font-semibold leading-tight md:text-6xl">{t("La pêche de Jersey, directement à votre cuisine")}</h1>
           <p className="mt-4 max-w-xl text-lg opacity-90">{t("Des prises fraîches et traçables, du bateau au restaurant, sans intermédiaire.")}</p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link to="/catalogue" className="btn btn-accent">{t("Voir la pêche du jour")}</Link>
-            <Link to="/espace-pecheur" className="btn btn-ghost border-primary-foreground/40 text-primary-foreground">{t("Je suis pêcheur")}</Link>
+            <Link to="/espace-pecheur" className="btn btn-ghost border-foreground/40 text-foreground">{t("Je suis pêcheur")}</Link>
           </div>
         </div>
       </section>
       <section className="mx-auto -mt-10 grid max-w-6xl gap-4 px-4 sm:grid-cols-2 relative">
-        <Stat n={available} label="produits disponibles" />
-        <Stat n={fishers.length} label="pêcheurs partenaires" />
+        <Stat n={loading ? "—" : available} label="lots réellement disponibles" />
+        <Stat n={loading ? "—" : fishers.length} label="pêcheurs vérifiés" />
       </section>
-      <p className="mx-auto mt-3 max-w-6xl px-4 text-xs text-muted-foreground"><DemoBadge />{t("Ces chiffres reflètent un jeu de données fictif, pas des disponibilités réelles.")}</p>
+      {error && <p role="alert" className="mx-auto mt-3 max-w-6xl px-4 text-sm text-destructive">{t("Impossible de charger les données du marché.")}</p>}
+      {!loading && available === 0 && <p className="mx-auto mt-3 max-w-6xl px-4 text-sm text-muted-foreground">{t("Aucun lot disponible pour le moment. Revenez consulter la pêche du jour.")}</p>}
+      <MarineConditionsPanel />
       <section className="mx-auto mt-16 grid max-w-6xl gap-6 px-4 md:grid-cols-3">
-        {[
+        {([
           ["Traçable", "Bateau, zone, heure de capture et de débarquement sur chaque lot."],
           ["Frais", "Tri par fraîcheur et conseils de conservation de la chaîne du froid."],
           ["Local", "Des pêcheurs côtiers de Gorey, St Helier, St Aubin et Rozel."],
-        ].map(([t, d]) => (
+        ] as const).map(([t, d]) => (
           <div key={t} className="card p-6">
             <h2 className="text-xl font-semibold text-primary">{translateLabel(t)}</h2>
             <p className="mt-2 text-muted-foreground">{translateLabel(d)}</p>
@@ -59,7 +61,7 @@ function Index() {
   );
 }
 
-function Stat({ n, label }: { n: number; label: string }) {
+function Stat({ n, label }: { n: number | string; label: string }) {
   const { t, gbp, dt } = useLanguage();
   return (
     <div className="card p-6 shadow-lg">

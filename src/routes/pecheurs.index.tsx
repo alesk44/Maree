@@ -1,7 +1,7 @@
 import { useLanguage } from "@/lib/i18n";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useStore } from "@/lib/store";
-import { DemoBadge, PageHeader } from "@/components/ui-bits";
+import { useSharedMarket } from "@/lib/shared-market";
+import { Empty, PageHeader } from "@/components/ui-bits";
 
 export const Route = createFileRoute("/pecheurs/")({
   head: () => ({
@@ -14,12 +14,15 @@ export const Route = createFileRoute("/pecheurs/")({
       { property: "og:description", content: "Découvrez les bateaux et méthodes de pêche." },
     ],
   }),
-  component: () => {
+  component: function FishersPage() {
     const { t } = useLanguage();
-    const { fishers, catches } = useStore();
+    const { fishers, catches, loading, error } = useSharedMarket();
     return (
       <div className="mx-auto max-w-6xl px-4 py-10">
-        <PageHeader title={t("Pêcheurs partenaires")} sub={t("Profils fictifs pour le prototype.")}><DemoBadge /></PageHeader>
+        <PageHeader title={t("Pêcheurs partenaires")} sub={t("Découvrez les pêcheurs vérifiés qui publient leur pêche du jour.")} />
+        {error && <p role="alert" className="mb-4 text-sm text-destructive">{t("Impossible de charger les données du marché.")}</p>}
+        {loading && <p role="status" className="mb-4 text-sm text-muted-foreground">{t("Chargement des pêcheurs…")}</p>}
+        {!loading && fishers.length === 0 && <Empty>{t("Aucun pêcheur vérifié n'est encore inscrit.")}</Empty>}
         <div className="grid gap-5 sm:grid-cols-2">
           {fishers.map((f) => (
             <Link key={f.id} to="/pecheurs/$id" params={{ id: f.id }} className="card block p-6 transition hover:shadow-lg">

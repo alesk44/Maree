@@ -1,10 +1,16 @@
 # Marée Jersey
 
-A trilingual (French, English, Romanian) prototype connecting Jersey fishers with local restaurants for the day's fresh catch.
+Application de mise en relation entre les pêcheurs de Jersey et les restaurants locaux pour proposer la pêche du jour, fraîche et traçable.
 
-## Local development
+## Stack
 
-Requirements: Node.js and Bun.
+- TanStack Start, React, TypeScript
+- Tailwind CSS
+- Supabase Auth, PostgreSQL, Row Level Security et Realtime
+- Bun pour l'installation et les scripts
+- Nitro / Cloudflare Workers pour l'hébergement prévu
+
+## Développement local
 
 ```sh
 git clone https://github.com/alesk44/Maree.git
@@ -13,55 +19,53 @@ bun install
 bun run dev
 ```
 
-## Verify before deployment
+## Vérifications
 
 ```sh
 bun run build
+bunx tsc --noEmit
+bun run lint
 bun run test
-bun x wrangler deploy --dry-run
 ```
 
-The build creates a Cloudflare Workers-compatible Nitro bundle under `.output/`. The dry run checks the generated Worker and asset bundle without publishing it.
+Le workflow GitHub Actions exécute ces contrôles sur la branche de travail. Sur le commit `a92ad4c9b820850c02b07580ecb93600da9d3c1c`, les workflows `Build verification`, `Verify` et `Marée CI` sont terminés avec succès : build production, TypeScript, ESLint et tests.
 
-## Deploy to Cloudflare Workers
+## Fonctionnalités connectées à Supabase sur la branche de travail
 
-1. Create or sign in to your free Cloudflare account.
-2. In the project folder, run `bun install`.
-3. Run the verification commands above.
-4. Authenticate with `bun x wrangler login` and complete the browser authorization.
-5. Deploy with `bun run deploy`.
-6. Open the `workers.dev` URL returned by Wrangler and verify the home page, all routes, and the FR / EN / RO language selector.
+- Catalogue public : lots disponibles et profils de pêcheurs, actualisés en temps réel.
+- Espace restaurant : connexion, réservation transactionnelle, historique des commandes du compte.
+- Espace pêcheur : accès réservé au rôle pêcheur, publication et gestion de ses prises, suivi des commandes.
+- RPC `reserve_catch` : réservation transactionnelle avec contrôle du stock.
+- RPC `update_order_status` : changement sécurisé du statut d'une commande par le pêcheur concerné.
 
-The deployment has not been performed automatically because it requires authorization to the owner's Cloudflare account. Do not treat the site as deployed until Wrangler reports success and returns a live URL.
+Les permissions de base de données et les migrations doivent être relues avant toute mise en production. Les contrôles automatisés ne remplacent pas les tests de bout en bout avec un vrai compte restaurant et un vrai compte pêcheur.
 
-## Supabase shared database and account foundation
+## Configuration Supabase
 
-A first Supabase/PostgreSQL schema migration is included at `supabase/migrations/20261030000000_initial_schema.sql`. It defines user profiles, fish lots, orders, validation triggers, indexes, and row-level security policies. It is **not connected to the app yet** and has not been applied to a live database because no Supabase project is connected to this repository/account. The schema is applied to the Supabase project `maree-jersey` in the London region. A transactional `reserve_catch` RPC locks the catch row, validates remaining stock, creates the order and decrements inventory atomically. New accounts are created with the `restaurant` role by default; fisher/admin roles must be assigned through a trusted administrative process.
+Le navigateur utilise uniquement l'URL du projet et la clé publishable. La clé `service_role` ne doit jamais être placée dans le code client, dans les variables `VITE_*` ou dans Git.
 
-## Current prototype limitations
+Variables optionnelles :
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_PUBLISHABLE_KEY`
 
-- Supabase client configuration and the `/connexion` sign-in / sign-up page are now present. The app's catalogue, fisher workspace and order forms still use the local demo store; they have not yet been migrated to the shared database.
-- Fisher/admin role assignment is not self-service. Do not use the demo fisher workspace for real listings until the routes are connected to authenticated user IDs and server-side permissions.
-- There is no payment processing. The `notify-verification-request` Supabase Edge Function is deployed; to activate email alerts, configure the Supabase Edge Function secrets `RESEND_API_KEY` (Resend API key) and `MAREE_FROM_EMAIL` (a sender address verified with Resend). The notification target is `alexozo44760@gmail.com`. Until those secrets and a verified sender are configured, verification requests still save to the database but the automatic alert cannot be delivered.
-- Before real commercial use, connect a shared database and secure authentication, then verify Jersey food-sale, traceability, data-protection and business requirements.
+Avant d'inviter des utilisateurs, configurer dans Supabase Auth :
+- Site URL et URL de redirection autorisées pour le domaine de prévisualisation puis le domaine final.
+- Confirmation d'e-mail, réinitialisation du mot de passe et SMTP fiable.
+- Attribution des rôles pêcheur et administrateur via un processus de confiance, jamais par un champ libre contrôlé par l'utilisateur.
 
-## Stack
+Les alertes e-mail nécessitent un fournisseur e-mail configuré côté serveur/Edge Function. Ne jamais exposer de secret Resend dans le frontend ou dans Git.
 
-- TanStack Start
-- React and TypeScript
-- Tailwind CSS
-- Nitro Cloudflare Workers preset
+## Déploiement
 
+Le déploiement Cloudflare n'est pas effectué automatiquement. Créer d'abord une prévisualisation de la branche, vérifier les routes et les parcours sur mobile/ordinateur, puis faire approuver le résultat. La production ne doit être déployée qu'après approbation explicite du propriétaire.
 
-## Supabase browser configuration
+## État du projet et limites connues
 
-The frontend uses only the public project URL and publishable key in `src/lib/supabase.ts`. These are intended for browser use; never add a Supabase `service_role` key to frontend code. Optional deployment overrides are `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. The sign-up flow creates restaurant accounts; fisher access must be granted by a trusted administrator after verification. Configure the Supabase Auth site URL and allowed redirect URLs for the final deployed domain before inviting real users.
+- Le travail actuel est isolé sur `feature/supabase-shared-data-v2` et la PR #2 est maintenue en brouillon.
+- La version `main` n'a pas été fusionnée ni remplacée.
+- Le test inter-comptes pêcheur → restaurant → pêcheur reste à effectuer.
+- Les données réelles de catalogue et de commandes doivent être confirmées ; ne pas présenter les données de démonstration comme des ventes ou disponibilités réelles.
+- Le nouveau tableau de bord sombre inspiré de la référence fournie reste à intégrer.
+- Paiement, notifications e-mail fiables, conformité locale, traçabilité opérationnelle et conditions de livraison doivent être finalisés avant un lancement commercial.
 
-
-## Account creation and automatic email setup
-
-- Account creation/sign-in: open `/connexion` on the deployed app. The page includes account creation, sign-in, a password-reset email action, and a link to request fisher/restaurant verification.
-- Fisher/restaurant verification: sign in first, then open `/verification` and submit the professional details. Requests are stored in Supabase; an Edge Function emails the verification inbox once Resend secrets are configured.
-- In Supabase Dashboard → Edge Functions → Secrets, add `RESEND_API_KEY` and `MAREE_FROM_EMAIL`. Create a free Resend account, verify a sender domain/address as Resend requires, and use that sender in `MAREE_FROM_EMAIL`. Never put the API key in frontend code or commit it to GitHub.
-- In Supabase Dashboard → Authentication → URL Configuration, set the Site URL to the final deployed app URL and add that URL plus `/connexion` to the allowed redirect URLs. Ensure email confirmations are enabled if new accounts must confirm their email; Supabase's default test mailer is rate-limited, so configure SMTP for reliable production delivery.
-- Password reset and confirmation links depend on the correct Site URL / allowed redirect URLs and the Auth email settings. The app does not send email credentials itself.
+Voir [roadmap.md](./roadmap.md) pour la liste détaillée, les blocages et les critères de mise en production.
