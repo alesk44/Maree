@@ -214,7 +214,7 @@ Le build, les tests, le lint et le typecheck sont verts ; les tests RLS et les t
 - [x] Autoriser le restaurant à déclarer un règlement hors plateforme ; seule l’administration Marée peut confirmer la réception.
 - [x] Ajouter l’espace restaurant pour consulter les relevés et déclarer un paiement, et l’espace admin pour vérifier les déclarations.
 - [x] Étendre le job mensuel à la génération des deux familles de relevés, sans mélanger les montants pêcheurs et Marée.
-- [x] Ajouter les tests pgTAP de cloisonnement RLS et de transition de paiement ; le plan passe à 79 assertions.
+- [x] Ajouter les tests pgTAP de cloisonnement RLS et de transition de paiement ; le plan passe à 83 assertions.
 - [ ] Attendre la fin des workflows CI/pgTAP et corriger tout échec avant fusion.
 - [ ] Vérifier le rendu des nouveaux écrans sur l’aperçu privé.
 - [ ] Ne pas appliquer cette migration à la base de production sans validation finale explicite.
