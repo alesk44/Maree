@@ -2,7 +2,7 @@ import { useLanguage } from "@/lib/i18n";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { createSharedCatch, fetchMyOrders, fetchMyMonthlyInvoices, confirmFisherInvoicePaid, updateMyCatch, updateMyOrderStatus, useSharedMarket, type SharedOrderRow, type SharedMonthlyInvoiceRow } from "@/lib/shared-market";
+import { createSharedCatch, fetchMyOrders, fetchMyMonthlyInvoices, confirmFisherInvoicePaid, markFisherOrderPaid, updateMyCatch, updateMyOrderStatus, useSharedMarket, type SharedOrderRow, type SharedMonthlyInvoiceRow } from "@/lib/shared-market";
 import { supabase } from "@/lib/supabase";
 import { Empty, OrderSteps, PageHeader, StatusPill } from "@/components/ui-bits";
 import type { Status } from "@/lib/store";
@@ -49,6 +49,14 @@ function FisherSpace() {
     return {key:day.toISOString().slice(0,10),label:day.toLocaleDateString(undefined,{weekday:"short"}),count:mine.filter((item)=>{const landed=new Date(item.landedAt);return landed>=day&&landed<next;}).length};
   });
   const maxDailyActivity=Math.max(1,...weeklyActivity.map((day)=>day.count));
+  const deliveredOrders=myOrders.filter(o=>o.status==="delivered");
+  const immediateReceivables=deliveredOrders.filter(o=>o.billing_mode==="immediate"&&o.fisher_payment_status==="unpaid");
+  const openMonthlyInvoices=monthlyInvoices.filter(i=>i.status==="open");
+  const receivableTotal=immediateReceivables.reduce((sum,o)=>sum+Number(o.product_subtotal??0)+Number(o.tip_amount??0),0)
+    +openMonthlyInvoices.reduce((sum,i)=>sum+Number(i.subtotal)+Number(i.tip_total??0),0);
+  const tipsEarned=deliveredOrders.reduce((sum,o)=>sum+Number(o.tip_amount??0),0);
+  const paymentsReceived=deliveredOrders.filter(o=>o.fisher_payment_status==="paid").reduce((sum,o)=>sum+Number(o.product_subtotal??0)+Number(o.tip_amount??0),0)
+    +monthlyInvoices.filter(i=>i.status==="paid").reduce((sum,i)=>sum+Number(i.subtotal)+Number(i.tip_total??0),0);
 
   const load = async () => {
     setProfileLoading(true);
@@ -165,6 +173,19 @@ function FisherSpace() {
       await confirmFisherInvoicePaid(invoiceId,method.trim()||null,reference.trim()||null);
       toast.success(t("Règlement confirmé et enregistré."));
       setMonthlyInvoices(await fetchMyMonthlyInvoices());
+      setOrders(await fetchMyOrders());
+    } catch(e) { toast.error(e instanceof Error && !("code" in e) ? t(e.message) : t("Impossible de confirmer ce règlement.")); }
+  };
+
+  const confirmOrderPayment = async (orderId:string) => {
+    const method=window.prompt(t("Mode de règlement reçu (ex. virement bancaire) :"));
+    if(method===null) return;
+    const reference=window.prompt(t("Référence du règlement (facultatif) :"));
+    if(reference===null) return;
+    try {
+      await markFisherOrderPaid(orderId,method.trim()||null,reference.trim()||null);
+      toast.success(t("Règlement confirmé et enregistré."));
+      setOrders(await fetchMyOrders());
     } catch(e) { toast.error(e instanceof Error && !("code" in e) ? t(e.message) : t("Impossible de confirmer ce règlement.")); }
   };
 
@@ -226,19 +247,22 @@ function FisherSpace() {
     </section>
     {accountTab==="sales" && <section className="card mb-8 grid gap-4 p-5">
       <div><h2 className="text-xl font-semibold">{t("Mes ventes et relevés")}</h2><p className="text-sm text-muted-foreground">{t("Synthèse calculée sur les commandes livrées. Aucun paiement en ligne n'est encaissé ; vous pouvez confirmer un règlement reçu hors plateforme.")}</p></div>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Metric label={t("Ventes livrées")} value={myOrders.filter(o=>o.status==="delivered").length} detail={t("Commandes terminées")}/>
-        <Metric label={t("Montant produits dû")} value={gbp(myOrders.filter(o=>o.status==="delivered").reduce((sum,o)=>sum+Number(o.product_subtotal??0),0))} detail={t("Votre chiffre produits")}/>
-        
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <Metric label={t("Ventes livrées")} value={deliveredOrders.length} detail={t("Commandes terminées")}/>
+        <Metric label={t("Produits vendus")} value={gbp(deliveredOrders.reduce((sum,o)=>sum+Number(o.product_subtotal??0),0))} detail={t("Montant produits brut")}/>
+        <Metric label={t("Pourboires reçus")} value={gbp(tipsEarned)} detail={t("100 % pour vous, sans commission")}/>
+        <Metric label={t("À recevoir")} value={gbp(receivableTotal)} detail={t("Commandes et relevés non réglés")}/>
+        <Metric label={t("Paiements reçus")} value={gbp(paymentsReceived)} detail={t("Règlements confirmés")}/>
         <Metric label={t("En attente")} value={myOrders.filter(o=>o.status!=="delivered"&&o.status!=="cancelled").length} detail={t("Commandes à traiter")}/>
       </div>
       <div className="grid gap-2">
         <h3 className="font-semibold">{t("Mes factures mensuelles et règlements")}</h3>
         {monthlyInvoices.length===0?<Empty>{t("Aucun relevé mensuel généré pour le moment.")}</Empty>:
           <ul className="grid gap-2">{monthlyInvoices.map(i=><li key={i.id} className="rounded-xl border border-border p-4">
-            <div className="flex flex-wrap justify-between gap-2"><strong>{t("Période")} {i.period_start} — {i.period_end}</strong><strong>{gbp(Number(i.subtotal))}</strong></div>
+            <div className="flex flex-wrap justify-between gap-2"><strong>{t("Période")} {i.period_start} — {i.period_end}</strong><strong>{gbp(Number(i.subtotal)+Number(i.tip_total??0))}</strong></div>
+            <p className="text-xs text-muted-foreground">{t("Produits")} : {gbp(Number(i.subtotal))} · {t("Pourboires")} : {gbp(Number(i.tip_total??0))}</p>
             <p className="text-sm text-muted-foreground">{t("Échéance")} : {i.due_date} · {i.status==="paid"?t("Réglée"):i.status==="void"?t("Annulée"):t("En attente de règlement")}</p>
-            {i.items?.length ? <ul className="mt-2 grid gap-1 border-t border-border pt-2 text-xs">{i.items.map(item=><li key={item.order_id} className="flex flex-wrap justify-between gap-2"><span>Commande {item.order_id.slice(0,8).toUpperCase()} · {Number(item.quantity_kg)} kg × {gbp(Number(item.unit_price))}/kg</span><strong>{gbp(Number(item.product_subtotal))}</strong></li>)}</ul> : null}
+            {i.items?.length ? <ul className="mt-2 grid gap-1 border-t border-border pt-2 text-xs">{i.items.map(item=><li key={item.order_id} className="flex flex-wrap justify-between gap-2"><span>Commande {item.order_id.slice(0,8).toUpperCase()} · {Number(item.quantity_kg)} kg × {gbp(Number(item.unit_price))}/kg · {t("Pourboire")} {gbp(Number(item.tip_amount??0))}</span><strong>{gbp(Number(item.product_subtotal)+Number(item.tip_amount??0))}</strong></li>)}</ul> : null}
             {i.paid_at&&<p className="text-xs text-muted-foreground">{t("Règlement reçu")} : {dt(i.paid_at)} {i.payment_method||""} {i.payment_reference||""}</p>}
             {i.status==="open"&&<button type="button" className="btn btn-accent mt-3" onClick={()=>void confirmInvoicePayment(i.id)}>{t("Confirmer que le restaurant a réglé")}</button>}
           </li>)}</ul>}
@@ -247,7 +271,9 @@ function FisherSpace() {
         <ul className="grid gap-2">{myOrders.filter(o=>o.status==="delivered").map(o=>{const lot=mine.find(c=>c.id===o.catch_id);const total=Number(o.product_subtotal??0);return <li key={o.id} className="rounded-xl border border-border p-4">
           <div className="flex flex-wrap justify-between gap-2"><strong>{lot?.emoji} {t(lot?.species??"Produit")} · {Number(o.quantity_kg)} kg</strong><strong>{gbp(total)}</strong></div>
           <p className="text-xs text-muted-foreground">{t("Livrée")} · {dt(o.delivered_at??o.requested_slot)} · Réf. {o.id.slice(0,8).toUpperCase()}</p>
-          <p className="mt-1 text-sm font-medium">{t("Votre montant produits")} : <strong>{gbp(total)}</strong></p>
+          <p className="mt-1 text-sm font-medium">{t("Votre montant produits")} : <strong>{gbp(total)}</strong> · {t("Pourboire")} : <strong>{gbp(Number(o.tip_amount??0))}</strong></p>
+          {o.billing_mode==="immediate"&&o.fisher_payment_status==="unpaid"&&<button type="button" className="btn btn-accent mt-3" onClick={()=>void confirmOrderPayment(o.id)}>{t("Confirmer le règlement reçu")}</button>}
+          {o.fisher_payment_status==="paid"&&<p className="mt-2 text-xs text-muted-foreground">{t("Réglé")} · {o.fisher_paid_at?dt(o.fisher_paid_at):""} {o.fisher_payment_method??""} {o.fisher_payment_reference??""}</p>}
           <details className="mt-2 text-xs text-muted-foreground"><summary className="cursor-pointer">{t("Détails complémentaires")}</summary><p className="mt-1">{t("Commission Marée (payée par le restaurant)")} : {gbp(Number(o.maree_fee??0))} · {t("Livraison (payée par le restaurant si choisie)")} : {gbp(Number(o.delivery_fee??0))}</p><p>{t("Ces frais ne sont pas déduits de votre montant produits.")}</p></details>
         </li>})}</ul>}
     </section>}
