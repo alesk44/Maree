@@ -131,10 +131,10 @@ export async function confirmFisherInvoicePaid(invoiceId:string,paymentMethod:st
   if(error) throw error;
 }
 
-export type SharedMareeCommissionInvoiceItemRow = { order_id:string; commission_amount:number|string; product_subtotal:number|string; fulfilment:"delivery"|"collection"; delivered_at:string };
+export type SharedMareeCommissionInvoiceItemRow = { order_id:string; commission_amount:number|string; delivery_amount:number|string; product_subtotal:number|string; fulfilment:"delivery"|"collection"; delivered_at:string };
 export type SharedMareeCommissionInvoiceRow = {
   id:string; restaurant_id:string; period_start:string; period_end:string; due_date:string;
-  commission_total:number|string; status:"open"|"declared_paid"|"paid"|"void";
+  commission_total:number|string; delivery_total:number|string; status:"open"|"declared_paid"|"paid"|"void";
   declared_at:string|null; verified_at:string|null; payment_method:string|null; payment_reference:string|null;
   items?:SharedMareeCommissionInvoiceItemRow[];
 };
@@ -144,7 +144,7 @@ export async function fetchMyMareeCommissionInvoices():Promise<SharedMareeCommis
   if(authError) throw authError;
   if(!user) return [];
   const {data,error}=await supabase.from("maree_monthly_commission_invoices")
-    .select("id,restaurant_id,period_start,period_end,due_date,commission_total,status,declared_at,verified_at,payment_method,payment_reference,items:maree_monthly_commission_invoice_items(order_id,commission_amount,product_subtotal,fulfilment,delivered_at)")
+    .select("id,restaurant_id,period_start,period_end,due_date,commission_total,delivery_total,status,declared_at,verified_at,payment_method,payment_reference,items:maree_monthly_commission_invoice_items(order_id,commission_amount,delivery_amount,product_subtotal,fulfilment,delivered_at)")
     .order("period_start",{ascending:false});
   if(error && (error.code==="42P01" || error.code==="PGRST205")) return [];
   if(error) throw error;
