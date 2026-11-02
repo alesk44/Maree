@@ -53,6 +53,28 @@ describe("Marée internationalisation", () => {
     }
   });
 
+  it("traduit les principales rubriques de la page légale en anglais et en roumain", () => {
+    const legalKeys = [
+      "Informations légales",
+      "1. Éditeur et responsable du projet",
+      "2. Rôle de la plateforme",
+      "3. Tarifs, livraison et facturation",
+      "4. GST — Jersey",
+      "5. Sécurité alimentaire et traçabilité",
+      "6. Données personnelles et confidentialité",
+      "7. Conditions contractuelles et réclamations",
+      "8. Cookies et technologies",
+      "9. Documents à finaliser avant ouverture",
+      "Références :",
+      "Contacter le responsable",
+    ];
+    for (const key of legalKeys) {
+      expect(translations[key], key).toBeDefined();
+      expect(translate(key, "en"), key).not.toBe(key);
+      expect(translate(key, "ro"), key).not.toBe(key);
+    }
+  });
+
   it("formate les prix et dates avec le locale choisi", () => {
     expect(formatPrice(12.5, "en")).toContain("12.50");
     expect(formatPrice(12.5, "ro")).toContain("12,50");
