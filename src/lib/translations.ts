@@ -787,3 +787,8 @@ Object.assign(translations, {
 Object.assign(translations, {
   "Statut : {status}": ["Status: {status}", "Stare: {status}"],
 });
+
+Object.assign(translations, {
+  "Pour toute question sur la vérification, utilisez les coordonnées indiquées dans les mentions légales.": ["For verification questions, use the contact details in the legal notice.", "Pentru întrebări despre verificare, folosiți datele de contact din informațiile legale."],
+  "Demande enregistrée, mais l’e-mail automatique n’a pas pu partir. Utilisez les coordonnées des mentions légales pour contacter l’équipe.": ["Your request was saved, but the automatic email could not be sent. Use the contact details in the legal notice to reach the team.", "Cererea a fost salvată, dar e-mailul automat nu a putut fi trimis. Folosiți datele de contact din informațiile legale pentru a contacta echipa."],
+});
