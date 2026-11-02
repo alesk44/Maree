@@ -1,18 +1,8 @@
 name: Deploy private preview to Cloudflare Workers
 
+# Preview deployment is deliberately manual. CI never publishes a Worker.
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - feature/supabase-shared-data-v2
-    paths:
-      - "src/**"
-      - "supabase/**"
-      - "package.json"
-      - "bun.lock"
-      - "vite.config.*"
-      - "wrangler.*"
-      - ".github/workflows/deploy-cloudflare.yml"
 
 permissions:
   contents: read
