@@ -670,3 +670,25 @@ Object.assign(translations, {
   "Accepter la commande": ["Accept order", "Acceptă comanda"],
   "Frais de livraison Marée (20 %)": ["Marée delivery fee (20%)", "Taxă de livrare Marée (20%)"]
 });
+
+// Strings found during the full UI audit (navigation, forms, status and errors).
+Object.assign(translations, {
+  "Les disponibilités et commandes affichées proviennent du marché partagé. Les réservations sont des demandes : aucun paiement en ligne n’est activé dans cette version.": ["Availability and orders shown come from the shared marketplace. Reservations are requests; online payments are not enabled in this version.", "Disponibilitățile și comenzile afișate provin din piața comună. Rezervările sunt solicitări; plățile online nu sunt activate în această versiune."],
+  "Informations légales & confidentialité": ["Legal information & privacy", "Informații juridice și confidențialitate"],
+  "Le pêcheur accepte l’annulation sous cette condition : pénalité de": ["The fisher agrees to cancel subject to this fee:", "Pescarul acceptă anularea cu următoarea penalitate:"],
+  "Moins de 24 h avant le créneau : le pêcheur décide s’il accepte l’annulation et fixe toute pénalité éventuelle. Vous devrez accepter cette pénalité avant l’annulation.": ["Less than 24 hours before the time slot, the fisher decides whether to accept cancellation and may set a fee. You must accept the fee before the order is cancelled.", "Cu mai puțin de 24 de ore înainte de interval, pescarul decide dacă acceptă anularea și poate stabili o penalitate. Trebuie să acceptați penalitatea înainte de anularea comenzii."],
+  "Mode de règlement reçu (ex. virement bancaire) :": ["Payment method received (e.g. bank transfer):", "Metoda de plată primită (de exemplu, transfer bancar):"],
+  "Référence du règlement (facultatif) :": ["Payment reference (optional):", "Referința plății (opțională):"],
+  "Pénalité à appliquer en GBP (0 si aucune pénalité) :": ["Cancellation fee in GBP (enter 0 for no fee):", "Penalitate în GBP (introduceți 0 dacă nu se aplică nicio penalitate):"],
+  "Offre envoyée au restaurant :": ["Offer sent to the restaurant:", "Ofertă trimisă restaurantului:"],
+  "Les montants proviennent des prix et frais figés à la réservation : le pêcheur reçoit le sous-total produits, Marée facture 6,5 % au restaurant sur chaque achat et les frais de livraison de 20 % ne s’appliquent qu’en livraison. Aucun paiement réel n’est activé.": ["Amounts use the prices and fees fixed at booking: the fisher receives the product subtotal, Marée charges the restaurant 6.5% on each purchase, and the 20% delivery fee applies only to delivered orders. No real payments are enabled.", "Sumele folosesc prețurile și taxele fixate la rezervare: pescarul primește subtotalul produselor, Marée facturează restaurantului 6,5% la fiecare achiziție, iar taxa de livrare de 20% se aplică doar comenzilor livrate. Nu sunt activate plăți reale."],
+  "Fichier refusé : format PDF/JPG/PNG invalide ou taille supérieure à 10 Mo.": ["File rejected: invalid PDF/JPG/PNG format or larger than 10 MB.", "Fișier respins: format PDF/JPG/PNG invalid sau dimensiune mai mare de 10 MB."],
+  "Espace privé : seuls vous et l’administration autorisée pouvez consulter les fichiers. PDF, JPG ou PNG — 10 Mo maximum par fichier.": ["Private storage: only you and authorised administrators can view these files. PDF, JPG or PNG — maximum 10 MB per file.", "Spațiu privat: doar dumneavoastră și administratorii autorizați pot consulta fișierele. PDF, JPG sau PNG — maximum 10 MB per fișier."],
+  ": filtrez, recherchez, triez par fraîcheur.": ": filter, search and sort by freshness.", 
+  "Revenez dans l'espace pêcheur pour faire avancer le statut : envoyée → confirmée → prête → livrée.": "Return to the fisher workspace to advance the status: sent → confirmed → ready → delivered.",
+  "Rien n'est en production : voici ce qu'il faut pour rendre les données réelles.": ["Nothing is in production: here is what is needed for live data.", "Nimic nu este în producție: iată de ce este nevoie pentru date reale."],
+  "Catalogue indisponible :": ["Catalogue unavailable:", "Catalog indisponibil:"],
+  "Prix max :": ["Max price:", "Preț maxim:"],
+  "lots réellement disponibles": ["genuinely available batches", "loturi disponibile efectiv"],
+  "pêcheurs vérifiés": ["verified fishers", "pescari verificați"],
+});
