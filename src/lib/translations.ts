@@ -1,5 +1,5 @@
 // French source keys keep existing demo records compatible.
-export const translations: Record<string, readonly [string, string, string]> = {
+export const translations: Record<string, readonly [string, string]> = {
   "Pêche du jour": ["Today's catch", "Captura zilei"],
   "Pêcheurs": ["Fishers", "Pescari"],
   "Restaurant": ["Restaurant", "Restaurant"],
