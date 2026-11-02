@@ -50,7 +50,7 @@ function Restaurant() {
     } finally { setOrdersLoading(false); }
   };
 
-  useEffect(() => { void loadOrders(); }, []);
+  const avail = catches.filter((c) => c.status === "disponible" && c.qtyKg > 0);\n  const sel = catches.find((c) => c.id === catchId);\n\n  useEffect(() => { void loadOrders(); }, []);
   useEffect(() => { if (!catchId && catches.length) setCatchId(produit ?? catches[0]?.id ?? ""); }, [catches, catchId, produit]);
   useEffect(() => {
     let active = true;
