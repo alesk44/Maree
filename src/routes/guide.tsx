@@ -13,7 +13,7 @@ export const Route = createFileRoute("/guide")({
       { property: "og:description", content: "Mise en route et étapes avant le lancement." },
     ],
   }),
-  component: () => {
+  component: function GuidePage() {
     const { t: translateLabel } = useLanguage();
     const t = translateLabel;
     return (
@@ -29,7 +29,7 @@ export const Route = createFileRoute("/guide")({
       <h2 className="mt-12 text-2xl font-semibold">{t("Avant le lancement")}</h2>
       <p className="mt-1 text-muted-foreground">{t("Rien n'est en production : voici ce qu'il faut pour rendre les données réelles.")}</p>
       <ul className="mt-4 grid gap-3">
-        {[
+        {([
           ["Comptes authentifiés", "Connexion séparée pêcheurs / restaurants / admin, rôles et permissions."],
           ["Base de données", "Remplacer le stockage local par une base partagée (un backend gratuit suffit pour démarrer)."],
           ["Validation des pêcheurs", "Vérifier licence de pêche, immatriculation du bateau et identité avant publication."],
@@ -39,7 +39,7 @@ export const Route = createFileRoute("/guide")({
           ["Hygiène & traçabilité", "Enregistrement des lots, températures, étiquetage espèce/zone/méthode, conservation des documents."],
           ["Conformité locale", "Se rapprocher du Government of Jersey (Marine Resources, Environmental Health) pour enregistrement et règles de vente directe."],
           ["Notifications", "Mettre en place des e-mails ou SMS réels — actuellement aucun message n'est envoyé."],
-        ].map(([t, d]) => (
+        ] as const).map(([t, d]) => (
           <li key={t} className="card flex gap-3 p-4"><span className="mt-0.5 text-accent" aria-hidden>☐</span><div><strong>{translateLabel(t)}</strong><p className="text-sm text-muted-foreground">{translateLabel(d)}</p></div></li>
         ))}
       </ul>

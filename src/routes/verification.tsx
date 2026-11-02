@@ -4,83 +4,52 @@ import { toast } from "sonner";
 import { useLanguage } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase";
 
-export const Route = createFileRoute("/verification")({
-  head: () => ({ meta: [{ title: "Vérification des comptes — Marée Jersey" }, { name: "description", content: "Demande de vérification des pêcheurs et restaurants partenaires." }] }),
-  component: VerificationPage,
-});
-
-type RequestRow = { id: string; requested_role: "fisher" | "restaurant"; business_name: string; status: "pending" | "approved" | "rejected"; created_at: string; reviewer_note: string | null };
+export const Route = createFileRoute("/verification")({ head: () => ({ meta: [{ title: "Vérification des comptes — Marée Jersey" }] }), component: VerificationPage });
+type RequestRow = { id:string; requested_role:"fisher"|"restaurant"; business_name:string; status:"pending"|"approved"|"rejected"; created_at:string; reviewer_note:string|null };
+type Details = { fisher_category:"independent"|"professional"; vessel_name:string; home_port:string; fishing_licence_ref:string; vessel_registration_ref:string; business_licence_ref:string; safety_training_ref:string; species_permits:string; food_business_ref:string; food_safety_system:boolean; clean_water_ice:boolean; cold_chain:boolean; clean_equipment:boolean; personal_hygiene:boolean; separation_and_contamination:boolean; catch_traceability:boolean; legal_sales_confirmation:boolean; notes:string };
+async function hasValidFileSignature(file:File):Promise<boolean>{const bytes=new Uint8Array(await file.slice(0,8).arrayBuffer());if(file.type==="application/pdf")return String.fromCharCode(...bytes.slice(0,5))==="%PDF-";if(file.type==="image/jpeg")return bytes[0]===0xff&&bytes[1]===0xd8&&bytes[2]===0xff;if(file.type==="image/png")return bytes.length===8&&bytes[0]===0x89&&bytes[1]===0x50&&bytes[2]===0x4e&&bytes[3]===0x47&&bytes[4]===0x0d&&bytes[5]===0x0a&&bytes[6]===0x1a&&bytes[7]===0x0a;return false;}
+const initial:Details = { fisher_category:"independent",vessel_name:"",home_port:"",fishing_licence_ref:"",vessel_registration_ref:"",business_licence_ref:"",safety_training_ref:"",species_permits:"",food_business_ref:"",food_safety_system:false,clean_water_ice:false,cold_chain:false,clean_equipment:false,personal_hygiene:false,separation_and_contamination:false,catch_traceability:false,legal_sales_confirmation:false,notes:"" };
 
 function VerificationPage() {
-  const { t } = useLanguage();
-  const [email, setEmail] = useState<string | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [rows, setRows] = useState<RequestRow[]>([]);
-  const [busy, setBusy] = useState(false);
-  const [form, setForm] = useState({ requested_role: "fisher" as "fisher" | "restaurant", business_name: "", contact_name: "", phone: "", registration_number: "", evidence_note: "" });
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setEmail(data.user?.email ?? null);
-      setUserId(data.user?.id ?? null);
-    });
-  }, []);
-
-  useEffect(() => {
-    if (!userId) return;
-    supabase.from("verification_requests").select("id,requested_role,business_name,status,created_at,reviewer_note").order("created_at", { ascending: false })
-      .then(({ data, error }) => { if (error) toast.error(error.message); else setRows((data ?? []) as RequestRow[]); });
-  }, [userId]);
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!userId) return toast.error(t("Connectez-vous avant de demander une vérification."));
-    setBusy(true);
-    const { data: inserted, error } = await supabase.from("verification_requests").insert({
-      user_id: userId, ...form,
-      business_name: form.business_name.trim(),
-      contact_name: form.contact_name.trim(),
-      phone: form.phone.trim(),
-      registration_number: form.registration_number.trim() || null,
-      evidence_note: form.evidence_note.trim(),
-    }).select("id").single();
-    setBusy(false);
-    if (error) return toast.error(error.message);
-    const { error: emailError } = await supabase.functions.invoke("notify-verification-request", { body: { request_id: inserted.id } });
-    if (emailError) toast.warning(t("Demande enregistrée, mais l’e-mail automatique n’a pas pu partir. Contactez l’équipe par e-mail."));
-    else toast.success(t("Demande envoyée et notification e-mail transmise à l’équipe. La vérification reste manuelle."));
-    setForm({ requested_role: "fisher", business_name: "", contact_name: "", phone: "", registration_number: "", evidence_note: "" });
-    const { data } = await supabase.from("verification_requests").select("id,requested_role,business_name,status,created_at,reviewer_note").order("created_at", { ascending: false });
-    setRows((data ?? []) as RequestRow[]);
-  };
-
-  return <main className="mx-auto grid max-w-3xl gap-6 px-4 py-10">
-    <section className="card grid gap-3 p-6">
-      <p className="text-xs font-semibold uppercase tracking-widest text-accent">Marée Jersey · Trust & Safety</p>
-      <h1 className="font-display text-3xl font-semibold">{t("Vérification des pêcheurs et restaurants")}</h1>
-      <p className="text-sm text-muted-foreground">{t("Les comptes sont vérifiés manuellement avant d’obtenir les droits professionnels. Ne téléversez pas de pièces d’identité ou de documents sensibles ici.")}</p>
-      {email ? <p className="rounded-lg bg-secondary p-3 text-sm">{t("Connecté en tant que")} <strong>{email}</strong></p> : <p className="rounded-lg bg-secondary p-3 text-sm">{t("Connectez-vous pour envoyer une demande.")} <Link className="underline" to="/connexion">{t("Connexion")}</Link></p>}
-      <form onSubmit={submit} className="grid gap-4">
-        <label className="grid gap-1 text-sm font-medium">{t("Type de compte")}
-          <select className="field" value={form.requested_role} onChange={e => setForm(f => ({...f, requested_role: e.target.value as "fisher" | "restaurant"}))}>
-            <option value="fisher">{t("Pêcheur / pêcheuse")}</option><option value="restaurant">{t("Restaurant / acheteur professionnel")}</option>
-          </select>
-        </label>
-        <label className="grid gap-1 text-sm font-medium">{t("Nom commercial / bateau / restaurant")}<input className="field" required minLength={2} maxLength={160} value={form.business_name} onChange={e => setForm(f => ({...f,business_name:e.target.value}))}/></label>
-        <label className="grid gap-1 text-sm font-medium">{t("Nom du responsable")}<input className="field" required minLength={2} maxLength={120} value={form.contact_name} onChange={e => setForm(f => ({...f,contact_name:e.target.value}))}/></label>
-        <label className="grid gap-1 text-sm font-medium">{t("Téléphone professionnel")}<input className="field" type="tel" required minLength={5} maxLength={40} value={form.phone} onChange={e => setForm(f => ({...f,phone:e.target.value}))}/></label>
-        <label className="grid gap-1 text-sm font-medium">{t("Numéro d’enregistrement professionnel (si applicable)")}<input className="field" maxLength={120} value={form.registration_number} onChange={e => setForm(f => ({...f,registration_number:e.target.value}))}/></label>
-        <label className="grid gap-1 text-sm font-medium">{t("Informations de vérification")}<textarea className="field" required minLength={10} maxLength={2000} rows={4} value={form.evidence_note} onChange={e => setForm(f => ({...f,evidence_note:e.target.value}))} placeholder={t("Décrivez votre activité, port ou adresse professionnelle et les éléments que vous pourrez confirmer.")}/></label>
-        <button className="btn btn-accent" disabled={busy || !email}>{busy ? t("Envoi…") : t("Envoyer la demande de vérification")}</button>
-      </form>
-      <p className="text-xs text-muted-foreground">{t("Contact de vérification")} : <a className="underline" href="mailto:alexozo44760@gmail.com?subject=Mar%C3%A9e%20Jersey%20-%20V%C3%A9rification%20professionnelle">alexozo44760@gmail.com</a>. {t("Votre demande est enregistrée dans la base partagée. Une notification automatique est envoyée à l’équipe lorsque le service e-mail est configuré.")}</p>
-    </section>
-    {email && <section className="card grid gap-3 p-6"><h2 className="text-xl font-semibold">{t("Mes demandes")}</h2>
-      {rows.length === 0 ? <p className="text-sm text-muted-foreground">{t("Aucune demande envoyée pour le moment.")}</p> : rows.map(row => <article key={row.id} className="rounded-lg border p-3">
-        <div className="flex flex-wrap items-center justify-between gap-2"><strong>{row.business_name}</strong><span className="rounded-full bg-secondary px-3 py-1 text-xs">{t(row.status === "pending" ? "En attente" : row.status === "approved" ? "Approuvée" : "Refusée")}</span></div>
-        <p className="text-sm text-muted-foreground">{row.requested_role === "fisher" ? t("Pêcheur / pêcheuse") : t("Restaurant")} · {new Date(row.created_at).toLocaleDateString()}</p>
-        {row.reviewer_note && <p className="mt-2 text-sm">{row.reviewer_note}</p>}
-      </article>)}
-    </section>}
-  </main>;
+ const {t,language}=useLanguage(); const [email,setEmail]=useState<string|null>(null); const [userId,setUserId]=useState<string|null>(null);
+ const [rows,setRows]=useState<RequestRow[]>([]); const [busy,setBusy]=useState(false); const [details,setDetails]=useState<Details>(initial); const [documentType,setDocumentType]=useState("fishing_licence"); const [documents,setDocuments]=useState<File[]>([]); const [expiresAt,setExpiresAt]=useState("");
+ const [form,setForm]=useState({requested_role:"fisher" as "fisher"|"restaurant",business_name:"",contact_name:"",phone:"",registration_number:"",evidence_note:""});
+ useEffect(()=>{supabase.auth.getUser().then(({data})=>{setEmail(data.user?.email??null);setUserId(data.user?.id??null);});},[]);
+ const loadRows=async()=>{if(!userId)return;const {data,error}=await supabase.from("verification_requests").select("id,requested_role,business_name,status,created_at,reviewer_note").order("created_at",{ascending:false});if(error)toast.error(t("Une erreur technique est survenue. Réessayez."));else setRows((data??[]) as RequestRow[]);};
+ useEffect(()=>{void loadRows();},[userId]);
+ const updateDetail=(key:keyof Details,value:string|boolean)=>setDetails(old=>({...old,[key]:value}));
+ const submit=async(e:React.FormEvent)=>{e.preventDefault();if(!userId){toast.error(t("Connectez-vous avant de demander une vérification."));return;}setBusy(true);
+ const {data:inserted,error}=await supabase.from("verification_requests").insert({user_id:userId,...form,business_name:form.business_name.trim(),contact_name:form.contact_name.trim(),phone:form.phone.trim(),registration_number:form.registration_number.trim()||null,evidence_note:form.evidence_note.trim(),fisher_category:form.requested_role==="fisher"?details.fisher_category:null,compliance_details:form.requested_role==="fisher"?details:{}}).select("id").single();
+ setBusy(false);if(error){toast.error(t("Une erreur technique est survenue. Réessayez."));return;}
+ if(documents.length){setBusy(true);for(const file of documents){if(!["application/pdf","image/jpeg","image/png"].includes(file.type)||file.size>10*1024*1024||!(await hasValidFileSignature(file))){toast.error(t("Fichier refusé : format PDF/JPG/PNG invalide ou taille supérieure à 10 Mo."));continue;}const ext=file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g,"")||"pdf";const path=userId+"/"+inserted.id+"/"+crypto.randomUUID()+"."+ext;const {error:uploadError}=await supabase.storage.from("fisher-compliance").upload(path,file,{upsert:false,contentType:file.type});if(uploadError){toast.error(t("Une erreur technique est survenue. Réessayez."));continue;}const {error:metaError}=await supabase.from("verification_documents").insert({request_id:inserted.id,user_id:userId,document_type:documentType,file_path:path,original_filename:file.name,mime_type:file.type,size_bytes:file.size,expires_at:expiresAt||null});if(metaError){await supabase.storage.from("fisher-compliance").remove([path]);toast.error(t("Une erreur technique est survenue. Réessayez."));}}setBusy(false);}
+ const {error:emailError}=await supabase.functions.invoke("notify-verification-request",{body:{request_id:inserted.id}});
+ if(emailError)toast.warning(t("Demande enregistrée, mais l’e-mail automatique n’a pas pu partir. Utilisez les coordonnées des mentions légales pour contacter l’équipe."));else toast.success(t("Demande envoyée et notification e-mail transmise à l’équipe. La vérification reste manuelle."));
+ setForm({requested_role:"fisher",business_name:"",contact_name:"",phone:"",registration_number:"",evidence_note:""});setDetails(initial);setDocuments([]);setExpiresAt("");await loadRows();};
+ const textField=(label:string,key:keyof Details)=><label className="grid gap-1 text-sm font-medium">{t(label)}<input className="field" maxLength={500} value={String(details[key]??"")} onChange={e=>updateDetail(key,e.target.value)}/></label>;
+ const checkbox=(label:string,key:keyof Details)=><label className="flex items-start gap-2 rounded-lg border border-border p-3 text-sm"><input type="checkbox" className="mt-1" checked={Boolean(details[key])} onChange={e=>updateDetail(key,e.target.checked)}/><span>{t(label)}</span></label>;
+ return <main className="mx-auto grid max-w-3xl gap-6 px-4 py-10"><section className="card grid gap-3 p-6">
+ <p className="text-xs font-semibold uppercase tracking-widest text-accent">Marée Jersey · {t("Trust & Safety")}</p><h1 className="font-display text-3xl font-semibold">{t("Vérification des pêcheurs et restaurants")}</h1>
+ <p className="text-sm text-muted-foreground">{t("Les comptes sont vérifiés manuellement. Ne téléversez pas de pièces d’identité ou de documents sensibles ici.")}</p>
+ {email?<p className="rounded-lg bg-secondary p-3 text-sm">{t("Connecté en tant que")} <strong>{email}</strong></p>:<p className="rounded-lg bg-secondary p-3 text-sm">{t("Connectez-vous pour envoyer une demande.")} <Link className="underline" to="/connexion">{t("Connexion")}</Link></p>}
+ <form onSubmit={submit} className="grid gap-4">
+ <label className="grid gap-1 text-sm font-medium">{t("Type de compte")}<select className="field" value={form.requested_role} onChange={e=>setForm(f=>({...f,requested_role:e.target.value as "fisher"|"restaurant"}))}><option value="fisher">{t("Pêcheur / pêcheuse")}</option><option value="restaurant">{t("Restaurant / acheteur professionnel")}</option></select></label>
+ {form.requested_role==="fisher"&&<section className="grid gap-3 rounded-xl border border-accent/30 bg-secondary/30 p-4">
+ <div><h2 className="text-lg font-semibold">{t("Votre parcours de pêcheur")}</h2><p className="text-sm text-muted-foreground">{t("Les petits pêcheurs indépendants sont les bienvenus et prioritaires. Choisissez le statut qui décrit réellement votre activité.")}</p></div>
+ <label className="grid gap-1 text-sm font-medium">{t("Statut de pêcheur")}<select className="field" value={details.fisher_category} onChange={e=>updateDetail("fisher_category",e.target.value)}><option value="independent">{t("Petit pêcheur indépendant")}</option><option value="professional">{t("Pêcheur professionnel / entreprise")}</option></select></label>
+ <p className="text-xs text-muted-foreground">{t("Le statut indépendant simplifie le dossier Marée, mais ne dispense pas des licences ou règles applicables à la vente commerciale.")}</p>
+ <div className="grid gap-3 sm:grid-cols-2">{textField("Nom du bateau (si applicable)","vessel_name")}{textField("Port d’attache","home_port")}{textField("Référence licence de pêche commerciale (si applicable)","fishing_licence_ref")}{textField("Immatriculation / registre du navire (si applicable)","vessel_registration_ref")}{textField("Business licence / référence (si applicable)","business_licence_ref")}{textField("Formation ou certificat de sécurité (si applicable)","safety_training_ref")}{textField("Permis particuliers / espèces / engins (si applicable)","species_permits")}{textField("Enregistrement Food Business / Environmental Health (si applicable)","food_business_ref")}</div>
+ <h3 className="font-semibold">{t("Hygiène et sécurité alimentaire — déclarations")}</h3><p className="text-xs text-muted-foreground">{t("Cochez uniquement les points que vous appliquez réellement. L’équipe pourra demander des preuves ou des précisions.")}</p>
+ <div className="grid gap-2 sm:grid-cols-2">{checkbox("Système de sécurité alimentaire adapté (HACCP si requis)","food_safety_system")}{checkbox("Eau potable et glace propre adaptées au contact alimentaire","clean_water_ice")}{checkbox("Maîtrise du refroidissement et de la chaîne du froid","cold_chain")}{checkbox("Surfaces, outils et contenants nettoyés et désinfectés","clean_equipment")}{checkbox("Hygiène personnelle et tenue de travail adaptées","personal_hygiene")}{checkbox("Prévention des contaminations croisées","separation_and_contamination")}{checkbox("Traçabilité de l’origine, date, zone et lot de chaque prise","catch_traceability")}{checkbox("Je confirme que mon activité et la vente sont autorisées selon les règles qui me sont applicables à Jersey","legal_sales_confirmation")}</div>
+ <label className="grid gap-1 text-sm font-medium">{t("Précisions, exemptions éventuelles et justificatifs disponibles")}<textarea className="field" rows={3} maxLength={2000} value={details.notes} onChange={e=>updateDetail("notes",e.target.value)}/></label>
+ </section>}
+ {form.requested_role==="fisher"&&<section className="grid gap-3 rounded-xl border p-4"><h3 className="font-semibold">{t("Justificatifs (facultatif à cette étape)")}</h3><p className="text-xs text-muted-foreground">{t("Espace privé : seuls vous et l’administration autorisée peuvent consulter les fichiers. PDF, JPG ou PNG — 10 Mo maximum par fichier.")}</p><label className="grid gap-1 text-sm font-medium">{t("Type de justificatif")}<select className="field" value={documentType} onChange={e=>setDocumentType(e.target.value)}><option value="fishing_licence">{t("Licence de pêche")}</option><option value="vessel_registration">{t("Immatriculation du bateau")}</option><option value="business_licence">{t("Business licence")}</option><option value="safety_training">{t("Formation sécurité")}</option><option value="species_permit">{t("Permis espèces / engins")}</option><option value="food_business_registration">{t("Enregistrement Food Business")}</option><option value="food_safety_plan">{t("Plan hygiène / HACCP")}</option><option value="other">{t("Autre")}</option></select></label><label className="grid gap-1 text-sm font-medium">{t("Date d’expiration (si applicable)")}<input className="field" type="date" value={expiresAt} onChange={e=>setExpiresAt(e.target.value)}/></label><input className="field" type="file" multiple accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" onChange={e=>{const files=Array.from(e.currentTarget.files??[]);if(files.length>5){toast.error(t("Maximum 5 justificatifs par demande."));e.currentTarget.value="";setDocuments([]);return;}setDocuments(files);}}/>{documents.length>0&&<p className="text-xs text-muted-foreground">{documents.length} {t("fichier(s) sélectionné(s)")}</p>}</section>}
+ <label className="grid gap-1 text-sm font-medium">{t("Nom commercial / bateau / restaurant")}<input className="field" required minLength={2} maxLength={160} value={form.business_name} onChange={e=>setForm(f=>({...f,business_name:e.target.value}))}/></label>
+ <label className="grid gap-1 text-sm font-medium">{t("Nom du responsable")}<input className="field" required minLength={2} maxLength={120} value={form.contact_name} onChange={e=>setForm(f=>({...f,contact_name:e.target.value}))}/></label>
+ <label className="grid gap-1 text-sm font-medium">{t("Téléphone professionnel")}<input className="field" type="tel" required minLength={5} maxLength={40} value={form.phone} onChange={e=>setForm(f=>({...f,phone:e.target.value}))}/></label>
+ <label className="grid gap-1 text-sm font-medium">{t("Numéro d’enregistrement professionnel (si applicable)")}<input className="field" maxLength={120} value={form.registration_number} onChange={e=>setForm(f=>({...f,registration_number:e.target.value}))}/></label>
+ <label className="grid gap-1 text-sm font-medium">{t("Informations complémentaires sur votre demande")}<textarea className="field" required minLength={10} maxLength={2000} rows={4} value={form.evidence_note} onChange={e=>setForm(f=>({...f,evidence_note:e.target.value}))} placeholder={t("Décrivez votre activité, votre port ou adresse et les justificatifs disponibles.")}/></label>
+ <button className="btn btn-accent" disabled={busy||!email}>{busy?t("Envoi…"):t("Envoyer la demande de vérification")}</button></form>
+ <p className="text-xs text-muted-foreground">{t("Les cases cochées sont des déclarations, pas des certificats officiels. L’équipe peut demander les justificatifs avant approbation. Les exigences exactes dépendent de l’activité et doivent être confirmées auprès des autorités de Jersey.")}</p>
+ <p className="text-xs text-muted-foreground">{t("Pour toute question sur la vérification, utilisez les coordonnées indiquées dans les mentions légales.")}</p></section>
+ {email&&<section className="card grid gap-3 p-6"><h2 className="text-xl font-semibold">{t("Mes demandes")}</h2>{rows.length===0?<p className="text-sm text-muted-foreground">{t("Aucune demande envoyée pour le moment.")}</p>:rows.map(row=><article key={row.id} className="rounded-lg border p-3"><div className="flex flex-wrap items-center justify-between gap-2"><strong>{row.business_name}</strong><span className="rounded-full bg-secondary px-3 py-1 text-xs">{t(row.status==="pending"?"En attente":row.status==="approved"?"Approuvée":"Refusée")}</span></div><p className="text-sm text-muted-foreground">{row.requested_role==="fisher"?t("Pêcheur / pêcheuse"):t("Restaurant")} · {new Intl.DateTimeFormat(language === "fr" ? "fr-FR" : language === "ro" ? "ro-RO" : "en-GB", { dateStyle: "medium", timeZone: "Europe/Jersey" }).format(new Date(row.created_at))}</p>{row.reviewer_note&&<p className="mt-2 text-sm">{row.reviewer_note}</p>}</article>)}</section>}</main>;
 }

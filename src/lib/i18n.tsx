@@ -10,7 +10,7 @@ export function resolveLanguage(value: string | null): Language {
   return LANGUAGES.find((language) => language === value) ?? DEFAULT_LANGUAGE;
 }
 export function translate(text: string, language: Language = DEFAULT_LANGUAGE, values?: Record<string, string | number>): string {
-  const index = language === "en" ? 0 : 2;
+  const index = language === "en" ? 0 : 1;
   const result = language === "fr" ? text : translations[text]?.[index] ?? text;
   return result.replace(/\{(\w+)\}/g, (match, key: string) => String(values?.[key] ?? match));
 }
@@ -20,7 +20,7 @@ export function formatPrice(value: number, language: Language = DEFAULT_LANGUAGE
 export function formatDate(iso: string, language: Language = DEFAULT_LANGUAGE) {
   return new Intl.DateTimeFormat(locales[language], { timeZone: "Europe/Jersey", weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
 }
-const LanguageContext = createContext({ language: DEFAULT_LANGUAGE, setLanguage: (_language: Language) => {} });
+const LanguageContext = createContext<{ language: Language; setLanguage: (language: Language) => void }>({ language: DEFAULT_LANGUAGE, setLanguage: () => {} });
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguage] = useState<Language>(DEFAULT_LANGUAGE);
   useEffect(() => {

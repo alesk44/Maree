@@ -1,0 +1,116 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useLanguage } from "@/lib/i18n";
+import { getJerseySeason, getSeasonalSeafood } from "@/lib/seasonality";
+
+export const Route = createFileRoute("/recettes")({
+  head: () => ({
+    meta: [
+      { title: "Recettes de saison — Marée Jersey" },
+      { name: "description", content: "Trois idées pour cuisiner les espèces de saison débarquées à Jersey, avec des recettes de chefs et des idées Marée." },
+    ],
+  }),
+  component: RecipesPage,
+});
+
+type RecipeIdea = { title: string; description: string; source?: string; sourceUrl?: string; author?: string; imageUrl: string; imageCredit: string; imageLicense: string; imageSourceUrl: string };
+
+const recipeIdeas: Record<string, RecipeIdea[]> = {
+  "crabe-chancre": [
+    { imageUrl: "https://commons.wikimedia.org/wiki/Special:FilePath/Cancer_pagurus.jpg", imageCredit: "Hans Hillewaert", imageLicense: "CC BY-SA 4.0", imageSourceUrl: "https://commons.wikimedia.org/wiki/File:Cancer_pagurus.jpg", title: "Crab linguine", description: "Chair de crabe, linguine, citron, persil et une pointe de piment.", author: "Idée éditoriale Marée Jersey" },
+    { imageUrl: "https://commons.wikimedia.org/wiki/Special:FilePath/Cancer_pagurus.jpg", imageCredit: "Hans Hillewaert", imageLicense: "CC BY-SA 4.0", imageSourceUrl: "https://commons.wikimedia.org/wiki/File:Cancer_pagurus.jpg", title: "Crabe et Jersey Royals", description: "Crabe effiloché, pommes de terre Jersey Royals, herbes fraîches et mayonnaise citronnée.", author: "Idée éditoriale Marée Jersey" },
+    { imageUrl: "https://commons.wikimedia.org/wiki/Special:FilePath/Cancer_pagurus.jpg", imageCredit: "Hans Hillewaert", imageLicense: "CC BY-SA 4.0", imageSourceUrl: "https://commons.wikimedia.org/wiki/File:Cancer_pagurus.jpg", title: "Ravioles de crabe, bisque légère", description: "Ravioles fines garnies de chair de crabe, servies avec un jus de carapaces réduit.", author: "Idée de recette Marée Jersey" },
+  ],
+  homard: [
+    { imageUrl: "https://commons.wikimedia.org/wiki/Special:FilePath/Homarus_gammarus_001.jpg", imageCredit: "JoJan", imageLicense: "CC BY 3.0", imageSourceUrl: "https://commons.wikimedia.org/wiki/File:Homarus_gammarus_001.jpg", title: "Lobster and chips", description: "Homard accompagné de frites, recette publiée de Shaun Rankin.", source: "Great British Chefs · Shaun Rankin", sourceUrl: "https://www.greatbritishchefs.com/recipes/lobster-recipe-triple-cooked-chips-bearnaise", author: "Shaun Rankin · chef vivant et travaillant à Jersey" },
+    { imageUrl: "https://commons.wikimedia.org/wiki/Special:FilePath/Homarus_gammarus_001.jpg", imageCredit: "JoJan", imageLicense: "CC BY 3.0", imageSourceUrl: "https://commons.wikimedia.org/wiki/File:Homarus_gammarus_001.jpg", title: "Lobster Thermidor", description: "Homard, sauce crémeuse à la moutarde, gratin léger au four.", source: "Genuine Jersey · recettes de homard", sourceUrl: "https://www.genuinejersey.je/shellfish/jersey-shellfish-recipes/", author: "James Martin · recette référencée par Genuine Jersey" },
+    { imageUrl: "https://commons.wikimedia.org/wiki/Special:FilePath/Homarus_gammarus_001.jpg", imageCredit: "JoJan", imageLicense: "CC BY 3.0", imageSourceUrl: "https://commons.wikimedia.org/wiki/File:Homarus_gammarus_001.jpg", title: "Homard rôti, beurre de Jersey et pommes grenailles", description: "Une assiette simple qui met en avant le homard local et le beurre de Jersey.", author: "Idée de recette Marée Jersey" },
+  ],
+  bar: [
+    { imageUrl: "https://commons.wikimedia.org/wiki/Special:FilePath/Dicentrarchus_labrax.jpeg", imageCredit: "Dezidor", imageLicense: "CC BY 3.0", imageSourceUrl: "https://commons.wikimedia.org/wiki/File:Dicentrarchus_labrax.jpeg", title: "Bar poêlé, Saint-Jacques et petits pois", description: "La recette publiée associe un filet de bar poêlé, des Saint-Jacques, des petits pois et une velouté de poisson.", source: "Great British Chefs · Mark Jordan", sourceUrl: "https://www.greatbritishchefs.com/recipes/sea-bass-fillet-recipe-seared-jersey-scallops-peas", author: "Mark Jordan · chef vivant et travaillant à Jersey" },
+    { imageUrl: "https://commons.wikimedia.org/wiki/Special:FilePath/Dicentrarchus_labrax.jpeg", imageCredit: "Dezidor", imageLicense: "CC BY 3.0", imageSourceUrl: "https://commons.wikimedia.org/wiki/File:Dicentrarchus_labrax.jpeg", title: "Bar en croûte de sel, beurre citronné", description: "Cuisson douce du bar entier, pommes de terre nouvelles et beurre citronné.", author: "Idée de recette Marée Jersey" },
+    { imageUrl: "https://commons.wikimedia.org/wiki/Special:FilePath/Dicentrarchus_labrax.jpeg", imageCredit: "Dezidor", imageLicense: "CC BY 3.0", imageSourceUrl: "https://commons.wikimedia.org/wiki/File:Dicentrarchus_labrax.jpeg", title: "Filet de bar snacké, fondue de poireaux", description: "Peau croustillante, poireaux fondants et sauce au cidre.", author: "Idée de recette Marée Jersey" },
+  ],
+  dorade: [
+    { imageUrl: "https://commons.wikimedia.org/wiki/Special:FilePath/Sparus_Aurata.jpg", imageCredit: "Davidpescanova", imageLicense: "CC0 1.0", imageSourceUrl: "https://commons.wikimedia.org/wiki/File:Sparus_Aurata.jpg", title: "Dorade entière au four, citron et fenouil", description: "Dorade rôtie entière, fenouil, citron et huile d'olive.", author: "Idée de recette Marée Jersey" },
+    { imageUrl: "https://commons.wikimedia.org/wiki/Special:FilePath/Sparus_Aurata.jpg", imageCredit: "Davidpescanova", imageLicense: "CC0 1.0", imageSourceUrl: "https://commons.wikimedia.org/wiki/File:Sparus_Aurata.jpg", title: "Filet de dorade, beurre blanc", description: "Filet poêlé, beurre blanc et légumes de saison de Jersey.", author: "Idée de recette Marée Jersey" },
+    { imageUrl: "https://commons.wikimedia.org/wiki/Special:FilePath/Sparus_Aurata.jpg", imageCredit: "Davidpescanova", imageLicense: "CC0 1.0", imageSourceUrl: "https://commons.wikimedia.org/wiki/File:Sparus_Aurata.jpg", title: "Dorade grillée, pommes de terre écrasées", description: "Cuisson au grill, pommes de terre écrasées au beurre de Jersey et herbes.", author: "Idée de recette Marée Jersey" },
+  ],
+  maquereau: [
+    { imageUrl: "https://commons.wikimedia.org/wiki/Special:FilePath/Scomber_scombrus.jpg", imageCredit: "Hans Hillewaert", imageLicense: "CC BY-SA 4.0", imageSourceUrl: "https://commons.wikimedia.org/wiki/File:Scomber_scombrus.jpg", title: "Smoked mackerel Niçoise salad", description: "Maquereau fumé, pommes de terre, œuf, haricots verts et vinaigrette moutardée.", source: "An Island Chef · recettes de saison", sourceUrl: "https://anislandchef.com/an-island-chef-my-summer-recipes/", author: "Christian Gott · chef des îles Anglo-Normandes" },
+    { imageUrl: "https://commons.wikimedia.org/wiki/Special:FilePath/Scomber_scombrus.jpg", imageCredit: "Hans Hillewaert", imageLicense: "CC BY-SA 4.0", imageSourceUrl: "https://commons.wikimedia.org/wiki/File:Scomber_scombrus.jpg", title: "Maquereau grillé, moutarde et herbes", description: "Filets grillés, moutarde douce, citron et herbes fraîches.", author: "Idée de recette Marée Jersey" },
+    { imageUrl: "https://commons.wikimedia.org/wiki/Special:FilePath/Scomber_scombrus.jpg", imageCredit: "Hans Hillewaert", imageLicense: "CC BY-SA 4.0", imageSourceUrl: "https://commons.wikimedia.org/wiki/File:Scomber_scombrus.jpg", title: "Rillettes de maquereau, citron et poivre", description: "Maquereau cuit, fromage frais, citron et poivre, à servir sur pain grillé.", author: "Idée de recette Marée Jersey" },
+  ],
+  raie: [
+    { imageUrl: "", imageCredit: "Hans Hillewaert", imageLicense: "CC BY-SA 4.0", imageSourceUrl: "https://wolt.com/en/grc/zakynthos/restaurant/manoo-za", title: "Aile de raie, beurre noisette et câpres", description: "Pochage doux, beurre noisette, câpres et pommes de terre vapeur.", author: "Idée de recette Marée Jersey" },
+    { imageUrl: "", imageCredit: "Hans Hillewaert", imageLicense: "CC BY-SA 4.0", imageSourceUrl: "https://wolt.com/en/grc/zakynthos/restaurant/manoo-za", title: "Raie rôtie, purée de Jersey Royals", description: "Aile de raie rôtie et purée de pommes de terre au beurre local.", author: "Idée de recette Marée Jersey" },
+    { imageUrl: "", imageCredit: "Hans Hillewaert", imageLicense: "CC BY-SA 4.0", imageSourceUrl: "https://wolt.com/en/grc/zakynthos/restaurant/manoo-za", title: "Raie, sauce vierge et légumes croquants", description: "Cuisson délicate, tomates, citron, huile d'olive et herbes.", author: "Idée de recette Marée Jersey" },
+  ],
+};
+
+function RecipesPage() {
+  const { language } = useLanguage();
+  const isEnglish = language === "en";
+  const season = getJerseySeason();
+  const species = getSeasonalSeafood(season.month);
+  const recommended = species.filter((item) => item.status === "best_now" || item.status === "in_season");
+  const daily = species.filter((item) => item.status === "watch_daily_landing");
+  const restricted = species.filter((item) => item.status === "restricted");
+  const nameOf = (item: (typeof species)[number]) => language === "fr" ? item.nameFr : language === "ro" ? item.nameRo : item.name;
+  const label = (fr: string, en: string) => isEnglish ? en : fr;
+
+  return (
+    <main id="recettes" className="mx-auto max-w-6xl px-4 py-10">
+      <div className="mb-8">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Marée Jersey · Jersey</p>
+        <h1 className="mt-2 text-3xl font-semibold">{label("3 idées de recettes", "3 recipe ideas")}</h1>
+        <p className="mt-2 max-w-3xl text-muted-foreground">{label("Des idées pour cuisiner les espèces recommandées cette saison. Les lots réellement disponibles restent ceux publiés par les pêcheurs vérifiés.", "Ideas for cooking the species recommended this season. Actual availability is shown only in verified fishers' published landings.")}</p>
+      </div>
+
+      {recommended.length > 0 && <section className="mb-8 rounded-2xl border border-accent/30 bg-secondary/40 p-5">
+        <h2 className="text-lg font-semibold">{label("À privilégier maintenant", "Best to look for now")}</h2>
+        <div className="mt-3 flex flex-wrap gap-2">{recommended.map((item) => <a key={item.slug} href={`#${item.slug}`} className="rounded-full border border-border px-3 py-1.5 text-sm hover:bg-background">{nameOf(item)}</a>)}</div>
+      </section>}
+
+      {recommended.map((item) => <RecipeSpecies key={item.slug} slug={item.slug} name={nameOf(item)} note={language === "fr" ? item.noteFr : item.note} ideas={recipeIdeas[item.slug] ?? []} label={label} />)}
+
+      {daily.length > 0 && <section className="mt-10">
+        <h2 className="text-xl font-semibold">{label("Selon les débarquements du jour", "Depending on today's landings")}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{label("Ces espèces ne sont pas annoncées comme étant en pleine saison : consultez les lots frais et traçables publiés par les pêcheurs avant de les mettre au menu.", "These species are not marked as being in peak season: check fresh, traceable fisher listings before adding them to a menu.")}</p>
+        <div className="mt-5 space-y-6">{daily.map((item) => <RecipeSpecies key={item.slug} slug={item.slug} name={nameOf(item)} note={language === "fr" ? item.noteFr : item.note} ideas={recipeIdeas[item.slug] ?? []} label={label} />)}</div>
+      </section>}
+
+      {restricted.map((item) => <section key={item.slug} id={item.slug} className="mt-10 rounded-2xl border border-destructive/30 p-5">
+        <h2 className="text-xl font-semibold">{nameOf(item)} · {label("espèce réglementée", "regulated species")}</h2>
+        <p className="mt-2 text-sm text-muted-foreground">{language === "fr" ? item.noteFr : item.note}</p>
+        <p className="mt-2 text-sm">{label("Aucune recette promotionnelle n'est affichée ici tant que les jours d'ouverture et les conditions de licence ne sont pas vérifiés. Ne pas récolter ni acheter hors cadre légal.", "No promotional recipe ideas are shown until authorised opening days and licence conditions are verified. Do not harvest or buy outside the legal framework.")}</p>
+        <a className="mt-3 inline-block text-sm underline" href={item.imageSourceUrl} target="_blank" rel="noreferrer">{label("Consulter la réglementation officielle", "Read official regulations")}</a>
+      </section>)}
+
+      <p className="mt-10 border-t border-border pt-5 text-xs leading-relaxed text-muted-foreground">{label("Crédits : les liens « recette publiée » renvoient vers la source originale. Les autres propositions sont des idées éditoriales Marée Jersey, non attribuées à un chef tiers. Vérifier origine, fraîcheur, tailles minimales, licences et disponibilité du lot avant toute utilisation commerciale.", "Credits: links marked as published recipes point to the original source. Other suggestions are Marée Jersey editorial ideas and are not attributed to third-party chefs. Verify provenance, freshness, minimum sizes, licences and lot availability before commercial use.")}</p>
+    </main>
+  );
+}
+
+function RecipeSpecies({ slug, name, note, ideas, label }: { slug: string; name: string; note: string; ideas: RecipeIdea[]; label: (fr: string, en: string) => string }) {
+  return (
+    <section id={slug} className="scroll-mt-24 border-b border-border py-7">
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div><h2 className="text-2xl font-semibold">{name}</h2><p className="mt-1 text-sm text-muted-foreground">{note}</p></div>
+        <a href="/#weather-season-title" className="text-sm underline">{label("Retour aux saisons", "Back to season guide")}</a>
+      </div>
+      <div className="mt-4 grid gap-4 md:grid-cols-3">
+        {ideas.map((idea) => <article key={idea.title} className="card flex flex-col overflow-hidden">
+          {idea.imageUrl ? <img src={idea.imageUrl} alt={`${idea.title} — photo de référence de l’espèce, pas du plat`} loading="lazy" className="h-48 w-full object-cover" /> : <div className="flex h-48 items-center justify-center bg-muted text-sm text-muted-foreground">{label("Photo de référence à ajouter", "Reference photo coming soon")}</div>}
+          <div className="flex flex-1 flex-col p-5">
+          <span className="text-xs font-semibold uppercase tracking-wide text-accent">{idea.source ? label("Recette publiée", "Published recipe") : label("Idée Marée", "Marée idea")}</span>
+          <h3 className="mt-2 text-lg font-semibold">{idea.title}</h3>
+          <p className="mt-2 flex-1 text-sm text-muted-foreground">{idea.description}</p>
+          <p className="mt-4 text-xs">{idea.author}</p>
+          {idea.sourceUrl && <a href={idea.sourceUrl} target="_blank" rel="noreferrer" className="mt-3 text-sm font-semibold underline">{label("Voir la publication originale", "View original publication")} ↗</a>}
+          <a href={idea.imageSourceUrl} target="_blank" rel="noreferrer" className="mt-3 text-[10px] text-muted-foreground underline">{label("Photo de référence de l’espèce · crédit", "Species reference photo · credit")}: {idea.imageCredit || label("à confirmer", "to be confirmed")} {idea.imageLicense && `· ${idea.imageLicense}`}</a>
+          </div>
+        </article>)}
+      </div>
+    </section>
+  );
+}
