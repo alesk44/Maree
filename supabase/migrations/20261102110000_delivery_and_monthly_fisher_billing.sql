@@ -464,10 +464,25 @@ grant execute on function public.verify_maree_commission_invoice_paid(uuid) to a
 
 comment on table public.maree_monthly_commission_invoices is 'Monthly 6.5% commission statements owed by restaurants to Marée; distinct from fisher product invoices. Restaurant declarations require separate admin verification.';
 
+-- One scheduled SQL statement invokes both independent invoice generators.
+create or replace function public.generate_monthly_billing_statements(p_month date)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+begin
+  perform public.generate_fisher_monthly_invoices(p_month);
+  perform public.generate_maree_monthly_commission_invoices(p_month);
+end;
+$function$;
+revoke all on function public.generate_monthly_billing_statements(date) from public, anon, authenticated;
+grant execute on function public.generate_monthly_billing_statements(date) to service_role;
+
 -- Replace the monthly job so both separate statement families are generated.
 select cron.unschedule(jobid) from cron.job where jobname = 'maree-monthly-fisher-invoices';
 select cron.schedule(
   'maree-monthly-fisher-invoices',
   '0 3 1 * *',
-  $job$select public.generate_fisher_monthly_invoices((date_trunc('month', now()) - interval '1 month')::date); select public.generate_maree_monthly_commission_invoices((date_trunc('month', now()) - interval '1 month')::date);$job$
+  $job$select public.generate_monthly_billing_statements((date_trunc('month', now()) - interval '1 month')::date);$job$
 );
