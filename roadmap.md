@@ -2,7 +2,7 @@
 
 > **Mise à jour 2 novembre 2026 : modèle commercial révisé à la demande du propriétaire. La commission Marée est de 6,5 % du sous-total produits pour chaque achat restaurant→pêcheur, que la commande soit livrée ou retirée. Elle s'ajoute au montant dû au pêcheur ; les frais de livraison de 20 % sont distincts et s'appliquent uniquement à la livraison. Aucun prélèvement automatique ni PSP n'est activé. La facturation mensuelle par couple restaurant/pêcheur, l'échéance à J+7 après fin de mois et le blocage après au moins 3 factures mensuelles échues impayées restent à finaliser. L'ancien modèle à double commission 6,5 % + 6,5 % / 13 % est obsolète. Les frais GST restent désactivés tant que le statut et le traitement fiscal de Marée Jersey ne sont pas confirmés.**
 
-Dernière revue : 2 novembre 2026 — tous les contrôles automatisés réussis sur `c4634ae5368ac5d4a738bb28f316ddcded27a20d` (Verify, Build verification, Marée CI, Supabase migrations/pgTAP et déploiement de prévisualisation Cloudflare).  
+Dernière revue : 2 novembre 2026 — changements de facturation et d'interface en cours de validation CI sur la branche de prévisualisation ; ne pas considérer les derniers contrôles comme terminés avant les workflows du dernier commit.  
 Branche de travail : `feature/supabase-shared-data-v2`  
 Règle de livraison : aucun merge sur `main`, aucun déploiement public et aucune mise en production sans validation explicite du propriétaire.
 
@@ -20,10 +20,18 @@ Règle de livraison : aucun merge sur `main`, aucun déploiement public et aucun
 - [x] RPC de règlement réservée au pêcheur destinataire ou à un administrateur ; le restaurant ne peut pas s'auto-déclarer payé. Date, auteur, mode et référence sont enregistrés.
 - [x] Blocage serveur dans `reserve_catch` dès au moins 3 factures mensuelles échues impayées, tous pêcheurs confondus.
 - [x] Génération mensuelle idempotente et anti-doublon par restaurant/pêcheur/mois. Les règles d'ajustement/avoirs et de commandes partiellement livrées restent à préciser.
-- [ ] Tests pgTAP étendus au nouveau schéma, aux privilèges et RPC ; tester la commission 6,5 % sur livraison ET retrait, les frais livraison 20 % uniquement sur livraison, les arrondis, factures mensuelles et blocage multi-pêcheurs.
+- [x] Tests pgTAP étendus aux snapshots de commission, au taux 6,5 % et à la planification mensuelle ; validation CI du dernier commit encore attendue. [ ] Tester la commission 6,5 % sur livraison ET retrait, les frais livraison 20 % uniquement sur livraison, les arrondis, factures mensuelles et blocage multi-pêcheurs.
 - [ ] Mettre à jour les écrans restaurant, pêcheur et admin pour afficher la commission Marée de 6,5 % une seule fois, sans ancienne retenue supplémentaire côté pêcheur.
 
-### État de code au 2 novembre 2026\n- Migration additive `20261102110000_delivery_and_monthly_fisher_billing.sql` créée sur la branche ; non appliquée à la base distante.\n- `reserve_catch` calcule et fige le sous-total produits, la commission Marée de 6,5 %, les frais livraison distincts de 20 % et le total ; aucune GST n'est ajoutée.\n- Préférence immédiat/mensuel sauvegardée par couple restaurant/pêcheur ; interface restaurant mise à jour.\n- Les écrans restaurant/pêcheur utilisent les montants figés et l'ancienne commission 6,5 % est retirée des synthèses.\n- Le schéma de relevés mensuels, la RPC de génération (service_role), la RPC de règlement sécurisé et le blocage des commandes sont créés. La commission Marée de 6,5 % est maintenant figée sur chaque commande, livraison ou retrait. Il reste à configurer le déclenchement mensuel, l'interface de relevés/règlements et les tests de bout en bout.\n- CI a détecté des erreurs de syntaxe dans les premières modifications frontend ; corrections commitées. Attendre les workflows du dernier commit avant de déclarer la branche verte.\n\n### Séquence d'implémentation
+### État de code au 2 novembre 2026
+- Migration additive `20261102110000_delivery_and_monthly_fisher_billing.sql` créée sur la branche ; non appliquée à la base distante.
+- `reserve_catch` calcule et fige le sous-total produits, la commission Marée de 6,5 %, les frais livraison distincts de 20 % et le total ; aucune GST n'est ajoutée.
+- Préférence immédiat/mensuel sauvegardée par couple restaurant/pêcheur ; interface restaurant mise à jour.
+- Les écrans restaurant/pêcheur utilisent les montants figés et l'ancienne commission 6,5 % est retirée des synthèses.
+- Le schéma de relevés mensuels, la RPC de génération (service_role), la RPC de règlement sécurisé et le blocage des commandes sont créés. La commission Marée de 6,5 % est maintenant figée sur chaque commande, livraison ou retrait. Il reste à configurer le déclenchement mensuel, l'interface de relevés/règlements et les tests de bout en bout.
+- CI a détecté des erreurs de syntaxe dans les premières modifications frontend ; corrections commitées. Attendre les workflows du dernier commit avant de déclarer la branche verte.
+
+### Séquence d'implémentation
 1. Migration additive et RPC de réservation : snapshots tarifaires et frais calculés exclusivement côté serveur.
 2. Préférences de facturation et génération mensuelle idempotente des factures/relevés.
 3. Règlement sécurisé et règle de blocage dans la transaction de réservation.
