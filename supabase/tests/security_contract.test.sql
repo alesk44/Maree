@@ -625,14 +625,14 @@ reset role;
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
 select lives_ok(
-  $select public.decide_order_cancellation('20000000-0000-4000-8000-000000000005'::uuid,true,4.00)$,
+  'select public.decide_order_cancellation('20000000-0000-4000-8000-000000000005'::uuid,true,4.00)',
   'fisher can offer a penalty on the second late cancellation'
 );
 reset role;
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000003';
 select lives_ok(
-  $select public.respond_order_cancellation('20000000-0000-4000-8000-000000000005'::uuid,false)$,
+  'select public.respond_order_cancellation('20000000-0000-4000-8000-000000000005'::uuid,false)',
   'buyer can decline a proposed late cancellation penalty'
 );
 reset role;
