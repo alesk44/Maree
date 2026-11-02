@@ -60,6 +60,9 @@ export function WeatherSeasonPanel() {
     daily: ["Selon les débarquements du jour", "Check today's landings", "În funcție de capturile zilei"],
     disclaimer: ["La saisonnalité indique une tendance générale, pas une garantie de stock. Vérifiez les lots réellement publiés, la traçabilité, la taille minimale et les règles de pêche en vigueur à Jersey.", "Seasonality is a general guide, not a stock guarantee. Check actual published lots, traceability, minimum sizes and current Jersey fishing rules.", "Sezonalitatea este doar orientativă, nu o garanție de stoc. Verificați capturile publicate, trasabilitatea, dimensiunile minime și regulile actuale de pescuit din Jersey."],
     unavailable: ["Météo indisponible pour le moment.", "Weather is temporarily unavailable.", "Vremea nu este disponibilă momentan."],
+    temperature: ["Température", "Temperature", "Temperatură"],
+    loading: ["Chargement de la météo…", "Loading weather…", "Se încarcă vremea…"],
+    restricted: ["Réglementation stricte", "Strictly regulated", "Strict reglementare"],
     attribution: ["Données météo : MET Norway · CC BY 4.0", "Weather data: MET Norway · CC BY 4.0", "Date meteo: MET Norway · CC BY 4.0"],
   };
   const tr = (values: readonly string[]) => values[langIndex] ?? values[1] ?? "";
@@ -79,12 +82,12 @@ export function WeatherSeasonPanel() {
           </div>
           <span className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground">{tr(labels.season)} : {seasonName}</span>
         </div>
-        {loading && <p role="status" className="mt-5 text-sm text-muted-foreground">Loading…</p>}
+        {loading && <p role="status" className="mt-5 text-sm text-muted-foreground">{tr(labels.loading)}</p>}
         {error && <p role="alert" className="mt-5 text-sm text-muted-foreground">{tr(labels.unavailable)}</p>}
         {weather && (
           <>
             <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <Metric label="Température" value={weather.current.temperatureC === null ? "—" : weather.current.temperatureC.toFixed(1) + " °C"} />
+              <Metric label={tr(labels.temperature)} value={weather.current.temperatureC === null ? "—" : weather.current.temperatureC.toFixed(1) + " °C"} />
               <Metric label={tr(labels.wind)} value={weather.current.windSpeedKmh === null ? "—" : weather.current.windSpeedKmh.toFixed(0) + " km/h · " + windDirection(weather.current.windDirectionDeg, language)} />
               <Metric label={tr(labels.humidity)} value={weather.current.humidityPercent === null ? "—" : weather.current.humidityPercent.toFixed(0) + " %"} />
               <Metric label={tr(labels.rain)} value={weather.current.precipitationMm === null ? "—" : weather.current.precipitationMm.toFixed(1) + " mm"} />
@@ -106,11 +109,18 @@ export function WeatherSeasonPanel() {
           <h3 className="text-lg font-semibold">{tr(labels.seafood)}</h3>
           <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {seafood.map((item) => {
-              const status = item.status === "best_now" ? tr(labels.best) : item.status === "in_season" ? tr(labels.inSeason) : tr(labels.daily);
+              const status = item.status === "best_now" ? tr(labels.best) : item.status === "in_season" ? tr(labels.inSeason) : item.status === "restricted" ? tr(labels.restricted) : tr(labels.daily);
+              const name = langIndex === 0 ? item.nameFr : langIndex === 2 ? item.nameRo : item.name;
+              const note = langIndex === 0 ? item.noteFr : langIndex === 2 ? item.noteRo : item.note;
+              const months = langIndex === 0
+                ? item.name === "Chancre crab" ? "Novembre–mars" : item.name === "Jersey lobster" ? "Avril–décembre ; pic de mai à septembre" : item.name === "Ormers" ? "1er octobre–30 avril ; jours d’ouverture lunaires autorisés uniquement" : "Selon les débarquements du jour"
+                : langIndex === 2
+                  ? item.name === "Chancre crab" ? "Noiembrie–martie" : item.name === "Jersey lobster" ? "Aprilie–decembrie; vârf mai–septembrie" : item.name === "Ormers" ? "1 octombrie–30 aprilie; doar zile lunare autorizate" : "În funcție de capturile zilei"
+                  : item.months;
               return <article key={item.name} className="rounded-xl bg-secondary/70 p-4">
-                <div className="flex flex-wrap items-start justify-between gap-2"><h4 className="font-semibold">{item.name}</h4><span className="text-xs text-accent">{status}</span></div>
-                <p className="mt-1 text-xs text-muted-foreground">{item.months}</p>
-                <p className="mt-2 text-sm">{item.note}</p>
+                <div className="flex flex-wrap items-start justify-between gap-2"><h4 className="font-semibold">{name}</h4><span className="text-xs text-accent">{status}</span></div>
+                <p className="mt-1 text-xs text-muted-foreground">{months}</p>
+                <p className="mt-2 text-sm">{note}</p>
               </article>;
             })}
           </div>
