@@ -349,3 +349,23 @@ Ce bloc fait foi pour l'état courant ; les anciennes sections datées plus bas 
 - Aucun déploiement Cloudflare exécuté.
 - Aucun paiement en ligne activé.
 - Le projet n'est pas déclaré prêt pour une commercialisation.
+
+## Chantier notifications persistantes — 2 novembre 2026
+
+### Première tranche ajoutée sur la branche
+- [x] Migration additive `20261102190000_persistent_notifications.sql` : table persistante, clé anti-doublon, index utilisateur/non-lu et RLS par destinataire.
+- [x] Création côté base uniquement : nouvelle commande vers le pêcheur, changement de statut vers l'autre partie, demandes/réponses d'annulation, nouvelle demande de vérification vers les administrateurs.
+- [x] Publication Realtime de la table notifications lorsque `supabase_realtime` est disponible.
+- [x] Centre global dans l'en-tête : compteur exact de notifications non lues, 20 plus récentes, lecture individuelle et lecture globale, actualisation Realtime.
+- [x] Libellés et messages du centre traduits FR/EN/RO.
+- [x] Tests pgTAP ajoutés : RLS, interdiction d'insertion client, limitation de mise à jour à `read_at`, cloisonnement entre pêcheurs, création des alertes admin. Plan porté de 181 à 191 assertions.
+- [ ] Résultat du workflow Supabase migration tests sur le HEAD de cette tranche : en attente de vérification.
+- [ ] Tester dans le navigateur avec de vrais comptes distincts restaurant, pêcheur et admin ; vérifier les événements Realtime, les liens, les changements de compte et les états sans réseau.
+- [ ] Ajouter les notifications de résultat de vérification et de disponibilité des factures mensuelles après validation de cette première tranche.
+- [ ] E-mail et push hors session non inclus ; ne pas confondre notification in-app et e-mail/SMS.
+
+### Limites et garde-fous
+- La migration reste locale au dépôt : aucune application sur Supabase distant.
+- Aucun secret e-mail, fournisseur SMS ou service payant ajouté.
+- Les notifications sont créées par des triggers SQL de confiance ; les clients ne peuvent ni créer ni modifier leur contenu.
+- PR #2 reste ouverte en brouillon ; aucun merge ni déploiement.
