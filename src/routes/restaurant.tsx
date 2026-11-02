@@ -132,12 +132,13 @@ function Restaurant() {
       </div>
       <div className="grid gap-2">
         <h3 className="font-semibold">{t("Relevés mensuels de commission Marée")}</h3>
-        <p className="text-xs text-muted-foreground">{t("Ces relevés concernent uniquement la commission de 6,5 % due à Marée par le restaurant. Ils sont distincts des factures produits dues aux pêcheurs. Une déclaration de paiement reste à vérifier par l’administration.")}</p>
+        <p className="text-xs text-muted-foreground">{t("Ces relevés regroupent séparément la commission de 6,5 % et les frais de livraison de 20 % dus à Marée par le restaurant. Ils sont distincts des factures produits dues aux pêcheurs. Une déclaration de paiement reste à vérifier par l’administration.")}</p>
         {mareeInvoices.length===0 ? <Empty>{t("Aucun relevé mensuel de commission pour le moment.")}</Empty> :
           <ul className="grid gap-2">{mareeInvoices.map(i=><li key={i.id} className="rounded-xl border border-border p-4">
-            <div className="flex flex-wrap justify-between gap-2"><strong>{t("Période")} {i.period_start} — {i.period_end}</strong><strong>{gbp(Number(i.commission_total))}</strong></div>
+            <div className="flex flex-wrap justify-between gap-2"><strong>{t("Période")} {i.period_start} — {i.period_end}</strong><strong>{gbp(Number(i.commission_total)+Number(i.delivery_total))}</strong></div>
+            <p className="text-xs text-muted-foreground">{t("Commission Marée (6,5 %)")} : {gbp(Number(i.commission_total))} · {t("Livraison Marée (20 %)")} : {gbp(Number(i.delivery_total))}</p>
             <p className="text-sm text-muted-foreground">{t("Échéance")} : {i.due_date} · {i.status==="paid"?t("Paiement vérifié par Marée"):i.status==="declared_paid"?t("Paiement déclaré — vérification Marée en attente"):i.status==="void"?t("Annulé"):t("À régler à Marée")}</p>
-            {i.items?.length ? <ul className="mt-2 grid gap-1 border-t border-border pt-2 text-xs">{i.items.map(item=><li key={item.order_id} className="flex flex-wrap justify-between gap-2"><span>Commande {item.order_id.slice(0,8).toUpperCase()} · {item.fulfilment==="delivery"?t("Livraison"):t("Retrait")} · {gbp(Number(item.product_subtotal))} {t("produits")}</span><strong>{gbp(Number(item.commission_amount))}</strong></li>)}</ul> : null}
+            {i.items?.length ? <ul className="mt-2 grid gap-1 border-t border-border pt-2 text-xs">{i.items.map(item=><li key={item.order_id} className="flex flex-wrap justify-between gap-2"><span>Commande {item.order_id.slice(0,8).toUpperCase()} · {item.fulfilment==="delivery"?t("Livraison"):t("Retrait")} · {gbp(Number(item.product_subtotal))} {t("produits")}</span><strong>{t("Commission")} : {gbp(Number(item.commission_amount))} · {t("Livraison")} : {gbp(Number(item.delivery_amount))}</strong></li>)}</ul> : null}
             {i.payment_method&&<p className="text-xs text-muted-foreground">{t("Mode")} : {i.payment_method} {i.payment_reference?("· "+t("Référence")+" : "+i.payment_reference):""}</p>}
             {i.status==="open"&&<button type="button" className="btn btn-accent mt-3" onClick={async()=>{
               const method=window.prompt(t("Mode de paiement effectué (ex. virement bancaire)"));
