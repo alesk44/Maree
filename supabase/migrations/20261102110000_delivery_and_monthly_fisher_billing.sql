@@ -60,8 +60,15 @@ with check (
 drop policy if exists "Restaurant updates own billing preference" on public.restaurant_fisher_billing_settings;
 create policy "Restaurant updates own billing preference"
 on public.restaurant_fisher_billing_settings for update to authenticated
-using (restaurant_id = (select auth.uid()))
-with check (restaurant_id = (select auth.uid()));
+using (
+  restaurant_id = (select auth.uid())
+  and exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.role = 'restaurant'::public.app_role)
+)
+with check (
+  restaurant_id = (select auth.uid())
+  and exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.role = 'restaurant'::public.app_role)
+  and exists (select 1 from public.profiles p where p.id = fisher_id and p.role = 'fisher'::public.app_role)
+);
 grant select, insert, update on public.restaurant_fisher_billing_settings to authenticated;
 
 create table if not exists public.fisher_monthly_invoices (
