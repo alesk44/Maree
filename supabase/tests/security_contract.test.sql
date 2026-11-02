@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(191);
+select plan(206);
 
 -- Isolated auth users; the auth trigger creates their initial restaurant profiles.
 insert into auth.users (id, email) values
@@ -865,6 +865,54 @@ reset role;
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000005';
 select is((select count(*) from public.notifications where event_type='verification_request_received'),4::bigint,'trusted admin receives each verification request notification');
+reset role;
+
+-- Notification follow-up contract: verification outcomes and invoice lifecycle.
+select ok(to_regprocedure('private.create_verification_result_notification()') is not null, 'verification result notification trigger function exists');
+select ok(to_regprocedure('private.create_fisher_invoice_notifications()') is not null, 'fisher invoice notification trigger function exists');
+select ok(to_regprocedure('private.create_maree_invoice_notifications()') is not null, 'Marée invoice notification trigger function exists');
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000005';
+select lives_ok(
+  $select public.review_verification_request('30000000-0000-4000-8000-000000000002'::uuid, 'rejected'::public.verification_status, 'Missing supporting evidence')$,
+  'admin rejection produces a final verification decision'
+);
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000006';
+select is((select count(*) from public.notifications where event_type='verification_approved'),1::bigint,'approved applicant receives one private approval notification');
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000004';
+select is((select count(*) from public.notifications where event_type='verification_approved'),1::bigint,'second approved applicant receives their own approval notification');
+select is((select count(*) from public.notifications where event_type='verification_rejected'),1::bigint,'rejected applicant receives their own rejection notification');
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
+select ok(exists(select 1 from public.notifications where event_type='fisher_invoice_created'), 'fisher receives a notification when a monthly product invoice is generated');
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000003';
+select ok(exists(select 1 from public.notifications where event_type='restaurant_fisher_invoice_created'), 'restaurant receives its monthly fisher invoice notification');
+select ok(exists(select 1 from public.notifications where event_type='fisher_invoice_paid'), 'restaurant is notified when the fisher confirms payment receipt');
+select ok(exists(select 1 from public.notifications where event_type='maree_invoice_created'), 'restaurant receives its monthly Marée statement notification');
+select ok(exists(select 1 from public.notifications where event_type='maree_invoice_payment_verified'), 'restaurant is notified after admin verifies its Marée payment');
+select is((select count(*) from public.notifications where event_type='maree_invoice_payment_declared'),0::bigint,'restaurant cannot read admin-only payment verification alerts');
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000005';
+select ok(exists(select 1 from public.notifications where event_type='maree_invoice_payment_declared'), 'admin receives a private alert when a restaurant declares payment');
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000004';
+select ok(exists(select 1 from public.notifications where event_type='maree_invoice_created'), 'second restaurant receives only its own generated Marée statement alert');
 reset role;
 
 select * from finish();
