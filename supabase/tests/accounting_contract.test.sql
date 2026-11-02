@@ -1,6 +1,6 @@
 begin;
 
-select plan(10);
+select plan(12);
 
 select has_column('public','orders','tip_amount',
   'Orders store optional tips separately from product prices.');
@@ -32,6 +32,14 @@ select ok(
 select ok(
   has_function_privilege('authenticated','public.mark_order_paid(uuid,text,text)','EXECUTE'),
   'Authenticated users can call the RPC, which enforces fisher ownership internally.'
+);
+select ok(
+  position('v_maree_fee := round(v_subtotal * v_maree_rate, 2)' in pg_get_functiondef('public.reserve_catch(uuid,numeric,timestamptz,text,text,numeric)'::regprocedure)) > 0,
+  'Marée commission is calculated only on the product subtotal, not the tip.'
+);
+select ok(
+  position('v_subtotal + v_maree_fee + v_delivery + v_tip' in pg_get_functiondef('public.reserve_catch(uuid,numeric,timestamptz,text,text,numeric)'::regprocedure)) > 0,
+  'Restaurant total includes the full fisher tip.'
 );
 
 select * from finish();
