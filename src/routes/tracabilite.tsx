@@ -20,6 +20,7 @@ type DetectorWindow = typeof window & { BarcodeDetector?: new (options?: { forma
 
 function classifyCode(raw: string): ScanResult {
   const value = raw.trim();
+  if (value.length > 2048) throw new Error("Code invalide ou trop long.");
   if (/^https:\/\//i.test(value)) return { raw: value, kind: /\/(01)\d{14}/.test(value) || /\/(10|21)\//.test(value) ? "gs1" : "url" };
   if (/^https?:\/\//i.test(value) || /^(javascript|data|file|intent):/i.test(value)) throw new Error("URL refusée : seules les adresses HTTPS sont acceptées.");
   if (/^\d{8,14}$/.test(value)) return { raw: value, kind: "gs1" };
