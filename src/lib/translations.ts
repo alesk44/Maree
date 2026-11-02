@@ -760,3 +760,8 @@ Object.assign(translations, {
   "Référence :": ["Reference:", "Referință:"],
   "propriétaire et créateur de l'application Marée Jersey": ["owner and creator of the Marée Jersey app", "proprietarul și creatorul aplicației Marée Jersey"],
 });
+
+Object.assign(translations, {
+  "Espace privé : seuls vous et l’administration autorisée peuvent consulter les fichiers. PDF, JPG ou PNG — 10 Mo maximum par fichier.": ["Private storage: only you and authorised administrators can view these files. PDF, JPG or PNG — maximum 10 MB per file.", "Spațiu privat: doar dumneavoastră și administratorii autorizați pot consulta aceste fișiere. PDF, JPG sau PNG — maximum 10 MB per fișier."],
+  "Méthode :": ["Method:", "Metodă:"],
+});
