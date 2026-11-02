@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(168);
+select plan(172);
 
 -- Isolated auth users; the auth trigger creates their initial restaurant profiles.
 insert into auth.users (id, email) values
@@ -646,6 +646,31 @@ select is(
   0.5::numeric,
   'declining the offer does not restore reserved stock'
 );
+
+-- Exact 24-hour boundary: now() is transaction-stable, so the slot and policy comparison are equal.
+update public.catches set remaining_kg=0,status='sold_out'
+where id='10000000-0000-4000-8000-000000000003';
+insert into public.orders (
+  id,catch_id,restaurant_id,quantity_kg,requested_slot,fulfilment,status,
+  fisher_id_snapshot,product_subtotal,maree_fee,delivery_fee,total_amount
+) values (
+  '20000000-0000-4000-8000-000000000006',
+  '10000000-0000-4000-8000-000000000003',
+  '00000000-0000-4000-8000-000000000003',
+  0.5,now()+interval '24 hours','collection','confirmed',
+  '00000000-0000-4000-8000-000000000001',5,0.33,0,5.33
+);
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000003';
+select is(
+  public.request_order_cancellation('20000000-0000-4000-8000-000000000006'::uuid),
+  'cancelled'::text,
+  'cancellation exactly 24 hours before the slot is immediate and free'
+);
+reset role;
+select is((select status from public.orders where id='20000000-0000-4000-8000-000000000006'),'cancelled'::public.order_status,'exactly-24-hour cancellation marks the order cancelled');
+select is((select cancellation_penalty from public.orders where id='20000000-0000-4000-8000-000000000006'),0::numeric,'exactly-24-hour cancellation has no penalty');
+select is((select remaining_kg from public.catches where id='10000000-0000-4000-8000-000000000003'),0.5::numeric,'exactly-24-hour cancellation restores reserved stock');
 
 -- External QR references are stored in the existing catch traceability tables.
 select ok((select relrowsecurity from pg_class where oid = 'public.catch_traceability_codes'::regclass), 'traceability QR codes have RLS enabled');
