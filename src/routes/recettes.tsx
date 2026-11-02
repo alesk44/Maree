@@ -99,12 +99,16 @@ function RecipeSpecies({ slug, name, note, ideas, label }: { slug: string; name:
         <a href="/#weather-season-title" className="text-sm underline">{label("Retour aux saisons", "Back to season guide")}</a>
       </div>
       <div className="mt-4 grid gap-4 md:grid-cols-3">
-        {ideas.map((idea) => <article key={idea.title} className="card flex flex-col overflow-hidden">\n          <img src={idea.imageUrl} alt={`${idea.title} — photo illustrative du plat`} loading="lazy" className="h-48 w-full object-cover" />\n          <div className="flex flex-1 flex-col p-5">
+        {ideas.map((idea) => <article key={idea.title} className="card flex flex-col overflow-hidden">
+          <img src={idea.imageUrl} alt={`${idea.title} — photo illustrative du plat`} loading="lazy" className="h-48 w-full object-cover" />
+          <div className="flex flex-1 flex-col p-5">
           <span className="text-xs font-semibold uppercase tracking-wide text-accent">{idea.source ? label("Recette publiée", "Published recipe") : label("Idée Marée", "Marée idea")}</span>
           <h3 className="mt-2 text-lg font-semibold">{idea.title}</h3>
           <p className="mt-2 flex-1 text-sm text-muted-foreground">{idea.description}</p>
           <p className="mt-4 text-xs">{idea.author}</p>
           {idea.sourceUrl && <a href={idea.sourceUrl} target="_blank" rel="noreferrer" className="mt-3 text-sm font-semibold underline">{label("Voir la publication originale", "View original publication")} ↗</a>}
+          <a href={idea.imageSourceUrl} target="_blank" rel="noreferrer" className="mt-3 text-[10px] text-muted-foreground underline">{label("Crédit photo", "Photo credit")}: {idea.imageCredit}</a>
+          </div>
         </article>)}
       </div>
     </section>
