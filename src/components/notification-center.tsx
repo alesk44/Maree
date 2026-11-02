@@ -13,7 +13,7 @@ type NotificationRow = {
   read_at: string | null;
 };
 
-const allowedTargets = new Set(["/restaurant", "/espace-pecheur", "/admin"]);
+const allowedTargets = new Set(["/restaurant", "/espace-pecheur", "/admin", "/verification"]);
 
 export function NotificationCenter() {
   const { t, dt } = useLanguage();
