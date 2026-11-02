@@ -170,9 +170,10 @@ function Restaurant() {
         <h3 className="font-semibold">{t("Factures mensuelles des pêcheurs")}</h3>
         {monthlyInvoices.length===0 ? <Empty>{t("Aucune facture mensuelle pour le moment. Elles apparaîtront après la génération mensuelle.")}</Empty> :
           <ul className="grid gap-2">{monthlyInvoices.map(i=><li key={i.id} className="rounded-xl border border-border p-4">
-            <div className="flex flex-wrap justify-between gap-2"><strong>{t("Période")} {i.period_start} — {i.period_end}</strong><strong>{gbp(Number(i.subtotal))}</strong></div>
+            <div className="flex flex-wrap justify-between gap-2"><strong>{t("Période")} {i.period_start} — {i.period_end}</strong><strong>{gbp(Number(i.subtotal)+Number(i.tip_total??0))}</strong></div>
+            <p className="text-xs text-muted-foreground">{t("Produits")} : {gbp(Number(i.subtotal))} · {t("Pourboires")} : {gbp(Number(i.tip_total??0))}</p>
             <p className="text-sm text-muted-foreground">{t("Pêcheur")} · {i.fisher_id.slice(0,8).toUpperCase()} · {t("Échéance")} : {i.due_date} · {i.status==="paid"?t("Réglée"):i.status==="void"?t("Refusée par le pêcheur"):t("À régler au pêcheur")}</p>
-            {i.items?.length ? <ul className="mt-2 grid gap-1 border-t border-border pt-2 text-xs">{i.items.map(item=><li key={item.order_id} className="flex flex-wrap justify-between gap-2"><span>Commande {item.order_id.slice(0,8).toUpperCase()} · {Number(item.quantity_kg)} kg × {gbp(Number(item.unit_price))}/kg</span><strong>{gbp(Number(item.product_subtotal))}</strong></li>)}</ul> : null}
+            {i.items?.length ? <ul className="mt-2 grid gap-1 border-t border-border pt-2 text-xs">{i.items.map(item=><li key={item.order_id} className="flex flex-wrap justify-between gap-2"><span>Commande {item.order_id.slice(0,8).toUpperCase()} · {Number(item.quantity_kg)} kg × {gbp(Number(item.unit_price))}/kg · {t("Pourboire")} {gbp(Number(item.tip_amount??0))}</span><strong>{gbp(Number(item.product_subtotal)+Number(item.tip_amount??0))}</strong></li>)}</ul> : null}
             {i.paid_at&&<p className="text-xs text-muted-foreground">{t("Règlement confirmé")} : {dt(i.paid_at)} {i.payment_method||""} {i.payment_reference||""}</p>}
           </li>)}</ul>}
       </div>
