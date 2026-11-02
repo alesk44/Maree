@@ -84,7 +84,7 @@ function FisherSpace() {
           setMonthlyInvoices(nextInvoices);
         }
       }
-    } catch(e) { toast.error(e instanceof Error?t(e.message):t("Impossible de charger le profil.")); return; }
+    } catch(e) { toast.error(e instanceof Error && !("code" in e) ? t(e.message) : t("Impossible de charger le profil.")); return; }
     finally { setProfileLoading(false); }
   };
   useEffect(()=>{void load();},[]);
@@ -103,7 +103,7 @@ function FisherSpace() {
       toast.success(t("Prise publiée dans le catalogue partagé."));
       setForm((f)=>({...f,species:"",grade:""}));
       await refresh();
-    } catch(e) { toast.error(e instanceof Error?t(e.message):t("Impossible de publier cette prise.")); }
+    } catch(e) { toast.error(e instanceof Error && !("code" in e) ? t(e.message) : t("Impossible de publier cette prise.")); }
   };
 
   const saveFisherProfile = async (e:React.FormEvent) => {
@@ -121,7 +121,7 @@ function FisherSpace() {
       bio:fisherProfile.bio.trim()||null,since_year:year
     }).eq("id",userId);
     setSavingProfile(false);
-    if(error) toast.error(error.message); else {toast.success(t("Profil pêcheur enregistré."));await refresh();}
+    if(error) toast.error(t("Une erreur technique est survenue. Réessayez.")); else {toast.success(t("Profil pêcheur enregistré."));await refresh();}
   };
 
   const saveCatch = async (id:string,patch:{qtyKg?:number;priceKg?:number;status?:Status}) => {
@@ -133,7 +133,7 @@ function FisherSpace() {
       });
       toast.success(t("Lot mis à jour."));
       await refresh();
-    } catch(e) { toast.error(e instanceof Error?t(e.message):t("Impossible de modifier ce lot.")); }
+    } catch(e) { toast.error(e instanceof Error && !("code" in e) ? t(e.message) : t("Impossible de modifier ce lot.")); }
   };
 
   const confirmInvoicePayment = async (invoiceId:string) => {
@@ -145,7 +145,7 @@ function FisherSpace() {
       await confirmFisherInvoicePaid(invoiceId,method.trim()||null,reference.trim()||null);
       toast.success(t("Règlement confirmé et enregistré."));
       setMonthlyInvoices(await fetchMyMonthlyInvoices());
-    } catch(e) { toast.error(e instanceof Error?t(e.message):t("Impossible de confirmer ce règlement.")); }
+    } catch(e) { toast.error(e instanceof Error && !("code" in e) ? t(e.message) : t("Impossible de confirmer ce règlement.")); }
   };
 
   const decideOrder = async (order:SharedOrderRow,status:"confirmed"|"cancelled") => {
@@ -153,7 +153,7 @@ function FisherSpace() {
       await updateMyOrderStatus(order.id,status);
       toast.success(status==="confirmed"?t("Commande acceptée."):t("Commande refusée."));
       setOrders(await fetchMyOrders());
-    } catch(e) { toast.error(e instanceof Error?e.message:t("Impossible de mettre à jour la commande.")); }
+    } catch(e) { toast.error(e instanceof Error && !("code" in e) ? t(e.message) : t("Une erreur technique est survenue. Réessayez.")); }
   };
 
   const decideLateCancellation = async (order:SharedOrderRow,approve:boolean) => {
@@ -170,7 +170,7 @@ function FisherSpace() {
       toast.success(approve?t("Offre d’annulation et pénalité envoyées au restaurant."):t("Annulation refusée."));
       setOrders(await fetchMyOrders());
       await refresh();
-    }catch(e){toast.error(e instanceof Error?t(e.message):t("Impossible de traiter cette demande."));}
+    }catch(e){toast.error(e instanceof Error && !("code" in e) ? t(e.message) : t("Impossible de traiter cette demande."));}
   };
 
   const advance = async (order:SharedOrderRow) => {
@@ -180,7 +180,7 @@ function FisherSpace() {
       await updateMyOrderStatus(order.id,target);
       toast.success(t("Statut de commande mis à jour."));
       setOrders(await fetchMyOrders());
-    } catch(e) { toast.error(e instanceof Error?t(e.message):t("Impossible de modifier la commande.")); }
+    } catch(e) { toast.error(e instanceof Error && !("code" in e) ? t(e.message) : t("Impossible de modifier la commande.")); }
   };
 
   if(profileLoading||loading) return <div className="mx-auto max-w-6xl px-4 py-10"><p role="status">{t("Chargement de votre espace pêcheur…")}</p></div>;
