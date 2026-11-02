@@ -17,8 +17,9 @@ export const Route = createFileRoute("/connexion")({
 
 function AuthPage() {
   const { t } = useLanguage();
-  // OAuth/email links must return to the deployed preview, never the local dev origin.
-  const authRedirectUrl = "https://maree-jersey-preview.alexozo44760.workers.dev/connexion";
+  // Build redirects from the current app origin so preview and production both work.
+  // Supabase Auth must allowlist each deployed origin in its URL configuration.
+  const getAuthRedirectUrl = () => `${window.location.origin}/connexion`;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -68,7 +69,7 @@ function AuthPage() {
     setNeedsEmailConfirmation(false);
     try {
       if (mode === "reset") {
-        const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: `${authRedirectUrl}?flow=recovery` });
+        const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: `${getAuthRedirectUrl()}?flow=recovery` });
         if (error) throw error;
         toast.success(t("Si cette adresse correspond à un compte, un e-mail de réinitialisation va être envoyé."));
       } else if (mode === "update") {
@@ -81,7 +82,7 @@ function AuthPage() {
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
-          options: { data: { display_name: displayName.trim() }, emailRedirectTo: authRedirectUrl },
+          options: { data: { display_name: displayName.trim() }, emailRedirectTo: getAuthRedirectUrl() },
         });
         if (error) throw error;
         if (data.session) {
@@ -110,7 +111,7 @@ function AuthPage() {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: authRedirectUrl },
+        options: { redirectTo: getAuthRedirectUrl() },
       });
       if (error) throw error;
     } catch (error) {
