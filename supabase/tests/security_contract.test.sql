@@ -142,7 +142,7 @@ select throws_ok(
   'user cannot submit a verification request for another account'
 );
 select throws_ok(
-  $$$public.update_order_status('20000000-0000-4000-8000-000000000001'::uuid, 'confirmed'::public.order_status)$$$,
+  $$select public.update_order_status('20000000-0000-4000-8000-000000000001'::uuid, 'confirmed'::public.order_status)$$,
   'P0001', 'Only fisher accounts can update orders',
   'restaurant account cannot advance order status'
 );
@@ -159,22 +159,22 @@ select ok(
   'fisher clients cannot bypass the inventory ownership RPC with direct updates'
 );
 select throws_ok(
-  $$$public.update_order_status('20000000-0000-4000-8000-000000000002'::uuid, 'delivered'::public.order_status)$$$,
+  $$select public.update_order_status('20000000-0000-4000-8000-000000000002'::uuid, 'delivered'::public.order_status)$$,
   'P0001', 'Invalid order status transition',
   'fisher cannot skip required order status transitions'
 );
 select throws_ok(
-  $$$public.update_order_status('20000000-0000-4000-8000-000000000001'::uuid, 'confirmed'::public.order_status)$$$,
+  $$select public.update_order_status('20000000-0000-4000-8000-000000000001'::uuid, 'confirmed'::public.order_status)$$,
   'P0001', 'Only the lot owner can update this order',
   'fisher cannot update another fisher order'
 );
 select throws_ok(
-  $$$public.reserve_catch('10000000-0000-4000-8000-000000000001'::uuid, 0.5, now() + interval '1 day', 'collection', null)$$$,
+  $$select public.reserve_catch('10000000-0000-4000-8000-000000000001'::uuid, 0.5, now() + interval '1 day', 'collection', null)$$,
   'P0001', 'Only restaurant accounts can place orders',
   'fisher cannot reserve a catch'
 );
 select throws_ok(
-  $$$public.review_verification_request('30000000-0000-4000-8000-000000000001'::uuid, 'approved'::public.verification_status, null)$$$,
+  $$select public.review_verification_request('30000000-0000-4000-8000-000000000001'::uuid, 'approved'::public.verification_status, null)$$,
   'P0001', 'Admin access required',
   'fisher cannot review verification requests'
 );
@@ -184,7 +184,7 @@ reset role;
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000005';
 select lives_ok(
-  $$$public.review_verification_request('30000000-0000-4000-8000-000000000003'::uuid, 'approved'::public.verification_status, 'Approved by test admin')$$$,
+  $$select public.review_verification_request('30000000-0000-4000-8000-000000000003'::uuid, 'approved'::public.verification_status, 'Approved by test admin')$$,
   'admin can approve a pending verification request'
 );
 reset role;
@@ -196,7 +196,7 @@ select is(public.is_current_user_admin(), true, 'separate admin grant is recogni
 select is((select role::text from public.profiles where id = '00000000-0000-4000-8000-000000000007'), 'restaurant', 'separate admin grant preserves the restaurant business role');
 select is((select count(*) from public.verification_requests), 4::bigint, 'separate admin can read all verification requests');
 select lives_ok(
-  $$$public.review_verification_request('30000000-0000-4000-8000-000000000004'::uuid, 'approved'::public.verification_status, 'Approved by separate admin')$$$,
+  $$select public.review_verification_request('30000000-0000-4000-8000-000000000004'::uuid, 'approved'::public.verification_status, 'Approved by separate admin')$$,
   'separate admin can approve a pending verification request'
 );
 reset role;
