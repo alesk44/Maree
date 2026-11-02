@@ -56,7 +56,7 @@ function LegalPage() {
       <h2 className="text-2xl font-semibold">{t("5. Sécurité alimentaire et traçabilité")}</h2>
       <p>{t("Les opérateurs alimentaires restent responsables des obligations qui leur incombent au titre des lois de Jersey applicables. Les informations de lot, d'espèce, de zone, de date de capture et de débarquement affichées par la plateforme doivent être exactes et vérifiables. La présence d'un QR code ou d'une fiche de traçabilité ne vaut pas certification officielle ni validation sanitaire par Marée Jersey.")}</p>
       <p>{t("Les pêcheurs et autres opérateurs doivent vérifier les exigences applicables à leur activité, notamment l'enregistrement éventuel comme Food Business Operator, les règles d'hygiène, de transport, de conservation, d'étiquetage et les obligations propres à la pêche commerciale.")}</p>
-      <p className="text-sm text-muted-foreground">Références : <a className="underline" href="https://admin.jerseylaw.je/laws/current/l_4_2023" target="_blank" rel="noreferrer">Food (Jersey) Law 2023</a> · <a className="underline" href="https://www.gov.je/Industry/RetailHospitality/FoodDrink/pages/foodmatters.aspx" target="_blank" rel="noreferrer">{t("enregistrement des entreprises alimentaires et Eat Safe")}</a>.</p>
+      <p className="text-sm text-muted-foreground">{t("Références :")} <a className="underline" href="https://admin.jerseylaw.je/laws/current/l_4_2023" target="_blank" rel="noreferrer">Food (Jersey) Law 2023</a> · <a className="underline" href="https://www.gov.je/Industry/RetailHospitality/FoodDrink/pages/foodmatters.aspx" target="_blank" rel="noreferrer">{t("enregistrement des entreprises alimentaires et Eat Safe")}</a>.</p>
     </section>
 
     <section className="grid gap-3">
