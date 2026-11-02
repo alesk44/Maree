@@ -2,7 +2,7 @@ import { useLanguage } from "@/lib/i18n";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { fetchMyOrders, reserveSharedCatch, useSharedMarket, type SharedOrderRow } from "@/lib/shared-market";
+import { fetchMyOrders, reserveSharedCatch, setRestaurantFisherBillingMode, useSharedMarket, type SharedOrderRow } from "@/lib/shared-market";
 import { supabase } from "@/lib/supabase";
 import { Empty, OrderSteps, PageHeader } from "@/components/ui-bits";
 
@@ -32,7 +32,7 @@ function Restaurant() {
   const [note, setNote] = useState("");
   const [signedIn, setSignedIn] = useState(false);
   const [accountTab, setAccountTab] = useState<"activity" | "billing" | "profile">("activity");
-  const [profileName, setProfileName] = useState("");
+  const [profileName, setProfileName] = useState("");\n  const [billingMode, setBillingMode] = useState<"immediate"|"monthly">("immediate");
 
   const loadOrders = async () => {
     setOrdersLoading(true);
@@ -50,7 +50,7 @@ function Restaurant() {
   };
 
   useEffect(() => { void loadOrders(); }, []);
-  useEffect(() => { if (!catchId && catches.length) setCatchId(produit ?? catches[0]?.id ?? ""); }, [catches, catchId, produit]);
+  useEffect(() => { if (!catchId && catches.length) setCatchId(produit ?? catches[0]?.id ?? ""); }, [catches, catchId, produit]);\n  useEffect(() => {\n    let active = true;\n    const loadMode = async () => {\n      if (!signedIn || !sel) { setBillingMode("immediate"); return; }\n      const { data: auth } = await supabase.auth.getUser();\n      if (!auth.user) return;\n      const { data } = await supabase.from("restaurant_fisher_billing_settings").select("billing_mode").eq("restaurant_id", auth.user.id).eq("fisher_id", sel.fisherId).maybeSingle();\n      if (active) setBillingMode(data?.billing_mode === "monthly" ? "monthly" : "immediate");\n    };\n    void loadMode();\n    return () => { active = false; };\n  }, [signedIn, sel?.fisherId]);
 
   const avail = catches.filter((c) => c.status === "disponible" && c.qtyKg > 0);
   const sel = catches.find((c) => c.id === catchId);
@@ -61,7 +61,7 @@ function Restaurant() {
     if (!Number.isFinite(qty) || qty < 0.5 || qty > sel.qtyKg) { toast.error(t("Quantité invalide ou supérieure au stock disponible.")); return; }
     if (!Number.isFinite(new Date(slot).getTime())) { toast.error(t("Créneau invalide.")); return; }
     try {
-      await reserveSharedCatch({ catchId, qtyKg: qty, slot: new Date(slot).toISOString(), mode, note: note.trim() });
+      if (sel) await setRestaurantFisherBillingMode(sel.fisherId,billingMode);\n      await reserveSharedCatch({ catchId, qtyKg: qty, slot: new Date(slot).toISOString(), mode, note: note.trim() });
       toast.success(t("Réservation envoyée au pêcheur."));
       setNote("");
       await Promise.all([refresh(), loadOrders()]);
@@ -84,7 +84,7 @@ function Restaurant() {
         <Metric label={t("En attente de livraison")} value={orders.filter(o=>o.status!=="delivered"&&o.status!=="cancelled").length} detail={t("Commandes ouvertes")}/>
       </div>
       {orders.filter(o=>o.status==="delivered").length===0 ? <Empty>{t("Aucune commande livrée à afficher pour le moment.")}</Empty> :
-        <ul className="grid gap-2">{orders.filter(o=>o.status==="delivered").map(o=>{const lot=catches.find(c=>c.id===o.catch_id);const total=(lot?.priceKg??0)*Number(o.quantity_kg);return <li key={o.id} className="rounded-xl border border-border p-4">
+        <ul className="grid gap-2">{orders.filter(o=>o.status==="delivered").map(o=>{const lot=catches.find(c=>c.id===o.catch_id);const total=Number(o.product_subtotal??0);return <li key={o.id} className="rounded-xl border border-border p-4">
           <div className="flex flex-wrap justify-between gap-2"><strong>{lot?.emoji} {t(lot?.species??"Produit")} · {Number(o.quantity_kg)} kg</strong><strong>{gbp(total)}</strong></div>
           <p className="text-xs text-muted-foreground">{t("Livrée")} · {dt(o.requested_slot)} · Réf. {o.id.slice(0,8).toUpperCase()}</p>
           <p className="mt-1 text-xs text-muted-foreground">{t("Relevé indicatif — ne constitue pas une facture fiscale ni une preuve de paiement.")}</p>
@@ -125,7 +125,7 @@ function Restaurant() {
               </select>
             </label>
           </div>
-          <label className="grid gap-1 text-sm font-medium">{t("Créneau (heure de Jersey)")}
+          <label className="grid gap-1 text-sm font-medium">{t("Facturation auprès de ce pêcheur")}\n            <select className="field" value={billingMode} onChange={(e)=>setBillingMode(e.target.value as "immediate"|"monthly")}>\n              <option value="immediate">{t("À chaque commande")}</option><option value="monthly">{t("Relevé mensuel (échéance à 7 jours)")}</option>\n            </select>\n          </label>\n          <label className="grid gap-1 text-sm font-medium">{t("Créneau (heure de Jersey)")
             <input className="field" type="datetime-local" required value={slot} onChange={(e) => setSlot(e.target.value)} />
           </label>
           <label className="grid gap-1 text-sm font-medium">{t("Note")}
@@ -133,10 +133,10 @@ function Restaurant() {
           </label>
           {sel && <div className="rounded-lg bg-secondary p-4 text-sm">
             <p className="font-semibold">{t("Résumé")}</p>
-            <p>{qty} kg de {t(sel.species)} × {gbp(sel.priceKg)} = <strong>{gbp(qty * sel.priceKg)}</strong></p>
-            <p>{t("Commission Marée Jersey côté restaurant (6,5 %)")} : <strong>{gbp(qty * sel.priceKg * 0.065)}</strong></p>
-            <p>{t("Total estimé pour le restaurant")} : <strong>{gbp(qty * sel.priceKg * 1.065)}</strong></p>
-            <p className="text-xs text-muted-foreground">{t("Commission pêcheur (6,5 %) déduite de son prix de vente. Les deux parts représentent 13 % du prix de base. Calcul indicatif, non prélevé à ce stade.")}</p>
+            <p>{qty} kg de {t(sel.species)} × {gbp(sel.priceKg)} = <strong>{gbp(Math.round(qty * sel.priceKg * 100) / 100)}</strong></p>
+            <p>{t("Frais de livraison Marée Jersey (20 %)")} : <strong>{gbp(mode==="livraison" ? Math.round(qty * sel.priceKg * 20) / 100 : 0)}</strong></p>
+            <p>{t("Total estimé pour le restaurant")} : <strong>{gbp(Math.round((qty * sel.priceKg * (mode==="livraison"?1.2:1))*100)/100)}</strong></p>
+            <p className="text-xs text-muted-foreground">{t("Le prix des produits revient au pêcheur. Les frais de livraison reviennent intégralement à Marée Jersey. Retrait au port gratuit. GST non ajouté.")}</p>
             <p className="text-muted-foreground">{fishers.find((f) => f.id === sel.fisherId)?.boat} · {t(mode)}</p>
           </div>}
           <button className="btn" disabled={!signedIn}>{t("Envoyer la réservation")}</button>
