@@ -136,7 +136,7 @@ select is((select count(*) from public.verification_requests), 1::bigint, 'resta
 select is((select display_name from public.get_my_business_profile()), 'Restaurant A'::text, 'private profile RPC returns only the authenticated owner profile');
 select is((select count(*) from public.verification_documents), 1::bigint, 'restaurant sees only its own verification document');
 select lives_ok(
-  $insert into public.verification_documents (
+  $$insert into public.verification_documents (
     id,request_id,user_id,document_type,file_path,original_filename,mime_type,size_bytes
   ) values (
     '40000000-0000-4000-8000-000000000003',
@@ -144,12 +144,12 @@ select lives_ok(
     '00000000-0000-4000-8000-000000000003',
     'other','00000000-0000-4000-8000-000000000003/fixture-c.pdf',
     'fixture-c.pdf','application/pdf',100
-  )$,
+  )$$,
   'owner can attach document metadata to their own verification request'
 );
 select is((select count(*) from public.verification_documents), 2::bigint, 'owner can read their newly attached verification document');
 select lives_ok(
-  $update public.verification_documents set review_status='approved' where id='40000000-0000-4000-8000-000000000001'$,
+  $$update public.verification_documents set review_status='approved' where id='40000000-0000-4000-8000-000000000001'$,
   'non-admin document review update is filtered by row security'
 );
 select is((select review_status from public.verification_documents where id='40000000-0000-4000-8000-000000000001'),'pending'::text,'document owner cannot approve their own evidence');
@@ -163,7 +163,7 @@ select throws_ok(
     '00000000-0000-4000-8000-000000000003'::uuid, 'Bass', 'South coast',
     now() - interval '2 hours', now() - interval '1 hour',
     1, 1, 9, 'Line caught', 'Keep chilled'
-  )$$,
+  )$$$,
   '42501', null,
   'restaurant cannot publish a catch'
 );
@@ -244,14 +244,14 @@ reset role;
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000005';
 select lives_ok(
-  $select public.review_verification_request('30000000-0000-4000-8000-000000000003'::uuid, 'approved'::public.verification_status, 'Approved by test admin')$,
+  $$select public.review_verification_request('30000000-0000-4000-8000-000000000003'::uuid, 'approved'::public.verification_status, 'Approved by test admin')$,
   'admin can approve a pending verification request'
 );
 select is((select count(*) from public.verification_documents), 3::bigint, 'admin can read all verification documents');
 select lives_ok(
-  $update public.verification_documents
+  $$update public.verification_documents
     set review_status='approved', reviewed_by=auth.uid(), reviewed_at=now()
-    where id='40000000-0000-4000-8000-000000000001'$,
+    where id='40000000-0000-4000-8000-000000000001'$$$,
   'admin can update verification document review status'
 );
 select is((select review_status from public.verification_documents where id='40000000-0000-4000-8000-000000000001'),'approved'::text,'admin document review is persisted');
