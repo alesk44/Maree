@@ -82,6 +82,17 @@ Objectif : Marée doit pouvoir lire et référencer les QR codes déjà utilisé
 
 Constat initial : les sources officielles consultées décrivent les licences, logbooks et déclarations de débarquement, et Catch Jersey est cité pour certaines déclarations spécifiques de thon rouge; aucune plateforme publique universelle de QR traçabilité couvrant tous les poissons/fruits de mer de Jersey n'a été identifiée. Marée doit donc être un lecteur/agrégateur interopérable, pas prétendre se connecter à un registre central inexistant.
 
+## Suivi complémentaire — 2 novembre 2026
+
+- [x] Correctif RLS ajouté : un restaurant peut lire les détails du lot lié à sa propre commande même lorsque le lot n'est plus public/disponible; les autres lots réservés restent invisibles.
+- [x] Deux assertions vérifient l'accès au lot réservé de sa commande et le refus d'accès au lot réservé d'un autre restaurant.
+- [x] Le parcours d'annulation tardive comprend maintenant cinq assertions supplémentaires : le restaurant peut refuser l'offre du pêcheur, la commande reste confirmée et le stock reste réservé.
+- [x] Le plan pgTAP est porté à 168 assertions; le comptage statique des appels d'assertion correspond exactement à 168.
+- [ ] Les 168 assertions et le test de concurrence doivent encore être exécutés sur le commit courant `dea7e662b2b0c1df649b6a9417e485860236ed84`. Le workflow Supabase est encore bloqué/occupé à l'étape `Start local Supabase`; aucune conclusion de succès n'est annoncée.
+- [x] Sur ce commit, Build verification, Verify et Marée CI ont terminé avec succès.
+- [ ] Vérification manuelle navigateur, comptes restaurant/pêcheur réels et revue visuelle restent à faire.
+- [ ] Aucun merge, déploiement ou changement de la base Supabase connectée.
+
 ## Dernier audit — 2 novembre 2026 (résultats CI vérifiés)
 
 - [x] Sur le commit `fc2d498ea37b5f96a73a0738f6c410d07ffa9db6`, les quatre workflows `Verify`, `Build verification`, `Marée CI` et `Supabase migration tests` sont terminés avec succès.
