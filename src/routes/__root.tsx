@@ -102,7 +102,7 @@ function RootContent() {
     });
     return () => { active = false; listener.subscription.unsubscribe(); };
   }, []);
-  const links = NAV.map((n, i) => ({ ...n, icon: ["◈", "♧", "▣", "↗", "✓", "⌂", "⚙", "i"][i] }));
+  const links = NAV.map((n, i) => ({ ...n, icon: ["◈", "♧", "▣", "↗", "♙", "✓", "⌂", "⚙", "i"][i] }));
   return (
     <QueryClientProvider client={queryClient}>
       <a href="#main" className="sr-only focus:not-sr-only">{t("Aller au contenu")}</a>
@@ -135,6 +135,10 @@ function RootContent() {
                 <p className="hidden text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground lg:block">{t("Marché de la mer · Jersey")}</p>
               </div>
               <div className="flex items-center gap-2">
+                <Link to="/compte" className="flex items-center gap-2 rounded-full border border-border bg-card py-1 pl-1 pr-3 text-xs font-semibold text-foreground transition hover:border-accent" aria-label={t("Mon compte")}>
+                  <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-secondary text-accent">{account?.avatarUrl ? <img src={account.avatarUrl} alt="" className="h-full w-full object-cover" /> : "♙"}</span>
+                  <span className="hidden sm:inline">{t("Mon compte")}</span>
+                </Link>
                 <span className="hidden text-xs text-muted-foreground sm:inline">{t("Marché de la mer · Jersey")}</span>
                 <div role="group" aria-label={t("Langue")} className="inline-flex shrink-0 items-center rounded-lg border border-border bg-card p-1">
                   {([{ code: "fr", label: "FR" }, { code: "en", label: "EN" }, { code: "ro", label: "RO" }] as const).map((item) => (
