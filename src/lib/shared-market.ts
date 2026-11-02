@@ -70,7 +70,7 @@ export async function reserveSharedCatch(input:{catchId:string;qtyKg:number;slot
 export type SharedOrderRow = {
   id:string; catch_id:string; restaurant_id:string; quantity_kg:number|string;
   requested_slot:string; fulfilment:"delivery"|"collection"; note:string|null;
-  status:"submitted"|"confirmed"|"ready"|"delivered"|"cancelled"; created_at:string;
+  status:"submitted"|"confirmed"|"ready"|"delivered"|"cancelled"; created_at:string;\n  fisher_id_snapshot:string|null; unit_price_snapshot:number|string|null; product_subtotal:number|string|null;\n  delivery_fee_rate:number|string; delivery_fee:number|string; total_amount:number|string|null;\n  billing_mode:"immediate"|"monthly"; delivered_at:string|null;
 };
 
 export async function fetchMyOrders():Promise<SharedOrderRow[]> {
@@ -78,10 +78,18 @@ export async function fetchMyOrders():Promise<SharedOrderRow[]> {
   if(authError) throw authError;
   if(!user) return [];
   const {data,error}=await supabase.from("orders")
-    .select("id,catch_id,restaurant_id,quantity_kg,requested_slot,fulfilment,note,status,created_at")
+    .select("id,catch_id,restaurant_id,quantity_kg,requested_slot,fulfilment,note,status,created_at,fisher_id_snapshot,unit_price_snapshot,product_subtotal,delivery_fee_rate,delivery_fee,total_amount,billing_mode,delivered_at")
     .order("created_at",{ascending:false});
   if(error) throw error;
   return (data??[]) as SharedOrderRow[];
+}
+
+export async function setRestaurantFisherBillingMode(fisherId:string,mode:"immediate"|"monthly"):Promise<void>{
+  const {data:{user},error:authError}=await supabase.auth.getUser();
+  if(authError) throw authError;
+  if(!user) throw new Error("Connectez-vous avec votre compte restaurant.");
+  const {error}=await supabase.from("restaurant_fisher_billing_settings").upsert({restaurant_id:user.id,fisher_id:fisherId,billing_mode:mode,updated_at:new Date().toISOString()},{onConflict:"restaurant_id,fisher_id"});
+  if(error) throw error;
 }
 
 export async function updateMyCatch(id:string,patch:{remainingKg?:number;priceKg?:number;status?:"available"|"reserved"|"sold_out"}):Promise<void>{
