@@ -1,5 +1,5 @@
 import { useLanguage } from "@/lib/i18n";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { createSharedCatch, fetchMyOrders, fetchMyMonthlyInvoices, confirmFisherInvoicePaid, updateMyCatch, updateMyOrderStatus, useSharedMarket, type SharedOrderRow, type SharedMonthlyInvoiceRow } from "@/lib/shared-market";
@@ -198,6 +198,7 @@ function FisherSpace() {
 
   return <div className="mx-auto max-w-6xl px-4 py-10">
     <PageHeader title={t("Espace pêcheur")} sub={t("Connecté en tant que {name} — {boat}",{name:me.name,boat:me.boat})}/>
+    <Link to="/tracabilite" className="btn btn-accent mb-4 inline-flex">{t("Scanner QR")}</Link>
     <section className="mb-6 grid gap-2 sm:grid-cols-3" aria-label={t("Navigation espace pêcheur")}>
       <button type="button" className={"btn "+(accountTab==="activity"?"btn-accent":"")} onClick={()=>setAccountTab("activity")}>{t("Activité & commandes")}</button>
       <button type="button" className={"btn "+(accountTab==="sales"?"btn-accent":"")} onClick={()=>setAccountTab("sales")}>{t("Ventes & relevés")}</button>
