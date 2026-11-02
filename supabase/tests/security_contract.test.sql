@@ -263,7 +263,7 @@ select ok(not has_function_privilege('anon', 'public.mark_fisher_invoice_paid(uu
 
 -- Verify the monthly fisher invoice path independently from Marée commission billing.
 update public.orders
-set status='delivered', delivered_at=now(), billing_mode='monthly',
+set status='delivered', delivered_at=date_trunc('month',now()) - interval '15 days', billing_mode='monthly',
     fisher_id_snapshot='00000000-0000-4000-8000-000000000001',
     unit_price_snapshot=8.50, product_subtotal=4.25,
     maree_fee_rate=0.065, maree_fee=0.28,
