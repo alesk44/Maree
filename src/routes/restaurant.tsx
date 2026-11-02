@@ -32,7 +32,8 @@ function Restaurant() {
   const [note, setNote] = useState("");
   const [signedIn, setSignedIn] = useState(false);
   const [accountTab, setAccountTab] = useState<"activity" | "billing" | "profile">("activity");
-  const [profileName, setProfileName] = useState("");\n  const [billingMode, setBillingMode] = useState<"immediate"|"monthly">("immediate");
+  const [profileName, setProfileName] = useState("");
+  const [billingMode, setBillingMode] = useState<"immediate"|"monthly">("immediate");
 
   const loadOrders = async () => {
     setOrdersLoading(true);
@@ -50,7 +51,19 @@ function Restaurant() {
   };
 
   useEffect(() => { void loadOrders(); }, []);
-  useEffect(() => { if (!catchId && catches.length) setCatchId(produit ?? catches[0]?.id ?? ""); }, [catches, catchId, produit]);\n  useEffect(() => {\n    let active = true;\n    const loadMode = async () => {\n      if (!signedIn || !sel) { setBillingMode("immediate"); return; }\n      const { data: auth } = await supabase.auth.getUser();\n      if (!auth.user) return;\n      const { data } = await supabase.from("restaurant_fisher_billing_settings").select("billing_mode").eq("restaurant_id", auth.user.id).eq("fisher_id", sel.fisherId).maybeSingle();\n      if (active) setBillingMode(data?.billing_mode === "monthly" ? "monthly" : "immediate");\n    };\n    void loadMode();\n    return () => { active = false; };\n  }, [signedIn, sel?.fisherId]);
+  useEffect(() => { if (!catchId && catches.length) setCatchId(produit ?? catches[0]?.id ?? ""); }, [catches, catchId, produit]);
+  useEffect(() => {
+    let active = true;
+    const loadMode = async () => {
+      if (!signedIn || !sel) { setBillingMode("immediate"); return; }
+      const { data: auth } = await supabase.auth.getUser();
+      if (!auth.user) return;
+      const { data } = await supabase.from("restaurant_fisher_billing_settings").select("billing_mode").eq("restaurant_id", auth.user.id).eq("fisher_id", sel.fisherId).maybeSingle();
+      if (active) setBillingMode(data?.billing_mode === "monthly" ? "monthly" : "immediate");
+    };
+    void loadMode();
+    return () => { active = false; };
+  }, [signedIn, sel?.fisherId]);
 
   const avail = catches.filter((c) => c.status === "disponible" && c.qtyKg > 0);
   const sel = catches.find((c) => c.id === catchId);
@@ -61,7 +74,8 @@ function Restaurant() {
     if (!Number.isFinite(qty) || qty < 0.5 || qty > sel.qtyKg) { toast.error(t("Quantité invalide ou supérieure au stock disponible.")); return; }
     if (!Number.isFinite(new Date(slot).getTime())) { toast.error(t("Créneau invalide.")); return; }
     try {
-      if (sel) await setRestaurantFisherBillingMode(sel.fisherId,billingMode);\n      await reserveSharedCatch({ catchId, qtyKg: qty, slot: new Date(slot).toISOString(), mode, note: note.trim() });
+      if (sel) await setRestaurantFisherBillingMode(sel.fisherId,billingMode);
+      await reserveSharedCatch({ catchId, qtyKg: qty, slot: new Date(slot).toISOString(), mode, note: note.trim() });
       toast.success(t("Réservation envoyée au pêcheur."));
       setNote("");
       await Promise.all([refresh(), loadOrders()]);
@@ -125,7 +139,12 @@ function Restaurant() {
               </select>
             </label>
           </div>
-          <label className="grid gap-1 text-sm font-medium">{t("Facturation auprès de ce pêcheur")}\n            <select className="field" value={billingMode} onChange={(e)=>setBillingMode(e.target.value as "immediate"|"monthly")}>\n              <option value="immediate">{t("À chaque commande")}</option><option value="monthly">{t("Relevé mensuel (échéance à 7 jours)")}</option>\n            </select>\n          </label>\n          <label className="grid gap-1 text-sm font-medium">{t("Créneau (heure de Jersey)")
+          <label className="grid gap-1 text-sm font-medium">{t("Facturation auprès de ce pêcheur")}
+            <select className="field" value={billingMode} onChange={(e)=>setBillingMode(e.target.value as "immediate"|"monthly")}>
+              <option value="immediate">{t("À chaque commande")}</option><option value="monthly">{t("Relevé mensuel (échéance à 7 jours)")}</option>
+            </select>
+          </label>
+          <label className="grid gap-1 text-sm font-medium">{t("Créneau (heure de Jersey)")
             <input className="field" type="datetime-local" required value={slot} onChange={(e) => setSlot(e.target.value)} />
           </label>
           <label className="grid gap-1 text-sm font-medium">{t("Note")}
