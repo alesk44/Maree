@@ -21,7 +21,7 @@ export function NotificationCenter() {
   const [items, setItems] = useState<NotificationRow[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const unread = items.filter((item) => !item.read_at).length;
+  const [unread, setUnread] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -29,13 +29,21 @@ export function NotificationCenter() {
 
     const load = async (id: string) => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("notifications")
-        .select("id,event_type,title,body,href,created_at,read_at")
-        .eq("user_id", id)
-        .order("created_at", { ascending: false })
-        .limit(20);
-      if (active && !error) setItems((data ?? []) as NotificationRow[]);
+      const [rows, unreadCount] = await Promise.all([
+        supabase
+          .from("notifications")
+          .select("id,event_type,title,body,href,created_at,read_at")
+          .eq("user_id", id)
+          .order("created_at", { ascending: false })
+          .limit(20),
+        supabase
+          .from("notifications")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", id)
+          .is("read_at", null),
+      ]);
+      if (active && !rows.error) setItems((rows.data ?? []) as NotificationRow[]);
+      if (active && !unreadCount.error) setUnread(unreadCount.count ?? 0);
       if (active) setLoading(false);
     };
 
@@ -46,8 +54,10 @@ export function NotificationCenter() {
       }
       if (!active) return;
       setUserId(id);
+      setItems([]);
+      setUnread(0);
+      setOpen(false);
       if (!id) {
-        setItems([]);
         return;
       }
       await load(id);
@@ -101,6 +111,7 @@ export function NotificationCenter() {
       .is("read_at", null);
     if (!error) {
       setItems((current) => current.map((item) => item.read_at ? item : { ...item, read_at: readAt }));
+      setUnread(0);
     }
   };
 
@@ -115,7 +126,7 @@ export function NotificationCenter() {
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
       >
-        <span aria-hidden="true">♧</span>
+        <span aria-hidden="true">🔔</span>
         {unread > 0 && <span className="absolute -right-1 -top-1 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-accent-foreground">{unread > 9 ? "9+" : unread}</span>}
       </button>
       {open && (
