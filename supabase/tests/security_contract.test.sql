@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(65);
+select plan(79);
 
 -- Isolated auth users; the auth trigger creates their initial restaurant profiles.
 insert into auth.users (id, email) values
@@ -258,6 +258,56 @@ select is(
 reset role;
 select ok(has_function_privilege('authenticated', 'public.mark_fisher_invoice_paid(uuid,text,text)', 'EXECUTE'), 'authenticated fisher payment confirmation RPC is available');
 select ok(not has_function_privilege('anon', 'public.mark_fisher_invoice_paid(uuid,text,text)', 'EXECUTE'), 'anonymous users cannot confirm invoice payments');
+
+-- Marée commission invoices are restaurant liabilities, separate from fisher invoices.
+select ok(to_regclass('public.maree_monthly_commission_invoices') is not null, 'monthly Marée commission invoice table exists');
+select ok(to_regclass('public.maree_monthly_commission_invoice_items') is not null, 'monthly Marée commission invoice items table exists');
+select ok(has_function_privilege('service_role', 'public.generate_maree_monthly_commission_invoices(date)', 'EXECUTE'), 'trusted scheduler can generate Marée commission invoices');
+select ok(not has_function_privilege('authenticated', 'public.generate_maree_monthly_commission_invoices(date)', 'EXECUTE'), 'clients cannot generate Marée commission invoices');
+select ok(has_function_privilege('authenticated', 'public.declare_maree_commission_invoice_paid(uuid,text,text)', 'EXECUTE'), 'restaurant declaration RPC is available to authenticated users');
+select ok(has_function_privilege('authenticated', 'public.verify_maree_commission_invoice_paid(uuid)', 'EXECUTE'), 'admin verification RPC is available to authenticated users');
+
+insert into public.maree_monthly_commission_invoices
+  (id,restaurant_id,period_start,period_end,due_date,commission_total)
+values
+  ('40000000-0000-4000-8000-000000000001',
+   '00000000-0000-4000-8000-000000000003',
+   date_trunc('month',current_date)::date,
+   (date_trunc('month',current_date)+interval '1 month - 1 day')::date,
+   current_date+7,0.28);
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000003';
+select is((select count(*) from public.maree_monthly_commission_invoices),1::bigint,'restaurant can read its own Marée commission statement');
+select lives_ok(
+  $select public.declare_maree_commission_invoice_paid('40000000-0000-4000-8000-000000000001'::uuid,'Bank transfer','TEST-REF')$,
+  'restaurant can declare an off-platform commission payment'
+);
+select is((select status from public.maree_monthly_commission_invoices where id='40000000-0000-4000-8000-000000000001'),'declared_paid'::text,'restaurant declaration is not treated as verified payment');
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
+select is((select count(*) from public.maree_monthly_commission_invoices),0::bigint,'fisher cannot read restaurant Marée commission statements');
+select throws_ok(
+  $select public.verify_maree_commission_invoice_paid('40000000-0000-4000-8000-000000000001'::uuid)$,
+  'P0001','Admin access required','fisher cannot verify a Marée commission payment'
+);
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000005';
+select lives_ok(
+  $select public.verify_maree_commission_invoice_paid('40000000-0000-4000-8000-000000000001'::uuid)$,
+  'admin can verify a restaurant payment declaration'
+);
+select is((select status from public.maree_monthly_commission_invoices where id='40000000-0000-4000-8000-000000000001'),'paid'::text,'admin verification marks the commission invoice paid');
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000004';
+select is((select count(*) from public.maree_monthly_commission_invoices),0::bigint,'other restaurant cannot read another restaurant commission statement');
+reset role;
 
 select * from finish();
 rollback;
