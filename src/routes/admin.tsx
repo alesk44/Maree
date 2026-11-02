@@ -44,6 +44,39 @@ function Admin() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const documentTypeLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      fishing_licence: "Licence de pêche",
+      vessel_registration: "Immatriculation du bateau",
+      business_licence: "Business licence",
+      safety_training: "Formation sécurité",
+      species_permit: "Permis espèces / engins",
+      food_business_registration: "Enregistrement Food Business",
+      food_safety_plan: "Plan hygiène / HACCP",
+      other: "Autre",
+    };
+    return t(labels[type] ?? "Autre");
+  };
+  const complianceLabels: Record<string, string> = {
+    vessel_name: "Nom du bateau (si applicable)",
+    home_port: "Port d’attache",
+    fishing_licence_ref: "Référence licence de pêche commerciale (si applicable)",
+    vessel_registration_ref: "Immatriculation / registre du navire (si applicable)",
+    business_licence_ref: "Business licence",
+    safety_training_ref: "Formation ou certificat de sécurité (si applicable)",
+    species_permits: "Permis particuliers / espèces / engins (si applicable)",
+    food_business_ref: "Enregistrement Food Business / Environmental Health (si applicable)",
+    food_safety_system: "Système de sécurité alimentaire adapté (HACCP si requis)",
+    clean_water_ice: "Eau potable et glace propre adaptées au contact alimentaire",
+    cold_chain: "Maîtrise du refroidissement et de la chaîne du froid",
+    clean_equipment: "Surfaces, outils et contenants nettoyés et désinfectés",
+    personal_hygiene: "Hygiène personnelle et tenue de travail adaptées",
+    separation_and_contamination: "Prévention des contaminations croisées",
+    catch_traceability: "Traçabilité de l’origine, date, zone et lot de chaque prise",
+    legal_sales_confirmation: "Je confirme que mon activité et la vente sont autorisées selon les règles qui me sont applicables à Jersey",
+    notes: "Notes complémentaires",
+  };
+
   const reviewDocument = async (documentId: string, reviewStatus: "pending" | "approved" | "rejected" | "not_applicable") => {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) { toast.error(t("Session administrateur requise.")); return; }
@@ -130,7 +163,7 @@ function Admin() {
     <main className="mx-auto grid max-w-5xl gap-6 px-4 py-10">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-accent">Marée Jersey · Admin</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-accent">Marée Jersey · {t("Admin")}</p>
           <h1 className="mt-2 font-display text-3xl font-semibold">{t("Vérifications professionnelles")}</h1>
           <p className="mt-2 text-sm text-muted-foreground">{t("Examinez les demandes avant d’accorder les droits pêcheur ou restaurant.")}</p>
         </div>
@@ -178,7 +211,7 @@ function Admin() {
                 <div>
                   <h2 className="text-xl font-semibold">{request.business_name}</h2>
                   <p className="text-sm text-muted-foreground">
-                    {request.requested_role === "fisher" ? t("Pêcheur / pêcheuse") : t("Restaurant")} · {new Date(request.created_at).toLocaleString()}
+                    {request.requested_role === "fisher" ? t("Pêcheur / pêcheuse") : t("Restaurant")} · {new Intl.DateTimeFormat(language === "fr" ? "fr-FR" : language === "ro" ? "ro-RO" : "en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/Jersey" }).format(new Date(request.created_at))}
                   </p>
                 </div>
                 <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold">{t("En attente")}</span>
@@ -195,10 +228,10 @@ function Admin() {
               </div>
               {request.requested_role === "fisher" && <div className="rounded-lg border p-4 text-sm">
                 <strong>{request.fisher_category === "independent" ? t("Petit pêcheur indépendant") : t("Pêcheur professionnel")}</strong>
-                <pre className="mt-2 whitespace-pre-wrap break-words text-xs">{JSON.stringify(request.compliance_details ?? {}, null, 2)}</pre>
+                <dl className="mt-3 grid gap-2 sm:grid-cols-2">{Object.entries(request.compliance_details ?? {}).filter(([key, value]) => key in complianceLabels && value !== null && value !== "").map(([key, value]) => <div key={key} className="rounded-md bg-secondary/50 p-2"><dt className="text-xs text-muted-foreground">{t(complianceLabels[key])}</dt><dd className="mt-1 break-words font-medium">{typeof value === "boolean" ? t(value ? "Oui" : "Non") : String(value)}</dd></div>)}</dl>
                 <p className="mt-2 text-xs text-muted-foreground">{t("Déclarations à contrôler avec les justificatifs avant approbation.")}</p>
               </div>}
-              {request.requested_role === "fisher" && <section className="grid gap-2 rounded-lg border p-4"><h3 className="font-semibold">{t("Justificatifs privés")}</h3>{documents.filter((doc) => doc.request_id === request.id).length === 0 ? <p className="text-sm text-muted-foreground">{t("Aucun justificatif déposé.")}</p> : documents.filter((doc) => doc.request_id === request.id).map((doc) => <div key={doc.id} className="flex flex-wrap items-center justify-between gap-2 border-b py-2 last:border-0"><div><p className="text-sm font-medium">{t(doc.document_type)} · {doc.original_filename}</p><p className="text-xs text-muted-foreground">{doc.expires_at ? t("Expiration") + " : " + doc.expires_at : t("Expiration non renseignée")} · {doc.review_status}{doc.expires_at && new Date(doc.expires_at + "T00:00:00") < new Date() ? " · " + t("Expiré") : doc.expires_at && new Date(doc.expires_at + "T00:00:00") < new Date(Date.now() + 30*86400000) ? " · " + t("Expire sous 30 jours") : ""}</p><select className="field mt-1 text-xs" value={doc.review_status} onChange={(event) => void reviewDocument(doc.id, event.target.value as "pending" | "approved" | "rejected" | "not_applicable")}><option value="pending">{t("À examiner")}</option><option value="approved">{t("Validé")}</option><option value="rejected">{t("Refusé")}</option><option value="not_applicable">{t("Non applicable")}</option></select></div>{doc.signed_url && <a className="text-sm underline" href={doc.signed_url} target="_blank" rel="noreferrer">{t("Ouvrir (lien privé 5 min)")}</a>}</div>)}</section>}
+              {request.requested_role === "fisher" && <section className="grid gap-2 rounded-lg border p-4"><h3 className="font-semibold">{t("Justificatifs privés")}</h3>{documents.filter((doc) => doc.request_id === request.id).length === 0 ? <p className="text-sm text-muted-foreground">{t("Aucun justificatif déposé.")}</p> : documents.filter((doc) => doc.request_id === request.id).map((doc) => <div key={doc.id} className="flex flex-wrap items-center justify-between gap-2 border-b py-2 last:border-0"><div><p className="text-sm font-medium">{documentTypeLabel(doc.document_type)} · {doc.original_filename}</p><p className="text-xs text-muted-foreground">{doc.expires_at ? t("Expiration") + " : " + doc.expires_at : t("Expiration non renseignée")} · {t(doc.review_status === "pending" ? "À examiner" : doc.review_status === "approved" ? "Validé" : doc.review_status === "rejected" ? "Refusé" : "Non applicable")}{doc.expires_at && new Date(doc.expires_at + "T00:00:00") < new Date() ? " · " + t("Expiré") : doc.expires_at && new Date(doc.expires_at + "T00:00:00") < new Date(Date.now() + 30*86400000) ? " · " + t("Expire sous 30 jours") : ""}</p><select className="field mt-1 text-xs" value={doc.review_status} onChange={(event) => void reviewDocument(doc.id, event.target.value as "pending" | "approved" | "rejected" | "not_applicable")}><option value="pending">{t("À examiner")}</option><option value="approved">{t("Validé")}</option><option value="rejected">{t("Refusé")}</option><option value="not_applicable">{t("Non applicable")}</option></select></div>{doc.signed_url && <a className="text-sm underline" href={doc.signed_url} target="_blank" rel="noreferrer">{t("Ouvrir (lien privé 5 min)")}</a>}</div>)}</section>}
               <label className="grid gap-1 text-sm font-medium">
                 {t("Note à l’utilisateur (facultatif)")}
                 <textarea className="field" rows={2} maxLength={2000} value={notes[request.id] ?? ""} onChange={(event) => setNotes((current) => ({ ...current, [request.id]: event.target.value }))} />
