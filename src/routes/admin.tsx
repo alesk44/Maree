@@ -60,21 +60,26 @@ function Admin() {
         return;
       }
       setIsAdmin(true);
-      const [{ data: orderRows, error: orderError }, { data: catchRows, error: catchError }] = await Promise.all([
-        supabase.from("orders").select("id,catch_id,quantity_kg,status,created_at").order("created_at", { ascending: false }),
-        supabase.from("catches").select("id,species,price_per_kg,fisher_id"),
-      ]);
-      if (orderError) throw orderError;
-      if (catchError) throw catchError;
-      setAllOrders((orderRows ?? []) as AdminOrder[]);
-      setAllCatches((catchRows ?? []) as AdminCatch[]);
-      const { data, error: requestsError } = await supabase
+      // Load verification requests independently so a reporting query cannot
+      // prevent admins from reviewing pending fishermen/restaurants.
+      const { data: data, error: requestsError } = await supabase
         .from("verification_requests")
         .select("id,user_id,requested_role,business_name,contact_name,phone,registration_number,evidence_note,created_at")
         .eq("status", "pending")
         .order("created_at", { ascending: true });
       if (requestsError) throw requestsError;
       setRequests((data ?? []) as VerificationRequest[]);
+
+      // Dashboard figures are secondary: a metrics/RLS issue must not block approvals.
+      const [{ data: orderRows, error: orderError }, { data: catchRows, error: catchError }] = await Promise.all([
+        supabase.from("orders").select("id,catch_id,quantity_kg,status,created_at").order("created_at", { ascending: false }),
+        supabase.from("catches").select("id,species,price_per_kg,fisher_id"),
+      ]);
+      if (!orderError) setAllOrders((orderRows ?? []) as AdminOrder[]);
+      if (!catchError) setAllCatches((catchRows ?? []) as AdminCatch[]);
+      if (orderError || catchError) {
+        console.warn("Admin reporting data could not be fully loaded", { orderError, catchError });
+      }
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : t("Impossible de charger les demandes.");
       setError(message);
