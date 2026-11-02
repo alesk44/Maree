@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(158);
+select plan(161);
 
 -- Isolated auth users; the auth trigger creates their initial restaurant profiles.
 insert into auth.users (id, email) values
@@ -264,6 +264,9 @@ set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000007';
 select is(public.is_current_user_admin(), true, 'separate admin grant is recognized without changing restaurant role');
 select is((select role::text from public.profiles where id = '00000000-0000-4000-8000-000000000007'), 'restaurant', 'separate admin grant preserves the restaurant business role');
 select is((select count(*) from public.verification_requests), 4::bigint, 'separate admin can read all verification requests');
+select is((select count(*) from public.catches), 2::bigint, 'separate admin grant can read all catch lots');
+select is((select count(*) from public.orders), 2::bigint, 'separate admin grant can read all orders');
+select is((select count(*) from public.profiles), 7::bigint, 'separate admin grant can read all profiles');
 select is((select count(*) from public.verification_documents), 3::bigint, 'separate admin grant can read all verification documents');
 select lives_ok(
   $$select public.review_verification_request('30000000-0000-4000-8000-000000000004'::uuid, 'approved'::public.verification_status, 'Approved by separate admin')$$,
