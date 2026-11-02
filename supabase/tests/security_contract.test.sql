@@ -517,7 +517,7 @@ select is((select cancellation_request_status from public.orders where id='20000
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
 select lives_ok(
-  $select public.decide_order_cancellation('20000000-0000-4000-8000-000000000004'::uuid,true,7.50)$,
+  $$select public.decide_order_cancellation('20000000-0000-4000-8000-000000000004'::uuid,true,7.50)$$,
   'owning fisher can offer late cancellation with a chosen penalty'
 );
 reset role;
@@ -526,7 +526,7 @@ select is((select cancellation_penalty from public.orders where id='20000000-000
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000003';
 select lives_ok(
-  $select public.respond_order_cancellation('20000000-0000-4000-8000-000000000004'::uuid,true)$,
+  $$select public.respond_order_cancellation('20000000-0000-4000-8000-000000000004'::uuid,true)$$,
   'buyer can explicitly accept the fisher cancellation offer'
 );
 reset role;
