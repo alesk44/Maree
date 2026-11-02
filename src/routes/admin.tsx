@@ -205,7 +205,7 @@ function Admin() {
             <div className="card p-4"><p className="text-xs text-muted-foreground">{t("Commission Marée (6,5 %)")}</p><p className="mt-1 text-2xl font-semibold">{fmt(mareeCommission)}</p></div>
           </div>
           <div className="card flex flex-wrap items-center justify-between gap-3 p-5">
-            <div><p className="text-sm text-muted-foreground">{t("Commission Marée Jersey estimée (13 %) sur commandes livrées")}</p><p className="font-display text-3xl font-semibold text-accent">{fmt(deliveredBase * .13)}</p></div>
+            <div><p className="text-sm text-muted-foreground">{t("Frais de livraison Marée (20 %)")}</p><p className="font-display text-3xl font-semibold text-accent">{fmt(mareeDelivery)}</p></div>
             <div className="text-sm text-muted-foreground">{t("En attente")}: <strong>{allOrders.filter((order) => !["delivered", "cancelled"].includes(order.status)).length}</strong></div>
           </div>
           <p className="text-xs text-muted-foreground">{t("Les montants proviennent des prix et frais figés à la réservation : le pêcheur reçoit le sous-total produits, Marée facture 6,5 % au restaurant sur chaque achat et les frais de livraison de 20 % ne s’appliquent qu’en livraison. Aucun paiement réel n’est activé.")}</p>
