@@ -26,6 +26,8 @@ type VerificationRequest = {
   phone: string;
   registration_number: string | null;
   evidence_note: string;
+  fisher_category: "independent" | "professional" | null;
+  compliance_details: Record<string, unknown> | null;
   created_at: string;
 };
 
@@ -64,7 +66,7 @@ function Admin() {
       // prevent admins from reviewing pending fishermen/restaurants.
       const { data: data, error: requestsError } = await supabase
         .from("verification_requests")
-        .select("id,user_id,requested_role,business_name,contact_name,phone,registration_number,evidence_note,created_at")
+        .select("id,user_id,requested_role,business_name,contact_name,phone,registration_number,evidence_note,fisher_category,compliance_details,created_at")
         .eq("status", "pending")
         .order("created_at", { ascending: true });
       if (requestsError) throw requestsError;
