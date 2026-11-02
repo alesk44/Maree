@@ -66,6 +66,8 @@ export function WeatherSeasonPanel() {
     restricted: ["Réglementation stricte", "Strictly regulated", "Strict reglementare"],
     attribution: ["Données météo : MET Norway · CC BY 4.0", "Weather data: MET Norway · CC BY 4.0", "Date meteo: MET Norway · CC BY 4.0"],
     safety: ["Prévisions indicatives uniquement : ce panneau n’est pas un bulletin de sécurité maritime. Avant toute sortie, consultez Jersey Met et les bulletins de navigation officiels.", "Indicative forecast only: this panel is not a marine safety bulletin. Before going to sea, consult Jersey Met and official shipping forecasts.", "Prognoză orientativă: acest panou nu este un buletin de siguranță maritimă. Înainte de plecare, consultați Jersey Met și buletinele oficiale de navigație."],
+    photoComing: ["Photo à venir", "Photo coming soon", "Fotografie în curând"],
+    seasonalitySources: ["Sources sur la saisonnalité : ", "Seasonality sources: ", "Surse privind sezonalitatea: "],
   };
   const tr = (values: readonly string[]) => values[langIndex] ?? values[1] ?? "";
   const locale = language === "fr" ? "fr-FR" : language === "ro" ? "ro-RO" : "en-GB";
@@ -121,7 +123,7 @@ export function WeatherSeasonPanel() {
                   ? item.slug === "crabe-chancre" ? "Noiembrie–martie" : item.slug === "homard" ? "Aprilie–decembrie; vârf mai–septembrie" : item.slug === "ormeaux" ? "1 octombrie–30 aprilie; doar zile autorizate" : "În funcție de capturile zilei"
                   : item.months;
               return <article key={item.slug} id={`espece-${item.slug}`} className="overflow-hidden rounded-xl bg-secondary/70">
-                {item.imageUrl ? <img src={item.imageUrl} alt={name} loading="lazy" className="h-40 w-full object-cover" /> : <div className="flex h-40 items-center justify-center bg-muted text-sm text-muted-foreground">Photo à venir</div>}
+                {item.imageUrl ? <img src={item.imageUrl} alt={name} loading="lazy" className="h-40 w-full object-cover" /> : <div className="flex h-40 items-center justify-center bg-muted text-sm text-muted-foreground">{tr(labels.photoComing)}</div>}
                 <div className="p-4">
                   <div className="flex flex-wrap items-start justify-between gap-2"><h4 className="font-semibold">{name}</h4><span className="text-xs text-accent">{status}</span></div>
                   <p className="mt-1 text-xs text-muted-foreground">{months}</p>
@@ -133,7 +135,7 @@ export function WeatherSeasonPanel() {
             })}
           </div>
           <p className="mt-4 text-xs leading-relaxed text-muted-foreground">{tr(labels.disclaimer)}</p>
-          <p className="mt-2 text-xs text-muted-foreground">Seasonality sources: <a href="https://www.jersey.com/inspire-me/inspiration/jerseys-local-produce/" target="_blank" rel="noreferrer" className="underline">Visit Jersey</a> · <a href="https://jerseymarkets.je/traders/fin-feather/" target="_blank" rel="noreferrer" className="underline">Jersey Markets</a> · <a href="https://www.gov.je/Industry/FarmingFishing/Fishing/pages/fishingregulations.aspx" target="_blank" rel="noreferrer" className="underline">Government of Jersey</a></p>
+          <p className="mt-2 text-xs text-muted-foreground">{tr(labels.seasonalitySources)}<a href="https://www.jersey.com/inspire-me/inspiration/jerseys-local-produce/" target="_blank" rel="noreferrer" className="underline">Visit Jersey</a> · <a href="https://jerseymarkets.je/traders/fin-feather/" target="_blank" rel="noreferrer" className="underline">Jersey Markets</a> · <a href="https://www.gov.je/Industry/FarmingFishing/Fishing/pages/fishingregulations.aspx" target="_blank" rel="noreferrer" className="underline">Government of Jersey</a></p>
         </div>
       </div>
     </section>
