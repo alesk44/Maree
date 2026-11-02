@@ -15,6 +15,8 @@ alter table public.orders
   add column if not exists delivered_at timestamptz;
 
 -- Legacy orders are backfilled using their lot's current price only as a clearly marked
+-- The slot validator is for new reservations; historical completed orders may have past slots.
+alter table public.orders disable trigger orders_validate_slot;
 -- best-effort migration value. New orders always receive exact snapshots in reserve_catch.
 update public.orders o
 set fisher_id_snapshot = c.fisher_id,
@@ -25,6 +27,7 @@ set fisher_id_snapshot = c.fisher_id,
     total_amount = round(o.quantity_kg * c.price_per_kg * 1.065, 2)
 from public.catches c
 where c.id = o.catch_id and o.product_subtotal is null;
+alter table public.orders enable trigger orders_validate_slot;
 
 create table if not exists public.maree_commercial_settings (
   id boolean primary key default true check (id),
