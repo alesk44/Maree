@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(140);
+select plan(158);
 
 -- Isolated auth users; the auth trigger creates their initial restaurant profiles.
 insert into auth.users (id, email) values
@@ -82,6 +82,21 @@ insert into public.verification_requests (
    'Test evidence for a second restaurant account.')
 on conflict (id) do nothing;
 
+insert into public.verification_documents (
+  id, request_id, user_id, document_type, file_path, original_filename, mime_type, size_bytes
+) values
+  ('40000000-0000-4000-8000-000000000001',
+   '30000000-0000-4000-8000-000000000001',
+   '00000000-0000-4000-8000-000000000003',
+   'other', '00000000-0000-4000-8000-000000000003/fixture-a.pdf',
+   'fixture-a.pdf', 'application/pdf', 100),
+  ('40000000-0000-4000-8000-000000000002',
+   '30000000-0000-4000-8000-000000000002',
+   '00000000-0000-4000-8000-000000000004',
+   'other', '00000000-0000-4000-8000-000000000004/fixture-b.pdf',
+   'fixture-b.pdf', 'application/pdf', 100)
+on conflict (id) do nothing;
+
 -- Table-level security posture and least-privilege grants.
 select ok((select relrowsecurity from pg_class where oid = 'public.profiles'::regclass), 'profiles has RLS enabled');
 select ok((select relrowsecurity from pg_class where oid = 'public.catches'::regclass), 'catches has RLS enabled');
@@ -119,6 +134,27 @@ set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000003';
 select is((select count(*) from public.orders), 1::bigint, 'restaurant sees only its own order');
 select is((select count(*) from public.verification_requests), 1::bigint, 'restaurant sees only its own verification request');
 select is((select display_name from public.get_my_business_profile()), 'Restaurant A'::text, 'private profile RPC returns only the authenticated owner profile');
+select is((select count(*) from public.verification_documents), 1::bigint, 'restaurant sees only its own verification document');
+select lives_ok(
+  $insert into public.verification_documents (
+    id,request_id,user_id,document_type,file_path,original_filename,mime_type,size_bytes
+  ) values (
+    '40000000-0000-4000-8000-000000000003',
+    '30000000-0000-4000-8000-000000000001',
+    '00000000-0000-4000-8000-000000000003',
+    'other','00000000-0000-4000-8000-000000000003/fixture-c.pdf',
+    'fixture-c.pdf','application/pdf',100
+  )$,
+  'owner can attach document metadata to their own verification request'
+);
+select is((select count(*) from public.verification_documents), 2::bigint, 'owner can read their newly attached verification document');
+select lives_ok(
+  $update public.verification_documents set review_status='approved' where id='40000000-0000-4000-8000-000000000001'$,
+  'non-admin document review update is filtered by row security'
+);
+select is((select review_status from public.verification_documents where id='40000000-0000-4000-8000-000000000001'),'pending'::text,'document owner cannot approve their own evidence');
+select ok(not has_table_privilege('authenticated','public.verification_documents','DELETE'),'authenticated users cannot delete verification documents directly');
+select ok(not has_table_privilege('anon','public.verification_documents','SELECT'),'anonymous users cannot read verification documents');
 select throws_ok(
   $$insert into public.catches (
     fisher_id, species, zone, caught_at, landed_at, quantity_kg, remaining_kg,
@@ -208,9 +244,18 @@ reset role;
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000005';
 select lives_ok(
-  $$select public.review_verification_request('30000000-0000-4000-8000-000000000003'::uuid, 'approved'::public.verification_status, 'Approved by test admin')$$,
+  $select public.review_verification_request('30000000-0000-4000-8000-000000000003'::uuid, 'approved'::public.verification_status, 'Approved by test admin')$,
   'admin can approve a pending verification request'
 );
+select is((select count(*) from public.verification_documents), 3::bigint, 'admin can read all verification documents');
+select lives_ok(
+  $update public.verification_documents
+    set review_status='approved', reviewed_by=auth.uid(), reviewed_at=now()
+    where id='40000000-0000-4000-8000-000000000001'$,
+  'admin can update verification document review status'
+);
+select is((select review_status from public.verification_documents where id='40000000-0000-4000-8000-000000000001'),'approved'::text,'admin document review is persisted');
+select is((select reviewed_by from public.verification_documents where id='40000000-0000-4000-8000-000000000001'),'00000000-0000-4000-8000-000000000005'::uuid,'admin reviewer identity is recorded');
 reset role;
 
 -- A restaurant-role account with a separate admin grant can access admin functions.
@@ -219,6 +264,7 @@ set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000007';
 select is(public.is_current_user_admin(), true, 'separate admin grant is recognized without changing restaurant role');
 select is((select role::text from public.profiles where id = '00000000-0000-4000-8000-000000000007'), 'restaurant', 'separate admin grant preserves the restaurant business role');
 select is((select count(*) from public.verification_requests), 4::bigint, 'separate admin can read all verification requests');
+select is((select count(*) from public.verification_documents), 3::bigint, 'separate admin grant can read all verification documents');
 select lives_ok(
   $$select public.review_verification_request('30000000-0000-4000-8000-000000000004'::uuid, 'approved'::public.verification_status, 'Approved by separate admin')$$,
   'separate admin can approve a pending verification request'
@@ -632,6 +678,14 @@ select ok(to_regclass('public.verification_documents_user_idx') is not null, 've
 select ok(to_regclass('public.verification_documents_reviewed_by_idx') is not null, 'verification document reviewer foreign key is indexed');
 select ok(to_regclass('public.catch_traceability_codes_scanned_by_idx') is not null, 'traceability code actor foreign key is indexed');
 select ok(to_regclass('public.catch_traceability_events_actor_idx') is not null, 'traceability event actor foreign key is indexed');
+
+-- Consolidated permissive read policies remain one per role/action.
+select is((select count(*) from pg_policies where schemaname='public' and tablename='catches' and cmd='SELECT' and roles='{authenticated}'),1::bigint,'catches has one authenticated SELECT policy');
+select is((select count(*) from pg_policies where schemaname='public' and tablename='orders' and cmd='SELECT' and roles='{authenticated}'),1::bigint,'orders has one authenticated SELECT policy');
+select is((select count(*) from pg_policies where schemaname='public' and tablename='profiles' and cmd='SELECT' and roles='{authenticated}'),1::bigint,'profiles has one authenticated SELECT policy');
+select is((select count(*) from pg_policies where schemaname='public' and tablename='verification_documents' and cmd='SELECT' and roles='{authenticated}'),1::bigint,'verification documents have one authenticated SELECT policy');
+select is((select count(*) from pg_policies where schemaname='public' and tablename='verification_documents' and cmd='INSERT' and roles='{authenticated}'),1::bigint,'verification documents have one authenticated INSERT policy');
+select is((select count(*) from pg_policies where schemaname='public' and tablename='verification_requests' and cmd='SELECT' and roles='{authenticated}'),1::bigint,'verification requests have one authenticated SELECT policy');
 
 select * from finish();
 rollback;
