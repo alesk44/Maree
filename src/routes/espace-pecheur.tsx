@@ -156,6 +156,23 @@ function FisherSpace() {
     } catch(e) { toast.error(e instanceof Error?e.message:t("Impossible de mettre à jour la commande.")); }
   };
 
+  const decideLateCancellation = async (order:SharedOrderRow,approve:boolean) => {
+    let penalty=0;
+    if(approve){
+      const raw=window.prompt(t("Pénalité à appliquer en GBP (0 si aucune pénalité) :"),"0");
+      if(raw===null)return;
+      penalty=Number(raw);
+      if(!Number.isFinite(penalty)||penalty<0||penalty>1000000){toast.error(t("Montant de pénalité invalide."));return;}
+    }
+    try{
+      const {error}=await supabase.rpc("decide_order_cancellation",{p_order_id:order.id,p_approve:approve,p_penalty:penalty});
+      if(error)throw error;
+      toast.success(approve?t("Annulation acceptée et pénalité enregistrée."):t("Annulation refusée."));
+      setOrders(await fetchMyOrders());
+      await refresh();
+    }catch(e){toast.error(e instanceof Error?t(e.message):t("Impossible de traiter cette demande."));}
+  };
+
   const advance = async (order:SharedOrderRow) => {
     const target=nextStatus[order.status as keyof typeof nextStatus];
     if(!target) return;
