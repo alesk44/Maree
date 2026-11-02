@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(179);
+select plan(181);
 
 -- Isolated auth users; the auth trigger creates their initial restaurant profiles.
 insert into auth.users (id, email) values
@@ -495,7 +495,8 @@ select ok(has_function_privilege('authenticated', 'public.verify_maree_commissio
 update public.orders
 set status='delivered', delivered_at=now(), product_subtotal=6.00,
     unit_price_snapshot=12.00, fisher_id_snapshot='00000000-0000-4000-8000-000000000002',
-    maree_fee_rate=0.065, maree_fee=0.39, total_amount=6.39
+    maree_fee_rate=0.065, maree_fee=0.39,
+    delivery_fee_rate=0.20, delivery_fee=1.20, total_amount=7.59
 where id='20000000-0000-4000-8000-000000000002';
 select lives_ok(
   $$select public.generate_maree_monthly_commission_invoices(current_date)$$,
@@ -512,11 +513,23 @@ select is(
   'monthly commission statement uses the snapshotted 6.5 percent fee'
 );
 select is(
+  (select delivery_total from public.maree_monthly_commission_invoices where restaurant_id='00000000-0000-4000-8000-000000000004'),
+  1.20::numeric,
+  'monthly Marée statement includes the separate delivery charge'
+);
+select is(
   (select count(*) from public.maree_monthly_commission_invoice_items i
    join public.maree_monthly_commission_invoices m on m.id=i.invoice_id
    where m.restaurant_id='00000000-0000-4000-8000-000000000004'),
   1::bigint,
   'monthly commission statement includes its order detail line'
+);
+select is(
+  (select delivery_amount from public.maree_monthly_commission_invoice_items i
+   join public.maree_monthly_commission_invoices m on m.id=i.invoice_id
+   where m.restaurant_id='00000000-0000-4000-8000-000000000004'),
+  1.20::numeric,
+  'monthly Marée invoice item preserves the separate delivery amount'
 );
 select is(
   public.generate_maree_monthly_commission_invoices(current_date),
