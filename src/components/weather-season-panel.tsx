@@ -48,7 +48,7 @@ export function WeatherSeasonPanel() {
   const langIndex = language === "fr" ? 0 : language === "ro" ? 2 : 1;
   const labels = {
     weather: ["Météo à Jersey", "Jersey weather", "Vremea în Jersey"],
-    current: ["Conditions actuelles", "Current conditions", "Condiții actuale"],
+    current: ["Prévision la plus proche", "Nearest forecast", "Cea mai apropiată prognoză"],
     wind: ["Vent", "Wind", "Vânt"],
     humidity: ["Humidité", "Humidity", "Umiditate"],
     rain: ["Pluie prochaine heure", "Rain next hour", "Ploaie în următoarea oră"],
