@@ -218,3 +218,15 @@ Le build, les tests, le lint et le typecheck sont verts ; les tests RLS et les t
 - [ ] Attendre la fin des workflows CI/pgTAP et corriger tout échec avant fusion.
 - [ ] Vérifier le rendu des nouveaux écrans sur l’aperçu privé.
 - [ ] Ne pas appliquer cette migration à la base de production sans validation finale explicite.
+
+
+## Météo en direct et saisonnalité — 2 novembre 2026
+
+- [x] Proxy serveur `/api/weather` vers MET Norway Locationforecast, avec User-Agent identifiable, timeout, validation de réponse et cache CDN.
+- [x] Afficher météo de Saint-Hélier : température, vent, humidité, précipitations et tendance horaire.
+- [x] Afficher la saison courante selon le fuseau Europe/Jersey.
+- [x] Ajouter les conseils saisonniers issus de Visit Jersey et des fournisseurs locaux : crabe chancre (meilleure période novembre–mars), homard (saison avril–décembre, pic mai–septembre), poissons locaux selon débarquements réels.
+- [x] Signaler les ormeaux comme produit à réglementation stricte, jamais comme disponibilité quotidienne.
+- [x] Ajouter tests de normalisation météo, conversion vent m/s → km/h, dates Jersey, recommandations saisonnières et restriction ormeaux.
+- [ ] Vérifier la réponse réelle du proxy météo sur l’aperçu Cloudflare et confirmer l’attribution.
+- [ ] Terminer la suite Supabase pgTAP et la revue d’architecture avant toute fusion/production.
