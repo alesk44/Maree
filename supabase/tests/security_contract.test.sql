@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(206);
+select plan(210);
 
 -- Isolated auth users; the auth trigger creates their initial restaurant profiles.
 insert into auth.users (id, email) values
@@ -913,6 +913,23 @@ reset role;
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000004';
 select ok(exists(select 1 from public.notifications where event_type='maree_invoice_created'), 'second restaurant receives only its own generated Marée statement alert');
+reset role;
+
+-- Cross-role and cross-account notification isolation: admin status does not grant inbox-wide access.
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000003';
+select is((select count(*) from public.notifications where user_id='00000000-0000-4000-8000-000000000001'),0::bigint,'restaurant cannot read fisher notifications');
+select is((select count(*) from public.notifications where user_id='00000000-0000-4000-8000-000000000004'),0::bigint,'restaurant cannot read another restaurant notifications');
+select is((select count(*) from public.notifications where user_id='00000000-0000-4000-8000-000000000005'),0::bigint,'restaurant cannot read admin notifications');
+select is(
+  (with attempted as (
+    update public.notifications set read_at=now()
+    where user_id='00000000-0000-4000-8000-000000000001'
+    returning id
+  ) select count(*) from attempted),
+  0::bigint,
+  'restaurant cannot mark another user notification as read'
+);
 reset role;
 
 select * from finish();
