@@ -76,6 +76,7 @@ const NAV = [
   { to: "/espace-pecheur", label: "Espace pêcheur" },
   { to: "/admin", label: "Admin" },
   { to: "/guide", label: "Guide" },
+  { to: "/recettes", label: "Recettes" },
   { to: "/tracabilite", label: "Scanner QR" },
 ] as const;
 
@@ -103,7 +104,7 @@ function RootContent() {
     });
     return () => { active = false; listener.subscription.unsubscribe(); };
   }, []);
-  const links = NAV.map((n, i) => ({ ...n, icon: ["◈", "♧", "▣", "↗", "♙", "✓", "⌂", "⚙", "i", "⌗"][i] }));
+  const links = NAV.map((n, i) => ({ ...n, icon: ["◈", "♧", "▣", "↗", "♙", "✓", "⌂", "⚙", "i", "🍽", "⌗"][i] }));
   return (
     <QueryClientProvider client={queryClient}>
       <a href="#main" className="sr-only focus:not-sr-only">{t("Aller au contenu")}</a>
