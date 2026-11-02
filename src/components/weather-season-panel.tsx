@@ -64,6 +64,7 @@ export function WeatherSeasonPanel() {
     loading: ["Chargement de la météo…", "Loading weather…", "Se încarcă vremea…"],
     restricted: ["Réglementation stricte", "Strictly regulated", "Strict reglementare"],
     attribution: ["Données météo : MET Norway · CC BY 4.0", "Weather data: MET Norway · CC BY 4.0", "Date meteo: MET Norway · CC BY 4.0"],
+    safety: ["Prévisions indicatives uniquement : ce panneau n’est pas un bulletin de sécurité maritime. Avant toute sortie, consultez Jersey Met et les bulletins de navigation officiels.", "Indicative forecast only: this panel is not a marine safety bulletin. Before going to sea, consult Jersey Met and official shipping forecasts.", "Prognoză orientativă: acest panou nu este un buletin de siguranță maritimă. Înainte de plecare, consultați Jersey Met și buletinele oficiale de navigație."],
   };
   const tr = (values: readonly string[]) => values[langIndex] ?? values[1] ?? "";
   const locale = language === "fr" ? "fr-FR" : language === "ro" ? "ro-RO" : "en-GB";
@@ -103,6 +104,7 @@ export function WeatherSeasonPanel() {
               </div>
             </div>}
             <p className="mt-4 text-xs text-muted-foreground">{tr(labels.attribution)} · <a href="https://api.met.no/" target="_blank" rel="noreferrer" className="underline underline-offset-2">MET Norway</a> · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer" className="underline underline-offset-2">CC BY 4.0</a></p>
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{tr(labels.safety)} <a href="https://www.gov.je/weather/forecasttimes/" target="_blank" rel="noreferrer" className="underline">Jersey Met</a></p>
           </>
         )}
         <div className="mt-6 border-t border-border pt-5">
