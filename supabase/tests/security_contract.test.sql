@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(41);
+select plan(45);
 
 -- Isolated auth users; the auth trigger creates their initial restaurant profiles.
 insert into auth.users (id, email) values
@@ -85,6 +85,11 @@ select ok((select relrowsecurity from pg_class where oid = 'public.profiles'::re
 select ok((select relrowsecurity from pg_class where oid = 'public.catches'::regclass), 'catches has RLS enabled');
 select ok((select relrowsecurity from pg_class where oid = 'public.orders'::regclass), 'orders has RLS enabled');
 select ok((select relrowsecurity from pg_class where oid = 'public.verification_requests'::regclass), 'verification_requests has RLS enabled');
+select ok((select relrowsecurity from pg_class where oid = 'private.verification_email_action_tokens'::regclass), 'email action tokens have RLS enabled');
+select ok(not has_table_privilege('authenticated', 'private.verification_email_action_tokens', 'SELECT'), 'authenticated users cannot read email action tokens');
+select ok(not has_function_privilege('anon', 'public.create_verification_email_action_tokens(uuid,text,text,timestamptz)', 'EXECUTE'), 'anonymous users cannot create email decision tokens');
+select ok(not has_function_privilege('authenticated', 'public.review_verification_request_by_email_token(text)', 'EXECUTE'), 'authenticated users cannot execute email decision RPC');
+
 select ok(not has_column_privilege('anon', 'public.profiles', 'phone', 'SELECT'), 'anonymous users cannot read profile phone numbers');
 select ok(not has_column_privilege('authenticated', 'public.profiles', 'phone', 'SELECT'), 'authenticated users cannot directly read private profile phone numbers');
 select ok(not has_function_privilege('anon', 'public.get_my_business_profile()', 'EXECUTE'), 'anonymous users cannot call the private profile RPC');
