@@ -51,10 +51,9 @@ function Admin() {
         setRequests([]);
         return;
       }
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles").select("role").eq("id", user.id).single();
-      if (profileError) throw profileError;
-      if (profile.role !== "admin") {
+      const { data: adminAccess, error: adminAccessError } = await supabase.rpc("is_current_user_admin");
+      if (adminAccessError) throw adminAccessError;
+      if (adminAccess !== true) {
         setIsAdmin(false);
         setRequests([]);
         setError(t("Accès réservé à l’équipe d’administration."));
