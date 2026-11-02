@@ -175,6 +175,11 @@ function Admin() {
                 <p className="mb-1 font-semibold">{t("Informations fournies")}</p>
                 <p className="whitespace-pre-wrap">{request.evidence_note}</p>
               </div>
+              {request.requested_role === "fisher" && <div className="rounded-lg border p-4 text-sm">
+                <strong>{request.fisher_category === "independent" ? t("Petit pêcheur indépendant") : t("Pêcheur professionnel")}</strong>
+                <pre className="mt-2 whitespace-pre-wrap break-words text-xs">{JSON.stringify(request.compliance_details ?? {}, null, 2)}</pre>
+                <p className="mt-2 text-xs text-muted-foreground">{t("Déclarations à contrôler avec les justificatifs avant approbation.")}</p>
+              </div>}
               <label className="grid gap-1 text-sm font-medium">
                 {t("Note à l’utilisateur (facultatif)")}
                 <textarea className="field" rows={2} maxLength={2000} value={notes[request.id] ?? ""} onChange={(event) => setNotes((current) => ({ ...current, [request.id]: event.target.value }))} />
