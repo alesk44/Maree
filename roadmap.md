@@ -12,7 +12,7 @@ Règle de livraison : aucun merge sur `main`, aucun déploiement public et aucun
 ### Règles validées
 - [x] Commission Marée : 6,5 % du sous-total produits sur chaque achat restaurant→pêcheur, avec livraison ou retrait ; elle est ajoutée au total restaurant et attribuée à Marée Jersey.
 - [x] Frais de livraison distincts : 20 % du sous-total produits, facturés uniquement en cas de livraison et attribués à Marée Jersey à 100 % ; retrait au port gratuit.
-- [ ] Afficher séparément le montant produits dû au pêcheur, la commission Marée de 6,5 %, les frais de livraison éventuels de 20 % et le total restaurant. Aucun frais GST ne doit être ajouté avant confirmation du statut GST et du traitement applicable.
+- [x] Afficher séparément le montant produits dû au pêcheur, la commission Marée de 6,5 %, les frais de livraison éventuels de 20 % et le total restaurant dans le parcours de réservation et les relevés. Aucun frais GST ne doit être ajouté avant confirmation du statut GST et du traitement applicable.
 - [x] Enregistrer côté serveur un instantané du prix/kg, de la quantité, du sous-total produits, du taux/montant de commission Marée, du taux/montant de livraison, du total et du mode de facturation au moment de la réservation. Les écrans utilisent ces snapshots plutôt que le prix courant du lot.
 - [x] Permettre au restaurant de choisir le paiement à la commande ou le relevé mensuel par pêcheur ; enregistrer la préférence par restaurant et pêcheur.
 - [x] Schéma de factures mensuelles et génération SQL idempotente par restaurant/pêcheur/mois, avec échéance à J+7 après fin de mois. Le déclenchement planifié reste à configurer.
@@ -21,14 +21,14 @@ Règle de livraison : aucun merge sur `main`, aucun déploiement public et aucun
 - [x] Blocage serveur dans `reserve_catch` dès au moins 3 factures mensuelles échues impayées, tous pêcheurs confondus.
 - [x] Génération mensuelle idempotente et anti-doublon par restaurant/pêcheur/mois. Les règles d'ajustement/avoirs et de commandes partiellement livrées restent à préciser.
 - [x] Tests pgTAP étendus aux snapshots de commission, au taux 6,5 % et à la planification mensuelle ; validation CI du dernier commit encore attendue. [ ] Tester la commission 6,5 % sur livraison ET retrait, les frais livraison 20 % uniquement sur livraison, les arrondis, factures mensuelles et blocage multi-pêcheurs.
-- [ ] Mettre à jour les écrans restaurant, pêcheur et admin pour afficher la commission Marée de 6,5 % une seule fois, sans ancienne retenue supplémentaire côté pêcheur.
+- [x] Mettre à jour les espaces restaurant et pêcheur pour afficher la commission Marée de 6,5 % une seule fois, payée par le restaurant et non déduite du montant produits du pêcheur. L'écran admin reste à compléter.
 
 ### État de code au 2 novembre 2026
 - Migration additive `20261102110000_delivery_and_monthly_fisher_billing.sql` créée sur la branche ; non appliquée à la base distante.
 - `reserve_catch` calcule et fige le sous-total produits, la commission Marée de 6,5 %, les frais livraison distincts de 20 % et le total ; aucune GST n'est ajoutée.
 - Préférence immédiat/mensuel sauvegardée par couple restaurant/pêcheur ; interface restaurant mise à jour.
-- Les écrans restaurant/pêcheur utilisent les montants figés et l'ancienne commission 6,5 % est retirée des synthèses.
-- Le schéma de relevés mensuels, la RPC de génération (service_role), la RPC de règlement sécurisé et le blocage des commandes sont créés. La commission Marée de 6,5 % est maintenant figée sur chaque commande, livraison ou retrait. Il reste à configurer le déclenchement mensuel, l'interface de relevés/règlements et les tests de bout en bout.
+- Les espaces restaurant/pêcheur lisent les snapshots de commission et livraison ; la commission 6,5 % est affichée côté restaurant et en transparence côté pêcheur, sans retenue sur ses ventes.
+- Le schéma de relevés mensuels, la RPC de génération (service_role), la RPC de règlement sécurisé et le blocage des commandes sont créés. La commission Marée de 6,5 % est maintenant figée sur chaque commande, livraison ou retrait. Le déclenchement mensuel `pg_cron` est déclaré dans la migration (03:00 UTC le 1er du mois) ; les espaces restaurant/pêcheur affichent les relevés mensuels et l'historique des règlements, et le pêcheur peut confirmer un paiement reçu hors plateforme. Il reste à produire un relevé mensuel distinct des commissions Marée, valider les tests de bout en bout et appliquer la migration uniquement après approbation.
 - CI a détecté des erreurs de syntaxe dans les premières modifications frontend ; corrections commitées. Attendre les workflows du dernier commit avant de déclarer la branche verte.
 
 ### Séquence d'implémentation
