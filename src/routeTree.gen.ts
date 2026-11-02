@@ -85,6 +85,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/compte': typeof CompteRoute
   '/admin': typeof AdminRoute
   '/admin/email-review': typeof AdminEmailReviewRoute
   '/catalogue': typeof CatalogueRoute
@@ -112,7 +113,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/compte'
-    | '/compte'
     | '/admin'
     | '/admin/email-review'
     | '/catalogue'
@@ -124,6 +124,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/compte'
     | '/admin'
     | '/catalogue'
     | '/espace-pecheur'
@@ -134,6 +135,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/compte'
     | '/admin'
     | '/admin/email-review'
     | '/catalogue'
