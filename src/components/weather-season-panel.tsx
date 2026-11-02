@@ -62,7 +62,7 @@ export function WeatherSeasonPanel() {
     unavailable: ["Météo indisponible pour le moment.", "Weather is temporarily unavailable.", "Vremea nu este disponibilă momentan."],
     attribution: ["Données météo : MET Norway · CC BY 4.0", "Weather data: MET Norway · CC BY 4.0", "Date meteo: MET Norway · CC BY 4.0"],
   };
-  const tr = (values: readonly string[]) => values[langIndex];
+  const tr = (values: readonly string[]) => values[langIndex] ?? values[1] ?? "";
   const locale = language === "fr" ? "fr-FR" : language === "ro" ? "ro-RO" : "en-GB";
   const time = (value: string) => new Intl.DateTimeFormat(locale, { timeZone: "Europe/Jersey", hour: "2-digit", minute: "2-digit" }).format(new Date(value));
   const monthName = new Intl.DateTimeFormat(locale, { timeZone: "Europe/Jersey", month: "long" }).format(new Date());
