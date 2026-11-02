@@ -86,10 +86,10 @@ export function getSeasonalSeafood(month: number): SeasonalSeafood[] {
     {
       name: "Common skate", nameFr: "Raie", nameRo: "Pisică de mare", slug: "raie",
       ...daily,
-      imageUrl: "https://wp-ambassadevandenoordzee-english.s3.eu-central-1.amazonaws.com/2025/02/Vleet-Common-skate-Dipturus-batis-Peter-Verhoog-Buiten-beeld-412086-1.jpeg",
-      imageCredit: "Peter Verhoog / Embassy of the North Sea",
-      imageLicense: "Source attribution; reuse terms to confirm",
-      imageSourceUrl: "https://www.embassyofthenorthsea.com/embassy-of-the-north-sea-partner-in-extensive-international-rewilding-programme/",
+      imageUrl: "",
+      imageCredit: "",
+      imageLicense: "",
+      imageSourceUrl: "https://commons.wikimedia.org/wiki/Category:Dipturus_batis",
     },
     {
       name: "Ormers", nameFr: "Ormeaux de Jersey", nameRo: "Abalone (ormers)", slug: "ormeaux",
