@@ -64,7 +64,6 @@ export function NotificationCenter() {
         setLoading(false);
         return;
       }
-      await load(id, requestGeneration);
       if (!active || requestGeneration !== generation) return;
       channel = supabase
         .channel("user-notifications-" + id)
@@ -74,7 +73,13 @@ export function NotificationCenter() {
           table: "notifications",
           filter: "user_id=eq." + id,
         }, () => { if (active && requestGeneration === generation) void load(id, requestGeneration); })
-        .subscribe();
+        .subscribe((status) => {
+          // Fetch only after the channel is live so no INSERT can be missed
+          // between the initial snapshot and Realtime subscription.
+          if (status === "SUBSCRIBED" && active && requestGeneration === generation) {
+            void load(id, requestGeneration);
+          }
+        });
     };
 
     void supabase.auth.getSession().then(({ data }) => {
