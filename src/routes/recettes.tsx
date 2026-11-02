@@ -12,13 +12,13 @@ export const Route = createFileRoute("/recettes")({
   component: RecipesPage,
 });
 
-type RecipeIdea = { title: string; description: string; source?: string; sourceUrl?: string; author?: string };
+type RecipeIdea = { title: string; description: string; source?: string; sourceUrl?: string; author?: string; imageUrl: string; imageCredit: string; imageSourceUrl: string };
 
 const recipeIdeas: Record<string, RecipeIdea[]> = {
   "crabe-chancre": [
-    { title: "Crab linguine", description: "Chair de crabe, linguine, citron, persil et une pointe de piment.", source: "Genuine Jersey · recettes de coquillages", sourceUrl: "https://www.genuinejersey.je/shellfish/jersey-shellfish-recipes/", author: "Recette référencée par Genuine Jersey" },
-    { title: "Crabe et Jersey Royals", description: "Crabe effiloché, pommes de terre Jersey Royals, herbes fraîches et mayonnaise citronnée.", source: "Mark Jordan · collection de recettes", sourceUrl: "https://www.greatbritishchefs.com/collections/mark-jordan-recipes", author: "Inspiration d'un chef de Jersey" },
-    { title: "Ravioles de crabe, bisque légère", description: "Ravioles fines garnies de chair de crabe, servies avec un jus de carapaces réduit.", author: "Idée de recette Marée Jersey" },
+    { imageUrl: "https://images1.speedybooker.com/photos/fit.ashx?file=11032024_29235.jpg&w=1200", imageCredit: "Dartmouth River Restaurant", imageSourceUrl: "https://www.britainsfinest.co.uk/restaurants/dartmouth-river-restaurant", title: "Crab linguine", description: "Chair de crabe, linguine, citron, persil et une pointe de piment.", source: "Genuine Jersey · recettes de coquillages", sourceUrl: "https://www.genuinejersey.je/shellfish/jersey-shellfish-recipes/", author: "Recette référencée par Genuine Jersey" },
+    { imageUrl: "https://images1.speedybooker.com/photos/fit.ashx?file=11032024_29235.jpg&w=1200", imageCredit: "Dartmouth River Restaurant", imageSourceUrl: "https://www.britainsfinest.co.uk/restaurants/dartmouth-river-restaurant", title: "Crabe et Jersey Royals", description: "Crabe effiloché, pommes de terre Jersey Royals, herbes fraîches et mayonnaise citronnée.", source: "Mark Jordan · collection de recettes", sourceUrl: "https://www.greatbritishchefs.com/collections/mark-jordan-recipes", author: "Inspiration d'un chef de Jersey" },
+    { imageUrl: "https://images1.speedybooker.com/photos/fit.ashx?file=11032024_29235.jpg&w=1200", imageCredit: "Dartmouth River Restaurant", imageSourceUrl: "https://www.britainsfinest.co.uk/restaurants/dartmouth-river-restaurant", title: "Ravioles de crabe, bisque légère", description: "Ravioles fines garnies de chair de crabe, servies avec un jus de carapaces réduit.", author: "Idée de recette Marée Jersey" },
   ],
   homard: [
     { title: "Grilled lobster", description: "Homard grillé, beurre citronné et herbes fraîches.", source: "Genuine Jersey · recettes de homard", sourceUrl: "https://www.genuinejersey.je/shellfish/jersey-shellfish-recipes/", author: "Bryan Webb · recette référencée par Genuine Jersey" },
@@ -99,7 +99,7 @@ function RecipeSpecies({ slug, name, note, ideas, label }: { slug: string; name:
         <a href="/#weather-season-title" className="text-sm underline">{label("Retour aux saisons", "Back to season guide")}</a>
       </div>
       <div className="mt-4 grid gap-4 md:grid-cols-3">
-        {ideas.map((idea) => <article key={idea.title} className="card flex flex-col p-5">
+        {ideas.map((idea) => <article key={idea.title} className="card flex flex-col overflow-hidden">\n          <img src={idea.imageUrl} alt={`${idea.title} — photo illustrative du plat`} loading="lazy" className="h-48 w-full object-cover" />\n          <div className="flex flex-1 flex-col p-5">
           <span className="text-xs font-semibold uppercase tracking-wide text-accent">{idea.source ? label("Recette publiée", "Published recipe") : label("Idée Marée", "Marée idea")}</span>
           <h3 className="mt-2 text-lg font-semibold">{idea.title}</h3>
           <p className="mt-2 flex-1 text-sm text-muted-foreground">{idea.description}</p>
