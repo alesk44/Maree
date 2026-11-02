@@ -36,7 +36,7 @@ function AccountPage() {
         .select("display_name, avatar_url, role").eq("id", data.user.id).maybeSingle();
       const { data: privateProfile } = await supabase.rpc("get_my_business_profile").maybeSingle();
       if (!active) return;
-      if (profileError) toast.error(profileError.message);
+      if (profileError) toast.error(t("Une erreur technique est survenue. Réessayez."));
       setName(profile?.["display_name"] ?? String(data.user.user_metadata?.["display_name"] ?? ""));
       setRole(profile?.role ?? "");
       const privateDetails = privateProfile as { phone?: string | null; business_address?: string | null; business_postcode?: string | null; business_city?: string | null; business_email?: string | null } | null;
@@ -58,7 +58,7 @@ function AccountPage() {
     setSaving(true);
     const { error } = await supabase.from("profiles").update({ display_name: name.trim(), phone: phone.trim() || null, ...(role === "restaurant" ? { business_address: businessAddress.trim() || null, business_postcode: businessPostcode.trim() || null, business_city: businessCity.trim() || null, business_email: businessEmail.trim() || null } : {}) }).eq("id", userId);
     setSaving(false);
-    if (error) toast.error(error.message); else toast.success(t("Profil enregistré."));
+    if (error) toast.error(t("Une erreur technique est survenue. Réessayez.")); else toast.success(t("Profil enregistré."));
   };
 
   const uploadAvatar = async (file?: File) => {
@@ -69,12 +69,12 @@ function AccountPage() {
     const extension = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
     const path = userId + "/avatar." + extension;
     const { error: uploadError } = await supabase.storage.from("avatars").upload(path, file, { upsert: true, cacheControl: "3600", contentType: file.type });
-    if (uploadError) { setUploading(false); toast.error(uploadError.message); return; }
+    if (uploadError) { setUploading(false); toast.error(t("Une erreur technique est survenue. Réessayez.")); return; }
     const { data } = supabase.storage.from("avatars").getPublicUrl(path);
     const url = data.publicUrl + "?v=" + Date.now();
     const { error: updateError } = await supabase.from("profiles").update({ avatar_url: url }).eq("id", userId);
     setUploading(false);
-    if (updateError) { toast.error(updateError.message); return; }
+    if (updateError) { toast.error(t("Une erreur technique est survenue. Réessayez.")); return; }
     setAvatarUrl(url);
     toast.success(t("Photo de profil mise à jour."));
   };
@@ -86,12 +86,12 @@ function AccountPage() {
     if (files?.length) await supabase.storage.from("avatars").remove(files.map((file) => userId + "/" + file.name));
     const { error } = await supabase.from("profiles").update({ avatar_url: null }).eq("id", userId);
     setUploading(false);
-    if (error) toast.error(error.message); else { setAvatarUrl(null); toast.success(t("Photo supprimée.")); }
+    if (error) toast.error(t("Une erreur technique est survenue. Réessayez.")); else { setAvatarUrl(null); toast.success(t("Photo supprimée.")); }
   };
 
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
-    if (error) toast.error(error.message);
+    if (error) toast.error(t("Une erreur technique est survenue. Réessayez."));
     else { toast.success(t("Vous êtes déconnecté.")); window.location.assign("/"); }
   };
 
