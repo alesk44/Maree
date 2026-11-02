@@ -1374,3 +1374,31 @@ export const translations: Record<string, readonly [string, string, string]> = {
   "Confirmer le refus": ["Confirm rejection", "Confirm rejection", "Confirm rejection"],
   "Ouvrir l’espace administrateur": ["Open the admin dashboard", "Open the admin dashboard", "Open the admin dashboard"],
 };
+
+Object.assign(translations, {
+  "Mon compte": ["My account", "Minha conta", "Contul meu"],
+  "Entrez un nom d'au moins 2 caractères.": ["Enter a name with at least 2 characters.", "Introduza um nome com pelo menos 2 caracteres.", "Introduceți un nume de cel puțin 2 caractere."],
+  "Profil enregistré.": ["Profile saved.", "Perfil guardado.", "Profil salvat."],
+  "Choisissez une image.": ["Choose an image.", "Escolha uma imagem.", "Alegeți o imagine."],
+  "La photo doit faire 5 Mo maximum.": ["The photo must be 5 MB or smaller.", "A foto deve ter no máximo 5 MB.", "Fotografia trebuie să aibă maximum 5 MB."],
+  "Photo de profil mise à jour.": ["Profile photo updated.", "Foto de perfil atualizada.", "Fotografia de profil a fost actualizată."],
+  "Photo supprimée.": ["Photo removed.", "Foto removida.", "Fotografie ștearsă."],
+  "Vous êtes déconnecté.": ["You are signed out.", "Terminou a sessão.", "V-ați deconectat."],
+  "Chargement du compte…": ["Loading account…", "A carregar a conta…", "Se încarcă contul…"],
+  "Connectez-vous pour gérer votre profil et votre photo.": ["Sign in to manage your profile and photo.", "Inicie sessão para gerir o seu perfil e fotografia.", "Conectați-vă pentru a vă gestiona profilul și fotografia."],
+  "Connexion / Créer un compte": ["Sign in / Create an account", "Iniciar sessão / Criar conta", "Conectare / Creare cont"],
+  "Gérez vos informations personnelles et votre photo de profil.": ["Manage your personal information and profile photo.", "Gira as suas informações pessoais e foto de perfil.", "Gestionați informațiile personale și fotografia de profil."],
+  "Photo de profil": ["Profile photo", "Foto de perfil", "Fotografie de profil"],
+  "Envoi…": ["Uploading…", "A enviar…", "Se încarcă…"],
+  "Changer ma photo": ["Change my photo", "Alterar a minha foto", "Schimbați fotografia"],
+  "Supprimer la photo": ["Remove photo", "Remover foto", "Ștergeți fotografia"],
+  "Image JPG, PNG ou WebP · 5 Mo maximum.": ["JPG, PNG or WebP · 5 MB maximum.", "JPG, PNG ou WebP · máximo 5 MB.", "JPG, PNG sau WebP · maximum 5 MB."],
+  "Nom affiché": ["Display name", "Nome apresentado", "Nume afișat"],
+  "Adresse e-mail": ["Email address", "Endereço de e-mail", "Adresă de e-mail"],
+  "Téléphone": ["Phone", "Telefone", "Telefon"],
+  "Enregistrement…": ["Saving…", "A guardar…", "Se salvează…"],
+  "Enregistrer mon profil": ["Save my profile", "Guardar o meu perfil", "Salvați profilul"],
+  "Paramètres de connexion": ["Sign-in settings", "Definições de início de sessão", "Setări de conectare"],
+  "Se déconnecter": ["Sign out", "Terminar sessão", "Deconectare"],
+  "Connectez-vous pour gérer votre profil et votre photo.": ["Sign in to manage your profile and photo.", "Inicie sessão para gerir o seu perfil e fotografia.", "Conectați-vă pentru a vă gestiona profilul și fotografia."]
+});
