@@ -21,7 +21,7 @@ export const Route = createFileRoute("/espace-pecheur")({
 
 const EMOJI: Record<string,string> = { Casiers:"🦀", Ligne:"🐟", Plongée:"🐚", "Filet maillant":"🐠" };
 const nextStatus = { submitted:"confirmed", confirmed:"ready", ready:"delivered" } as const;
-const labelStatus = { submitted:"envoyée", confirmed:"confirmée", ready:"prête", delivered:"livrée", cancelled:"envoyée" } as const;
+const labelStatus = { submitted:"envoyée", confirmed:"confirmée", ready:"prête", delivered:"livrée" } as const;
 
 function FisherSpace() {
   const { t, gbp, dt } = useLanguage();
@@ -187,7 +187,7 @@ function FisherSpace() {
           return <li key={o.id} className="card p-4">
             <strong>{c?.emoji} {Number(o.quantity_kg)} kg {t(c?.species??"Produit")}</strong>
             <p className="mb-2 text-sm text-muted-foreground">{t(o.fulfilment==="delivery"?"Livraison":"Retrait")} · {dt(o.requested_slot)} {o.note&&"· "+o.note}</p>
-            <OrderSteps s={labelStatus[o.status]}/>
+            {o.status==="cancelled"?<span className="inline-flex rounded-full bg-destructive/15 px-2.5 py-1 text-xs font-semibold text-destructive">{t("Annulée")}</span>:<OrderSteps s={labelStatus[o.status as keyof typeof labelStatus]}/>}
             {o.status in nextStatus&&<button className="btn btn-accent mt-3 text-sm" onClick={()=>void advance(o)}>{t("Passer à l'étape suivante")}</button>}
           </li>;
         })}</ul>}
