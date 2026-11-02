@@ -148,7 +148,7 @@ function Restaurant() {
         {ordersLoading ? <p className="text-sm text-muted-foreground">{t("Chargement des commandes…")}</p> : orders.length === 0 ? <Empty>{t("Aucune réservation réelle pour le moment.")}</Empty> :
           <ul className="grid gap-3">{orders.map((o) => {
             const c = catches.find((x) => x.id === o.catch_id);
-            const status = ({ submitted:"envoyée", confirmed:"confirmée", ready:"prête", delivered:"livrée" } as Record<string, "envoyée"|"confirmée"|"prête"|"livrée">)[o.status];
+            const status = ({ submitted:"envoyée", confirmed:"confirmée", ready:"prête", delivered:"livrée" } as Record<string, "envoyée"|"confirmée"|"prête"|"livrée">)[o.status] ?? "envoyée";
             return <li key={o.id} className="card p-4">
               <div className="flex justify-between gap-2"><strong>{c?.emoji} {t(c?.species ?? "Produit")} · {Number(o.quantity_kg)} kg</strong><span className="text-sm">{c ? gbp(c.priceKg * Number(o.quantity_kg)) : ""}</span></div>
               <p className="mb-3 text-sm text-muted-foreground">{t(o.fulfilment === "delivery" ? "Livraison" : "Retrait")} · {dt(o.requested_slot)}</p>
