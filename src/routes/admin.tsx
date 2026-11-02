@@ -30,7 +30,7 @@ type VerificationRequest = {
 };
 
 function Admin() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [requests, setRequests] = useState<VerificationRequest[]>([]);
@@ -86,7 +86,7 @@ function Admin() {
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [language]);
 
   useEffect(() => { void loadRequests(); }, [loadRequests]);
 
