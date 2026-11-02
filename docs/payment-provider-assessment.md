@@ -2,48 +2,46 @@
 
 Date : 2 novembre 2026
 
-## Décision technique provisoire
+## Décision actuelle
 
-**Candidat recommandé : Adyen for Platforms**, sous réserve d'une validation commerciale écrite d'Adyen pour l'entité Marée Jersey et de l'ouverture du compte plateforme.
+**Paiements volontairement reportés. Aucun prestataire n'est sélectionné et aucun flux de paiement réel ne doit être développé ou activé à ce stade.**
 
-Motifs :
-- La documentation Adyen for Platforms inclut le Royaume-Uni « including Channel Islands and Isle of Man » pour l'onboarding des utilisateurs marketplace.
-- Le modèle prend en charge l'onboarding/KYC des vendeurs, les paiements en ligne, le partage des fonds, les transferts, les versements et les rapports de rapprochement.
-- La documentation précise que les paiements en personne et la création de magasins ne sont pas pris en charge dans les îles Anglo-Normandes ; Marée vise ici les paiements en ligne uniquement.
+Le propriétaire dispose actuellement d'un compte Revolut personnel. Il ne sera pas utilisé pour encaisser des transactions commerciales de Marée ni pour recevoir ou répartir les fonds des pêcheurs. Un compte personnel n'est pas une infrastructure de paiement marketplace.
 
-Stripe n'est pas un choix viable pour une entreprise établie à Jersey : Stripe indique explicitement que les entreprises des dépendances de la Couronne britannique, dont Jersey, ne sont pas actuellement prises en charge. Checkout.com reste une alternative à interroger, mais son éligibilité Jersey et les conditions de son produit marketplace doivent être confirmées directement.
+Une éventuelle ouverture de Revolut Business et l'accès à Revolut Merchant devront être confirmés séparément pour une société établie à Jersey. L'éligibilité du pays, les conditions contractuelles et la capacité de répartir les fonds entre Marée et les pêcheurs restent à confirmer directement auprès de Revolut. Aucun choix de prestataire ne doit être déduit de la seule disponibilité d'un compte Business.
 
-Références :
-- Adyen Marketplaces : https://docs.adyen.com/marketplaces
-- Adyen split payments : https://docs.adyen.com/marketplaces/process-payments/
+Stripe n'est pas considéré comme une option pour une entreprise établie à Jersey selon sa liste de territoires pris en charge. Tout autre PSP (dont Adyen ou Checkout.com) reste une piste à réévaluer plus tard, après confirmation écrite de l'éligibilité et du produit marketplace.
+
+Références à revalider au moment de reprendre le chantier :
+- Revolut Business : https://www.revolut.com/business/
+- Revolut Merchant : https://www.revolut.com/business/accept-payments/
 - Stripe availability for outlying territories : https://support.stripe.com/questions/stripe-availability-for-outlying-territories-of-supported-countries?locale=en-GB
 - Digital Jersey — choosing a payment processor : https://www.digital.je/business-support/choosing-a-payment-processor-in-jersey/
 
-## Répartition commerciale Marée
+## Répartition commerciale cible — non active
 
 Pour un prix de vente pêcheur de £100 :
-- Montant facturé au restaurant : £106.50
-- Montant attribué au pêcheur : £93.50
-- Commission brute Marée : £13.00
-- Les frais de traitement Adyen sont à chiffrer contractuellement et ne sont pas inclus dans ces montants.
+- Montant cible facturé au restaurant : £106.50
+- Montant cible attribué au pêcheur : £93.50
+- Commission brute cible Marée : £13.00
 
-La commission de 13 % est répartie en deux composantes économiques : 6,5 % retenus sur la part pêcheur et 6,5 % ajoutés au montant restaurant. Les arrondis doivent être effectués en pence avec une règle déterministe et les valeurs calculées doivent être figées à la création du paiement.
+La commission cible de 13 % comporte deux composantes : 6,5 % ajoutés au montant restaurant et 6,5 % déduits du montant pêcheur. Ces valeurs sont des simulations commerciales uniquement : elles ne sont ni facturées, ni prélevées, ni versées. Les frais éventuels du prestataire ne sont pas inclus.
 
-## Architecture à mettre en place
+## Architecture à prévoir lorsque le chantier reprendra
 
-1. Créer un compte marchand/plateforme Adyen et confirmer par écrit l'éligibilité Jersey, les devises, les frais, les délais de règlement, les réserves, les remboursements et les chargebacks.
-2. Onboarder chaque pêcheur comme titulaire de compte Adyen avec KYC/KYB géré par le PSP. Ne jamais collecter ou stocker les données de carte dans Marée.
-3. Créer une commande de paiement côté serveur, jamais depuis le navigateur avec des montants libres.
-4. Calculer et figer le montant de base, la commission, le montant vendeur et les frais applicables en GBP dans un registre immuable.
-5. Utiliser les instructions de split Adyen pour attribuer la part vendeur et la commission Marée.
-6. Valider l'état final uniquement depuis des webhooks Adyen authentifiés, idempotents et journalisés.
-7. Traiter les remboursements, annulations, litiges et chargebacks avec des écritures compensatoires ; ne jamais réécrire l'historique financier.
-8. Rapprocher quotidiennement les paiements, transferts, frais et versements avec les rapports Adyen.
+1. Obtenir une confirmation écrite que le PSP accepte l'entité Marée Jersey et le modèle marketplace.
+2. Confirmer les devises, frais, délais de règlement, réserves, remboursements, litiges et chargebacks.
+3. Faire onboarder les pêcheurs avec KYC/KYB géré par le PSP ; Marée ne collecte ni ne stocke les données de carte.
+4. Créer les intentions de paiement exclusivement côté serveur, avec montants calculés et validés côté serveur.
+5. Figer les montants GBP, les commissions et les frais dans un registre financier immuable.
+6. Valider les paiements uniquement à partir de webhooks authentifiés, idempotents et journalisés.
+7. Traiter remboursements, annulations et litiges par écritures compensatoires.
+8. Rapprocher quotidiennement paiements, frais, transferts et versements.
 
 ## Garde-fous
 
-- Aucun paiement réel ne doit être activé avant l'accord commercial Adyen, la configuration du compte et la validation des exigences applicables à Jersey.
-- Aucun secret Adyen ne doit être stocké dans Git, le navigateur ou les variables VITE_.
-- Ne pas annoncer qu'un paiement est réussi sur la seule base d'une redirection navigateur.
-- Ne pas effectuer de versement ou remboursement en se fiant uniquement à l'état affiché par le client.
-- Les relevés indicatifs actuels ne sont pas des factures fiscales ni un registre de paiement.
+- Aucun paiement réel, faux paiement de démonstration présenté comme réel, virement ou remboursement ne doit être activé.
+- Aucun secret de prestataire dans Git, le navigateur ou une variable VITE_.
+- Une redirection navigateur ne constitue jamais une preuve de paiement.
+- Les relevés indicatifs actuels ne sont ni des factures fiscales ni un registre de paiement.
+- La reprise du chantier nécessite une décision explicite du propriétaire et une validation écrite du prestataire pour Jersey.
