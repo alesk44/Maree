@@ -5,6 +5,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { supabase } from "@/lib/supabase";
 
 function NotFoundComponent() {
   const { t, gbp, dt } = useLanguage();
@@ -70,6 +71,7 @@ const NAV = [
   { to: "/pecheurs", label: "Pêcheurs" },
   { to: "/restaurant", label: "Restaurant" },
   { to: "/connexion", label: "Connexion / Créer un compte" },
+  { to: "/compte", label: "Mon compte" },
   { to: "/verification", label: "Vérification" },
   { to: "/espace-pecheur", label: "Espace pêcheur" },
   { to: "/admin", label: "Admin" },
@@ -84,6 +86,22 @@ function RootContent() {
   const { t, language, setLanguage } = useLanguage();
   const { queryClient } = Route.useRouteContext();
   const [open, setOpen] = useState(false);
+  const [account, setAccount] = useState<{ email: string; avatarUrl: string | null } | null>(null);
+  useEffect(() => {
+    let active = true;
+    const loadAccount = async (user: { id: string; email?: string }) => {
+      const { data } = await supabase.from("profiles").select("avatar_url").eq("id", user.id).maybeSingle();
+      if (active) setAccount({ email: user.email ?? "", avatarUrl: data?.avatar_url ?? null });
+    };
+    void supabase.auth.getSession().then(({ data }) => {
+      if (!active) return;
+      if (data.session?.user) void loadAccount(data.session.user); else setAccount(null);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) void loadAccount(session.user); else setAccount(null);
+    });
+    return () => { active = false; listener.subscription.unsubscribe(); };
+  }, []);
   const links = NAV.map((n, i) => ({ ...n, icon: ["◈", "♧", "▣", "↗", "✓", "⌂", "⚙", "i"][i] }));
   return (
     <QueryClientProvider client={queryClient}>
@@ -126,7 +144,7 @@ function RootContent() {
               </div>
             </div>
             {open && <nav className="grid border-t border-border px-4 py-2 lg:hidden" aria-label={t("Navigation mobile")}>
-              {links.map((n) => <Link key={n.to} to={n.to} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-3 font-medium text-muted-foreground" activeProps={{ className: "bg-secondary text-accent" }}><span aria-hidden="true">{n.icon}</span>{t(n.label)}</Link>)}
+              {links.map((n) => <Link key={n.to} to={n.to} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-3 font-medium text-muted-foreground" activeProps={{ className: "bg-secondary text-accent" }}>{n.to === "/compte" ? <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-secondary text-accent">{account?.avatarUrl ? <img src={account.avatarUrl} alt="" className="h-full w-full object-cover" /> : "♙"}</span> : <span aria-hidden="true">{n.icon}</span>}{t(n.label)}</Link>)}
             </nav>}
           </header>
           <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-border bg-card/95 px-2 py-2 shadow-2xl backdrop-blur lg:hidden" aria-label={t("Navigation rapide")}>
