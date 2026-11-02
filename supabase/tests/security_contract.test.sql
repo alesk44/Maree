@@ -270,7 +270,7 @@ set status='delivered', delivered_at=date_trunc('month',now()) - interval '15 da
     delivery_fee_rate=0.20, delivery_fee=0, total_amount=4.53
 where id='20000000-0000-4000-8000-000000000001';
 select lives_ok(
-  $select public.generate_fisher_monthly_invoices(current_date)$,
+  $maree_test$select public.generate_fisher_monthly_invoices((current_date - interval '1 month')::date)$maree_test$,
   'trusted scheduler can generate monthly fisher product invoices'
 );
 select is(
@@ -345,9 +345,9 @@ values
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000003';
 select throws_ok(
-  $select public.reserve_catch(
+  $maree_test$select public.reserve_catch(
     '10000000-0000-4000-8000-000000000001'::uuid,0.5,now()+interval '5 days','collection',null
-  )$,
+  )$maree_test$,
   'P0001','Ordering is blocked: at least three monthly invoices are overdue and unpaid',
   'restaurant with three overdue unpaid fisher invoices cannot place another order'
 );
