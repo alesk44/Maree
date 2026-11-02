@@ -5,8 +5,8 @@ import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/admin/email-review")({
   validateSearch: (search: Record<string, unknown>) => ({
-    token: typeof search.token === "string" ? search.token : "",
-    action: search.action === "approved" || search.action === "rejected" ? search.action : "",
+    token: typeof search["token"] === "string" ? search["token"] : "",
+    action: search["action"] === "approved" || search["action"] === "rejected" ? search["action"] : "",
   }),
   head: () => ({ meta: [{ title: "Confirmation administrateur — Marée Jersey" }] }),
   component: EmailReviewPage,
