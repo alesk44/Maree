@@ -126,7 +126,7 @@ export function WeatherSeasonPanel() {
                   <div className="flex flex-wrap items-start justify-between gap-2"><h4 className="font-semibold">{name}</h4><span className="text-xs text-accent">{status}</span></div>
                   <p className="mt-1 text-xs text-muted-foreground">{months}</p>
                   <p className="mt-2 text-sm">{note}</p>
-                  {item.imageUrl && <p className="mt-2 text-[11px] text-muted-foreground">Photo : <a href={item.imageSourceUrl} target="_blank" rel="noreferrer" className="underline">{item.imageCredit}</a> · {item.imageLicense}</p>}
+                  {item.imageUrl && <p className="mt-2 text-[11px] text-muted-foreground">Photo : <a href={item.imageSourceUrl} target="_blank" rel="noreferrer" className="underline">{item.imageCredit}</a> · <a href={item.imageLicense === "CC BY-SA 4.0" ? "https://creativecommons.org/licenses/by-sa/4.0/" : item.imageLicense === "CC BY 3.0" ? "https://creativecommons.org/licenses/by/3.0/" : "https://creativecommons.org/publicdomain/zero/1.0/"} target="_blank" rel="noreferrer" className="underline">{item.imageLicense}</a></p>}
                   <a href={`/recettes#${item.slug}`} className="mt-3 inline-flex rounded-lg border border-border px-3 py-2 text-sm font-semibold text-primary hover:bg-background">{tr(labels.recipes)} <span aria-hidden="true" className="ml-1">→</span></a>
                 </div>
               </article>;
