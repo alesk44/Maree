@@ -336,6 +336,7 @@ create table if not exists public.maree_monthly_commission_invoices (
   period_end date not null,
   due_date date not null,
   commission_total numeric(10,2) not null default 0 check (commission_total >= 0),
+  delivery_total numeric(10,2) not null default 0 check (delivery_total >= 0),
   status text not null default 'open'
     check (status in ('open','declared_paid','paid','void')),
   declared_at timestamptz,
@@ -354,11 +355,14 @@ create table if not exists public.maree_monthly_commission_invoice_items (
   invoice_id uuid not null references public.maree_monthly_commission_invoices(id) on delete restrict,
   order_id uuid not null unique references public.orders(id) on delete restrict,
   commission_amount numeric(10,2) not null check (commission_amount >= 0),
+  delivery_amount numeric(10,2) not null default 0 check (delivery_amount >= 0),
   product_subtotal numeric(10,2) not null check (product_subtotal >= 0),
   fulfilment text not null check (fulfilment in ('delivery','collection')),
   delivered_at timestamptz not null,
   primary key (invoice_id, order_id)
 );
+alter table public.maree_monthly_commission_invoices add column if not exists delivery_total numeric(10,2) not null default 0 check (delivery_total >= 0);
+alter table public.maree_monthly_commission_invoice_items add column if not exists delivery_amount numeric(10,2) not null default 0 check (delivery_amount >= 0);
 alter table public.maree_monthly_commission_invoices enable row level security;
 alter table public.maree_monthly_commission_invoice_items enable row level security;
 drop policy if exists "Restaurant and admin can read Marée commission invoices" on public.maree_monthly_commission_invoices;
@@ -397,25 +401,28 @@ begin
     raise exception 'Service role or trusted database scheduler required';
   end if;
   for v_group in
-    select o.restaurant_id, sum(o.maree_fee)::numeric(10,2) as commission_total
+    select o.restaurant_id,
+      sum(coalesce(o.maree_fee,0))::numeric(10,2) as commission_total,
+      sum(coalesce(o.delivery_fee,0))::numeric(10,2) as delivery_total
     from public.orders o
     where o.status = 'delivered' and o.delivered_at >= v_start_at
-      and o.delivered_at < v_end_at and coalesce(o.maree_fee,0) > 0
+      and o.delivered_at < v_end_at
+      and (coalesce(o.maree_fee,0) > 0 or coalesce(o.delivery_fee,0) > 0)
     group by o.restaurant_id
   loop
     insert into public.maree_monthly_commission_invoices
-      (restaurant_id,period_start,period_end,due_date,commission_total)
-    values (v_group.restaurant_id,v_start,v_end,v_end + 7,v_group.commission_total)
+      (restaurant_id,period_start,period_end,due_date,commission_total,delivery_total)
+    values (v_group.restaurant_id,v_start,v_end,v_end + 7,v_group.commission_total,v_group.delivery_total)
     on conflict (restaurant_id,period_start) do nothing
     returning id into v_invoice;
     if v_invoice is not null then
       insert into public.maree_monthly_commission_invoice_items
-        (invoice_id,order_id,commission_amount,product_subtotal,fulfilment,delivered_at)
-      select v_invoice,o.id,o.maree_fee,o.product_subtotal,o.fulfilment,o.delivered_at
+        (invoice_id,order_id,commission_amount,delivery_amount,product_subtotal,fulfilment,delivered_at)
+      select v_invoice,o.id,coalesce(o.maree_fee,0),coalesce(o.delivery_fee,0),o.product_subtotal,o.fulfilment,o.delivered_at
       from public.orders o
       where o.restaurant_id=v_group.restaurant_id and o.status='delivered'
         and o.delivered_at >= v_start_at and o.delivered_at < v_end_at
-        and coalesce(o.maree_fee,0) > 0;
+        and (coalesce(o.maree_fee,0) > 0 or coalesce(o.delivery_fee,0) > 0);
       v_count := v_count + 1;
     end if;
     v_invoice := null;
