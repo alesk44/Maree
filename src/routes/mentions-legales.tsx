@@ -22,13 +22,13 @@ function LegalPage() {
     <section className="grid gap-3">
       <h2 className="text-2xl font-semibold">{t("1. Éditeur et responsable du projet")}</h2>
       <div className="rounded-2xl border border-border p-5">
-        <p><strong>Nom :</strong> Cosqueric</p>
-        <p><strong>Prénom :</strong> Alexandre</p>
-        <p><strong>Rôle :</strong> propriétaire et créateur de l'application Marée Jersey</p>
-        <p><strong>Téléphone :</strong> <a className="underline" href="tel:07700343725">07700343725</a></p>
-        <p><strong>Adresse :</strong> 666 Phare Ouest, JE69C, St. Helier, Jersey, Channel Islands</p>
-        <p><strong>Nom du service :</strong> Marée Jersey</p>
-        <p className="mt-3 text-sm text-muted-foreground">Forme juridique, adresse électronique de contact et éventuel numéro d'immatriculation : à renseigner avant publication définitive.</p>
+        <p><strong>{t("Nom :")}</strong> Cosqueric</p>
+        <p><strong>{t("Prénom :")}</strong> Alexandre</p>
+        <p><strong>{t("Rôle :")}</strong> propriétaire et créateur de l'application Marée Jersey</p>
+        <p><strong>{t("Téléphone :")}</strong> <a className="underline" href="tel:07700343725">07700343725</a></p>
+        <p><strong>{t("Adresse :")}</strong> 666 Phare Ouest, JE69C, St. Helier, Jersey, Channel Islands</p>
+        <p><strong>{t("Nom du service :")}</strong> Marée Jersey</p>
+        <p className="mt-3 text-sm text-muted-foreground">{t("Forme juridique, adresse électronique de contact et éventuel numéro d'immatriculation : à renseigner avant publication définitive.")}</p>
       </div>
     </section>
 
@@ -49,14 +49,14 @@ function LegalPage() {
       <h2 className="text-2xl font-semibold">{t("4. GST — Jersey")}</h2>
       <p>{t("La GST de Jersey est distincte de la TVA britannique. Le taux standard indiqué par Revenue Jersey est de 5 %. L'obligation d'immatriculation dépend notamment du montant et de la nature des fournitures taxables, avec un seuil général de £300,000 sur une période de 12 mois. Une entreprise non immatriculée ne doit pas facturer la GST.")}</p>
       <p>{t("Le traitement fiscal de Marée Jersey dépendra de son rôle contractuel réel (agent ou vendeur agissant en son propre nom), de l'identité du fournisseur et de son statut GST. Aucun montant de GST ne sera ajouté automatiquement avant validation par un conseiller fiscal ou Revenue Jersey.")}</p>
-      <p className="text-sm text-muted-foreground">Références : <a className="underline" href="https://www.gov.je/taxesmoney/gst/businesses/registration/pages/shouldibe.aspx" target="_blank" rel="noreferrer">seuils d'immatriculation GST</a> · <a className="underline" href="https://www.gov.je/Industry/BusinessAdviceHub/BusinessTaxesSocialSecurity/Pages/GoodsServicesTaxBusinesses.aspx" target="_blank" rel="noreferrer">GST pour les entreprises</a>.</p>
+      <p className="text-sm text-muted-foreground">Références : <a className="underline" href="https://www.gov.je/taxesmoney/gst/businesses/registration/pages/shouldibe.aspx" target="_blank" rel="noreferrer">{t("seuils d'immatriculation GST")}</a> · <a className="underline" href="https://www.gov.je/Industry/BusinessAdviceHub/BusinessTaxesSocialSecurity/Pages/GoodsServicesTaxBusinesses.aspx" target="_blank" rel="noreferrer">{t("GST pour les entreprises")}</a>.</p>
     </section>
 
     <section className="grid gap-3">
       <h2 className="text-2xl font-semibold">{t("5. Sécurité alimentaire et traçabilité")}</h2>
       <p>{t("Les opérateurs alimentaires restent responsables des obligations qui leur incombent au titre des lois de Jersey applicables. Les informations de lot, d'espèce, de zone, de date de capture et de débarquement affichées par la plateforme doivent être exactes et vérifiables. La présence d'un QR code ou d'une fiche de traçabilité ne vaut pas certification officielle ni validation sanitaire par Marée Jersey.")}</p>
       <p>{t("Les pêcheurs et autres opérateurs doivent vérifier les exigences applicables à leur activité, notamment l'enregistrement éventuel comme Food Business Operator, les règles d'hygiène, de transport, de conservation, d'étiquetage et les obligations propres à la pêche commerciale.")}</p>
-      <p className="text-sm text-muted-foreground">Références : <a className="underline" href="https://admin.jerseylaw.je/laws/current/l_4_2023" target="_blank" rel="noreferrer">Food (Jersey) Law 2023</a> · <a className="underline" href="https://www.gov.je/Industry/RetailHospitality/FoodDrink/pages/foodmatters.aspx" target="_blank" rel="noreferrer">enregistrement des entreprises alimentaires et Eat Safe</a>.</p>
+      <p className="text-sm text-muted-foreground">Références : <a className="underline" href="https://admin.jerseylaw.je/laws/current/l_4_2023" target="_blank" rel="noreferrer">Food (Jersey) Law 2023</a> · <a className="underline" href="https://www.gov.je/Industry/RetailHospitality/FoodDrink/pages/foodmatters.aspx" target="_blank" rel="noreferrer">{t("enregistrement des entreprises alimentaires et Eat Safe")}</a>.</p>
     </section>
 
     <section className="grid gap-3">
