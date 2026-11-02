@@ -2,7 +2,7 @@
 
 > **Mise à jour 2 novembre 2026 : modèle commercial révisé à la demande du propriétaire. La commission Marée est de 6,5 % du sous-total produits pour chaque achat restaurant→pêcheur, que la commande soit livrée ou retirée. Elle s'ajoute au montant dû au pêcheur ; les frais de livraison de 20 % sont distincts et s'appliquent uniquement à la livraison. Aucun prélèvement automatique ni PSP n'est activé. La facturation mensuelle par couple restaurant/pêcheur, l'échéance à J+7 après fin de mois et le blocage après au moins 3 factures mensuelles échues impayées restent à finaliser. L'ancien modèle à double commission 6,5 % + 6,5 % / 13 % est obsolète. Les frais GST restent désactivés tant que le statut et le traitement fiscal de Marée Jersey ne sont pas confirmés.**
 
-Dernière revue : 2 novembre 2026 — changements de facturation et d'interface en cours de validation CI sur la branche de prévisualisation ; ne pas considérer les derniers contrôles comme terminés avant les workflows du dernier commit.  
+Dernière revue : 2 novembre 2026 — commit `fc2d498ea37b5f96a73a0738f6c410d07ffa9db6` : Verify, Build verification, Marée CI et Supabase migration tests terminés avec succès. La reconstruction locale Supabase, les 161 assertions pgTAP et le test de concurrence du dernier stock sont confirmés. Le contrôle visuel, les tests manuels inter-comptes et la validation juridique restent ouverts.  
 Branche de travail : `feature/supabase-shared-data-v2`  
 Règle de livraison : aucun merge sur `main`, aucun déploiement public et aucune mise en production sans validation explicite du propriétaire.
 
@@ -81,6 +81,19 @@ Objectif : Marée doit pouvoir lire et référencer les QR codes déjà utilisé
 - [ ] Tester QR malformés, URL malveillantes, doublons, codes expirés, absence de réseau et QR qui pointent vers un PDF ou une page non structurée.
 
 Constat initial : les sources officielles consultées décrivent les licences, logbooks et déclarations de débarquement, et Catch Jersey est cité pour certaines déclarations spécifiques de thon rouge; aucune plateforme publique universelle de QR traçabilité couvrant tous les poissons/fruits de mer de Jersey n'a été identifiée. Marée doit donc être un lecteur/agrégateur interopérable, pas prétendre se connecter à un registre central inexistant.
+
+## Dernier audit — 2 novembre 2026 (résultats CI vérifiés)
+
+- [x] Sur le commit `fc2d498ea37b5f96a73a0738f6c410d07ffa9db6`, les quatre workflows `Verify`, `Build verification`, `Marée CI` et `Supabase migration tests` sont terminés avec succès.
+- [x] Supabase local : démarrage, reconstruction complète depuis les migrations du dépôt et arrêt propres.
+- [x] pgTAP : 161 tests exécutés, résultat `PASS`.
+- [x] Concurrence : exactement une réservation du dernier stock de 0,5 kg acceptée; la réservation concurrente est rejetée.
+- [x] Les corrections de syntaxe des quatre blocs SQL pgTAP sont confirmées par l'exécution réelle de la suite.
+- [x] Le workflow Cloudflare de prévisualisation est désormais déclenché uniquement manuellement (`workflow_dispatch`). Aucun push de code ne lance un déploiement.
+- [ ] Vérifier le nouveau commit de garde-fou et ses workflows après mise à jour du présent document.
+- [ ] Aucun test navigateur manuel, parcours réel restaurant↔pêcheur ni contrôle visuel sur appareil réel n'est confirmé.
+- [ ] Aucune migration n'a été appliquée à la base Supabase connectée; aucun merge ou déploiement n'a été effectué.
+- [ ] L'application n'est pas déclarée prête pour une ouverture commerciale.
 
 ## Dernier audit — 1 novembre 2026
 
@@ -292,6 +305,6 @@ Le build, les tests, le lint et le typecheck sont verts ; les tests RLS et les t
 - [x] Ajouter un accès direct au scanner QR depuis les espaces pêcheur et restaurant.
 - [x] Corriger le dernier libellé légal « Références » non localisé.
 - [x] Audit statique des appels `t("…")` sur 19 fichiers routes/composants : 613 appels, 528 clés uniques, 0 clé manquante dans le dictionnaire FR/EN/RO. Ce contrôle ne prouve pas à lui seul que tous les textes rendus conditionnellement sont traduits.
-- [ ] Rejouer les workflows CI/pgTAP sur le dernier commit et corriger toute régression; la dernière suite Supabase observée a été annulée par la concurrence avant les tests SQL.
+- [x] Rejouer les workflows CI/pgTAP sur le commit `fc2d498ea37b5f96a73a0738f6c410d07ffa9db6` : les quatre workflows sont verts, 161 assertions et le test de concurrence réussis.
 - [ ] Relancer l'advisor Supabase après application contrôlée de la migration RLS; ne pas déclarer les avertissements résolus avant observation réelle.
 - [ ] Configurer les secrets e-mail dans l'environnement Edge Function avec le vrai destinataire et le domaine choisis par le propriétaire; aucun secret n'a été ajouté ni déployé depuis le dépôt.
