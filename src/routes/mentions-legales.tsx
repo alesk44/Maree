@@ -24,9 +24,9 @@ function LegalPage() {
         <p><strong>Prénom :</strong> Alexandre</p>
         <p><strong>Rôle :</strong> propriétaire et créateur de l'application Marée Jersey</p>
         <p><strong>Téléphone :</strong> <a className="underline" href="tel:07700343725">07700343725</a></p>
-        <p><strong>Adresse communiquée :</strong> 666 Phare Ouest, JE69C</p>
+        <p><strong>Adresse :</strong> 666 Phare Ouest, JE69C, St. Helier, Jersey, Channel Islands</p>
         <p><strong>Nom du service :</strong> Marée Jersey</p>
-        <p className="mt-3 text-sm text-muted-foreground">Forme juridique, adresse électronique de contact et éventuel numéro d'immatriculation : à renseigner avant publication définitive. Le code postal communiqué (JE69C) est à confirmer avant publication.</p>
+        <p className="mt-3 text-sm text-muted-foreground">Forme juridique, adresse électronique de contact et éventuel numéro d'immatriculation : à renseigner avant publication définitive.</p>
       </div>
     </section>
 
