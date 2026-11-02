@@ -106,8 +106,7 @@ export async function fetchMyMonthlyInvoices():Promise<SharedMonthlyInvoiceRow[]
   const {data,error}=await supabase.from("fisher_monthly_invoices")
     .select("id,restaurant_id,fisher_id,period_start,period_end,due_date,subtotal,tip_total,status,paid_at,payment_method,payment_reference,items:fisher_monthly_invoice_items(order_id,product_subtotal,quantity_kg,unit_price,tip_amount)")
     .order("period_start",{ascending:false});
-  if(error && (error.code==="42P01" || error.code==="PGRST205")) return [];
-  if(error) throw error;
+  if(error) throw new Error("Impossible de charger les relevés pêcheurs : schéma Supabase incomplet ou non synchronisé. "+error.message);
   return (data??[]) as SharedMonthlyInvoiceRow[];
 }
 
@@ -140,8 +139,7 @@ export async function fetchMyMareeCommissionInvoices():Promise<SharedMareeCommis
   const {data,error}=await supabase.from("maree_monthly_commission_invoices")
     .select("id,restaurant_id,period_start,period_end,due_date,commission_total,delivery_total,status,declared_at,verified_at,payment_method,payment_reference,items:maree_monthly_commission_invoice_items(order_id,commission_amount,delivery_amount,product_subtotal,fulfilment,delivered_at)")
     .order("period_start",{ascending:false});
-  if(error && (error.code==="42P01" || error.code==="PGRST205")) return [];
-  if(error) throw error;
+  if(error) throw new Error("Impossible de charger les relevés Marée : schéma Supabase incomplet ou non synchronisé. "+error.message);
   return (data??[]) as SharedMareeCommissionInvoiceRow[];
 }
 
@@ -157,11 +155,7 @@ export async function setRestaurantFisherBillingMode(fisherId:string,mode:"immed
   if(authError) throw authError;
   if(!user) throw new Error("Connectez-vous avec votre compte restaurant.");
   const {error}=await supabase.from("restaurant_fisher_billing_settings").upsert({restaurant_id:user.id,fisher_id:fisherId,billing_mode:mode,updated_at:new Date().toISOString()},{onConflict:"restaurant_id,fisher_id"});
-  if(error && (error.code==="42P01" || error.code==="PGRST205")) {
-    if(mode==="monthly") throw new Error("La facturation mensuelle sera disponible après validation de la migration Marée. Choisissez temporairement la facturation à chaque commande.");
-    return;
-  }
-  if(error) throw error;
+  if(error) throw new Error("Impossible d'enregistrer le mode de facturation : schéma Supabase incomplet ou non synchronisé. "+error.message);
 }
 
 export async function updateMyCatch(id:string,patch:{remainingKg?:number;priceKg?:number;status?:"available"|"reserved"|"sold_out"}):Promise<void>{
