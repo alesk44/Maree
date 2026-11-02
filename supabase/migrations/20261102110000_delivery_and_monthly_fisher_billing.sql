@@ -235,7 +235,9 @@ declare
   v_group record;
   v_invoice uuid;
 begin
-  if auth.role() <> 'service_role' then raise exception 'Service role required'; end if;
+  if auth.role() is distinct from 'service_role' and session_user <> 'postgres' then
+    raise exception 'Service role or trusted database scheduler required';
+  end if;
   for v_group in
     select o.restaurant_id, coalesce(o.fisher_id_snapshot, c.fisher_id) as fisher_id,
       sum(o.product_subtotal)::numeric(10,2) as subtotal
@@ -299,4 +301,15 @@ comment on column public.orders.maree_fee is '6.5% Marée Jersey commission on p
 comment on column public.orders.maree_fee_rate is 'Commission rate snapshotted on each order; default 6.5%.';
 comment on column public.orders.delivery_fee is 'Separate delivery charge payable to Marée Jersey; not fisher proceeds.';
 comment on column public.orders.product_subtotal is 'Immutable product amount payable to the fisher, snapshotted at reservation.';
-comment on table public.fisher_monthly_invoices is 'Monthly product-only statements payable to the fisher; Marée delivery fees are excluded.';
+comment on table public.fisher_monthly_invoices is 'Monthly product-only statements payable to the fisher; Marée commission and delivery fees are separate.';
+
+-- Schedule generation for the previous calendar month at 03:00 UTC on day 1.
+-- The job is created only when this protected migration is applied to the approved database.
+create extension if not exists pg_cron with schema pg_catalog;
+select cron.unschedule(jobid) from cron.job where jobname = 'maree-monthly-fisher-invoices';
+select cron.schedule(
+  'maree-monthly-fisher-invoices',
+  '0 3 1 * *',
+  $job$select public.generate_fisher_monthly_invoices((date_trunc('month', now()) - interval '1 month')::date);$job$
+);
+
