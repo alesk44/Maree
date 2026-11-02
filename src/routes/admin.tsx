@@ -81,7 +81,7 @@ function Admin() {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) { toast.error(t("Session administrateur requise.")); return; }
     const { error: updateError } = await supabase.from("verification_documents").update({ review_status: reviewStatus, reviewed_at: new Date().toISOString(), reviewed_by: user.id }).eq("id", documentId);
-    if (updateError) { toast.error(updateError.message); return; }
+    if (updateError) { toast.error(t("Une erreur technique est survenue. Réessayez.")); return; }
     setDocuments((current) => current.map((doc) => doc.id === documentId ? { ...doc, review_status: reviewStatus } : doc));
     toast.success(t("Statut du justificatif mis à jour."));
   };
@@ -145,8 +145,7 @@ function Admin() {
         console.warn("Admin reporting data could not be fully loaded", { orderError });
       }
     } catch (cause) {
-      const message = cause instanceof Error ? cause.message : t("Impossible de charger les demandes.");
-      setError(message);
+      setError(t("Impossible de charger les demandes."));
     } finally {
       setLoading(false);
     }
@@ -158,7 +157,7 @@ function Admin() {
     setBusyId(invoiceId);
     const { error: verifyError } = await supabase.rpc("verify_maree_commission_invoice_paid", { p_invoice_id: invoiceId });
     setBusyId(null);
-    if (verifyError) { toast.error(verifyError.message); return; }
+    if (verifyError) { toast.error(t("Une erreur technique est survenue. Réessayez.")); return; }
     toast.success(t("Paiement Marée vérifié et enregistré."));
     setCommissionInvoices((current) => current.map((invoice) => invoice.id === invoiceId ? { ...invoice, status: "paid" } : invoice));
   };
@@ -172,7 +171,7 @@ function Admin() {
     });
     setBusyId(null);
     if (reviewError) {
-      toast.error(reviewError.message);
+      toast.error(t("Une erreur technique est survenue. Réessayez."));
       return;
     }
     toast.success(status === "approved" ? t("Demande approuvée. Le rôle professionnel a été attribué.") : t("Demande refusée."));
