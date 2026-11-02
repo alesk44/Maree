@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(97);
+select plan(113);
 
 -- Isolated auth users; the auth trigger creates their initial restaurant profiles.
 insert into auth.users (id, email) values
@@ -454,6 +454,85 @@ set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000004';
 select is((select count(*) from public.maree_monthly_commission_invoices where id='40000000-0000-4000-8000-000000000001'),0::bigint,'other restaurant cannot read another restaurant commission statement');
 reset role;
+
+
+-- Buyer cancellations: free at least 24 hours before the slot; late offers require buyer consent.
+select ok(has_function_privilege('authenticated','public.request_order_cancellation(uuid)','EXECUTE'),'authenticated buyers can request order cancellation');
+select ok(has_function_privilege('authenticated','public.decide_order_cancellation(uuid,boolean,numeric)','EXECUTE'),'authenticated fishers can decide late cancellation requests');
+select ok(has_function_privilege('authenticated','public.respond_order_cancellation(uuid,boolean)','EXECUTE'),'authenticated buyers can respond to late cancellation offers');
+
+insert into public.catches (
+  id,fisher_id,species,zone,caught_at,landed_at,quantity_kg,remaining_kg,
+  price_per_kg,method,storage_instructions,status
+) values (
+  '10000000-0000-4000-8000-000000000003',
+  '00000000-0000-4000-8000-000000000001',
+  'Mackerel','South coast',now()-interval '3 hours',now()-interval '2 hours',
+  1,0.5,10,'Line caught','Keep chilled at 0–4°C','available'
+);
+insert into public.orders (
+  id,catch_id,restaurant_id,quantity_kg,requested_slot,fulfilment,status,
+  fisher_id_snapshot,product_subtotal,maree_fee,delivery_fee,total_amount
+) values (
+  '20000000-0000-4000-8000-000000000003',
+  '10000000-0000-4000-8000-000000000003',
+  '00000000-0000-4000-8000-000000000003',
+  0.5,now()+interval '30 hours','collection','submitted',
+  '00000000-0000-4000-8000-000000000001',5,0.33,0,5.33
+);
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000003';
+select is(
+  public.request_order_cancellation('20000000-0000-4000-8000-000000000003'::uuid),
+  'cancelled'::text,
+  'buyer cancellation more than 24 hours before the slot is immediate and free'
+);
+reset role;
+select is((select status from public.orders where id='20000000-0000-4000-8000-000000000003'),'cancelled'::public.order_status,'free cancellation marks the order cancelled');
+select is((select cancellation_penalty from public.orders where id='20000000-0000-4000-8000-000000000003'),0::numeric,'free cancellation has no penalty');
+select is((select remaining_kg from public.catches where id='10000000-0000-4000-8000-000000000003'),1::numeric,'free cancellation restores reserved stock');
+
+update public.catches set remaining_kg=0.5,status='available'
+where id='10000000-0000-4000-8000-000000000003';
+insert into public.orders (
+  id,catch_id,restaurant_id,quantity_kg,requested_slot,fulfilment,status,
+  fisher_id_snapshot,product_subtotal,maree_fee,delivery_fee,total_amount
+) values (
+  '20000000-0000-4000-8000-000000000004',
+  '10000000-0000-4000-8000-000000000003',
+  '00000000-0000-4000-8000-000000000003',
+  0.5,now()+interval '12 hours','collection','confirmed',
+  '00000000-0000-4000-8000-000000000001',5,0.33,0,5.33
+);
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000003';
+select is(
+  public.request_order_cancellation('20000000-0000-4000-8000-000000000004'::uuid),
+  'requested'::text,
+  'late cancellation is submitted to the fisher instead of being automatic'
+);
+reset role;
+select is((select cancellation_request_status from public.orders where id='20000000-0000-4000-8000-000000000004'),'pending'::text,'late cancellation remains pending for fisher decision');
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
+select lives_ok(
+  $select public.decide_order_cancellation('20000000-0000-4000-8000-000000000004'::uuid,true,7.50)$,
+  'owning fisher can offer late cancellation with a chosen penalty'
+);
+reset role;
+select is((select cancellation_request_status from public.orders where id='20000000-0000-4000-8000-000000000004'),'offered'::text,'fisher decision creates an offer awaiting buyer consent');
+select is((select cancellation_penalty from public.orders where id='20000000-0000-4000-8000-000000000004'),7.50::numeric,'fisher-selected penalty is snapshotted in GBP');
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000003';
+select lives_ok(
+  $select public.respond_order_cancellation('20000000-0000-4000-8000-000000000004'::uuid,true)$,
+  'buyer can explicitly accept the fisher cancellation offer'
+);
+reset role;
+select is((select status from public.orders where id='20000000-0000-4000-8000-000000000004'),'cancelled'::public.order_status,'late cancellation completes only after buyer acceptance');
+select is((select cancellation_penalty from public.orders where id='20000000-0000-4000-8000-000000000004'),7.50::numeric,'accepted cancellation retains the agreed penalty');
+select is((select remaining_kg from public.catches where id='10000000-0000-4000-8000-000000000003'),1::numeric,'accepted late cancellation restores reserved stock');
 
 select * from finish();
 rollback;
