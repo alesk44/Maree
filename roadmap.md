@@ -203,3 +203,18 @@ Le build, les tests, le lint et le typecheck sont verts ; les tests RLS et les t
 - [ ] Effectuer les tests fonctionnels avec deux comptes réels, un lot et une réservation.
 - [ ] Reprendre le point de lockfile Bun : régénérer `bun.lock` depuis un environnement Bun et remettre le mode `--frozen-lockfile` après vérification.
 - [ ] Configurer et tester les URL Auth, e-mail/Resend et les paramètres de conformité avant ouverture publique.
+
+
+## Facturation mensuelle Marée — 2 novembre 2026
+
+- [x] Créer un relevé mensuel de commission Marée par restaurant, distinct des factures de produits dues aux pêcheurs.
+- [x] Inclure dans le relevé Marée toutes les commandes livrées du mois, en utilisant la commission 6,5 % figée à la réservation, quel que soit le mode de facturation pêcheur.
+- [x] Conserver les lignes de détail avec commande, sous-total produits, commission, mode de remise et date de livraison.
+- [x] Séparer les statuts : ouvert, paiement déclaré par le restaurant, paiement vérifié par l’administration, annulé.
+- [x] Autoriser le restaurant à déclarer un règlement hors plateforme ; seule l’administration Marée peut confirmer la réception.
+- [x] Ajouter l’espace restaurant pour consulter les relevés et déclarer un paiement, et l’espace admin pour vérifier les déclarations.
+- [x] Étendre le job mensuel à la génération des deux familles de relevés, sans mélanger les montants pêcheurs et Marée.
+- [x] Ajouter les tests pgTAP de cloisonnement RLS et de transition de paiement ; le plan passe à 79 assertions.
+- [ ] Attendre la fin des workflows CI/pgTAP et corriger tout échec avant fusion.
+- [ ] Vérifier le rendu des nouveaux écrans sur l’aperçu privé.
+- [ ] Ne pas appliquer cette migration à la base de production sans validation finale explicite.
