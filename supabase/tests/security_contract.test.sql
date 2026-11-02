@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(38);
+select plan(41);
 
 -- Isolated auth users; the auth trigger creates their initial restaurant profiles.
 insert into auth.users (id, email) values
@@ -86,6 +86,9 @@ select ok((select relrowsecurity from pg_class where oid = 'public.catches'::reg
 select ok((select relrowsecurity from pg_class where oid = 'public.orders'::regclass), 'orders has RLS enabled');
 select ok((select relrowsecurity from pg_class where oid = 'public.verification_requests'::regclass), 'verification_requests has RLS enabled');
 select ok(not has_column_privilege('anon', 'public.profiles', 'phone', 'SELECT'), 'anonymous users cannot read profile phone numbers');
+select ok(not has_column_privilege('authenticated', 'public.profiles', 'phone', 'SELECT'), 'authenticated users cannot directly read private profile phone numbers');
+select ok(not has_function_privilege('anon', 'public.get_my_business_profile()', 'EXECUTE'), 'anonymous users cannot call the private profile RPC');
+select ok(has_function_privilege('authenticated', 'public.get_my_business_profile()', 'EXECUTE'), 'authenticated users can call the owner-scoped private profile RPC');
 select ok(not has_table_privilege('anon', 'public.orders', 'SELECT'), 'anonymous users cannot read orders');
 select ok(not has_table_privilege('authenticated', 'public.orders', 'INSERT'), 'authenticated clients cannot insert orders directly');
 select ok(not has_table_privilege('authenticated', 'public.orders', 'UPDATE'), 'authenticated clients cannot update orders directly');
@@ -108,6 +111,7 @@ set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000003';
 select is((select count(*) from public.orders), 1::bigint, 'restaurant sees only its own order');
 select is((select count(*) from public.verification_requests), 1::bigint, 'restaurant sees only its own verification request');
+select is((select display_name from public.get_my_business_profile()), 'Restaurant A'::text, 'private profile RPC returns only the authenticated owner profile');
 select throws_ok(
   $$insert into public.catches (
     fisher_id, species, zone, caught_at, landed_at, quantity_kg, remaining_kg,
