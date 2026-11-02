@@ -20,7 +20,7 @@ export const Route = createFileRoute("/espace-pecheur")({
 });
 
 const EMOJI: Record<string,string> = { Casiers:"🦀", Ligne:"🐟", Plongée:"🐚", "Filet maillant":"🐠" };
-const nextStatus = { submitted:"confirmed", confirmed:"ready", ready:"delivered" } as const;
+const nextStatus = { confirmed:"ready", ready:"delivered" } as const;
 const labelStatus = { submitted:"envoyée", confirmed:"confirmée", ready:"prête", delivered:"livrée" } as const;
 
 function FisherSpace() {
@@ -148,6 +148,14 @@ function FisherSpace() {
     } catch(e) { toast.error(e instanceof Error?t(e.message):t("Impossible de confirmer ce règlement.")); }
   };
 
+  const decideOrder = async (order:SharedOrderRow,status:"confirmed"|"cancelled") => {
+    try {
+      await updateMyOrderStatus(order.id,status);
+      toast.success(status==="confirmed"?t("Commande acceptée."):t("Commande refusée."));
+      setOrders(await fetchMyOrders());
+    } catch(e) { toast.error(e instanceof Error?e.message:t("Impossible de mettre à jour la commande.")); }
+  };
+
   const advance = async (order:SharedOrderRow) => {
     const target=nextStatus[order.status as keyof typeof nextStatus];
     if(!target) return;
@@ -183,7 +191,7 @@ function FisherSpace() {
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Metric label={t("Ventes livrées")} value={myOrders.filter(o=>o.status==="delivered").length} detail={t("Commandes terminées")}/>
         <Metric label={t("Montant produits dû")} value={gbp(myOrders.filter(o=>o.status==="delivered").reduce((sum,o)=>sum+Number(o.product_subtotal??0),0))} detail={t("Votre chiffre produits")}/>
-        <Metric label={t("Commission Marée (payée par le restaurant)")} value={gbp(myOrders.filter(o=>o.status==="delivered").reduce((sum,o)=>sum+Number(o.maree_fee??0),0))} detail={t("6,5 % — non déduits de votre prix")}/>
+        
         <Metric label={t("En attente")} value={myOrders.filter(o=>o.status!=="delivered"&&o.status!=="cancelled").length} detail={t("Commandes à traiter")}/>
       </div>
       <div className="grid gap-2">
@@ -201,8 +209,8 @@ function FisherSpace() {
         <ul className="grid gap-2">{myOrders.filter(o=>o.status==="delivered").map(o=>{const lot=mine.find(c=>c.id===o.catch_id);const total=Number(o.product_subtotal??0);return <li key={o.id} className="rounded-xl border border-border p-4">
           <div className="flex flex-wrap justify-between gap-2"><strong>{lot?.emoji} {t(lot?.species??"Produit")} · {Number(o.quantity_kg)} kg</strong><strong>{gbp(total)}</strong></div>
           <p className="text-xs text-muted-foreground">{t("Livrée")} · {dt(o.delivered_at??o.requested_slot)} · Réf. {o.id.slice(0,8).toUpperCase()}</p>
-          <p className="mt-1 text-sm">{t("Commission Marée (6,5 %, payée par le restaurant)")} : <strong>{gbp(Number(o.maree_fee??0))}</strong> · {t("Frais de livraison Marée (si livraison)")} : <strong>{gbp(Number(o.delivery_fee??0))}</strong> · {t("Votre montant produits")} : <strong>{gbp(total)}</strong></p>
-          <p className="mt-1 text-xs text-muted-foreground">{t("La commission de 6,5 % et les frais de livraison éventuels sont payés par le restaurant à Marée et ne sont pas déduits de votre montant produits. Le règlement mensuel est confirmé séparément.")}</p>
+          <p className="mt-1 text-sm font-medium">{t("Votre montant produits")} : <strong>{gbp(total)}</strong></p>
+          <details className="mt-2 text-xs text-muted-foreground"><summary className="cursor-pointer">{t("Détails complémentaires")}</summary><p className="mt-1">{t("Commission Marée (payée par le restaurant)")} : {gbp(Number(o.maree_fee??0))} · {t("Livraison (payée par le restaurant si choisie)")} : {gbp(Number(o.delivery_fee??0))}</p><p>{t("Ces frais ne sont pas déduits de votre montant produits.")}</p></details>
         </li>})}</ul>}
     </section>}
     {accountTab==="profile" && <form onSubmit={saveFisherProfile} className="card mb-8 grid gap-4 p-5">
@@ -275,8 +283,9 @@ function FisherSpace() {
           return <li key={o.id} className="card p-4">
             <strong>{c?.emoji} {Number(o.quantity_kg)} kg {t(c?.species??"Produit")}</strong>
             <p className="mb-2 text-sm text-muted-foreground">{t(o.fulfilment==="delivery"?"Livraison":"Retrait")} · {dt(o.requested_slot)} {o.note&&"· "+o.note}</p>
-            {o.status==="cancelled"?<span className="inline-flex rounded-full bg-destructive/15 px-2.5 py-1 text-xs font-semibold text-destructive">{t("Annulée")}</span>:<OrderSteps s={labelStatus[o.status as keyof typeof labelStatus]}/>}
-            {o.status in nextStatus&&<button className="btn btn-accent mt-3 text-sm" onClick={()=>void advance(o)}>{t("Passer à l'étape suivante")}</button>}
+            {o.status==="cancelled"?<span className="inline-flex rounded-full bg-destructive/15 px-2.5 py-1 text-xs font-semibold text-destructive">{t("Refusée / annulée")}</span>:<OrderSteps s={labelStatus[o.status as keyof typeof labelStatus]}/>}
+            {o.status==="submitted"&&<div className="mt-3 flex flex-wrap gap-2"><button type="button" className="btn btn-accent text-sm" onClick={()=>void decideOrder(o,"confirmed")}>{t("Accepter la commande")}</button><button type="button" className="btn border border-destructive/40 text-sm text-destructive" onClick={()=>void decideOrder(o,"cancelled")}>{t("Refuser")}</button></div>}
+            {o.status in nextStatus&&<button type="button" className="btn btn-accent mt-3 text-sm" onClick={()=>void advance(o)}>{t("Passer à l'étape suivante")}</button>}
           </li>;
         })}</ul>}
       </section>
