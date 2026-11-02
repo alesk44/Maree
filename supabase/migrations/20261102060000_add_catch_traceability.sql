@@ -160,4 +160,3 @@ comment on table public.catch_traceability_codes is
   'Private QR/code scan records. External payloads remain unverified until reviewed; never publish raw_code.';
 comment on table public.catch_traceability_events is
   'Append-only catch/order traceability timeline. No UPDATE or DELETE is granted to API roles.';
-
