@@ -29,7 +29,9 @@ where id = '00000000-0000-4000-8000-000000000006';
 update public.profiles set role = 'restaurant', display_name = 'Restaurant Admin'
 where id = '00000000-0000-4000-8000-000000000007';
 insert into private.admin_users (user_id)
-values ('00000000-0000-4000-8000-000000000007')
+values
+  ('00000000-0000-4000-8000-000000000005'),
+  ('00000000-0000-4000-8000-000000000007')
 on conflict (user_id) do nothing;
 
 insert into public.catches (
