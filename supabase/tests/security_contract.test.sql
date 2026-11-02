@@ -853,7 +853,7 @@ select ok(not has_column_privilege('authenticated','public.notifications','title
 
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
-select is((select count(*) from public.notifications where event_type='order_received'),1::bigint,'fisher receives a notification for a new order on their catch');
+select is((select count(*) from public.notifications where event_type='order_received'),7::bigint,'fisher receives a notification for each new order on their catch');
 select is((select count(*) from public.notifications where user_id='00000000-0000-4000-8000-000000000002'),0::bigint,'fisher cannot read another fisher notifications');
 select lives_ok(
   $stmt$update public.notifications set read_at=now() where event_type='order_received'$stmt$,
