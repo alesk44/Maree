@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(46);
+select plan(53);
 
 -- Isolated auth users; the auth trigger creates their initial restaurant profiles.
 insert into auth.users (id, email) values
@@ -205,6 +205,16 @@ select is((select reviewed_by from public.verification_requests where id = '3000
 
 select ok(to_regclass('public.verification_requests_user_id_idx') is not null, 'verification request owner index exists');
 select ok(to_regclass('public.verification_requests_reviewed_by_idx') is not null, 'verification reviewer index exists');
+
+
+-- Commercial model: immutable pricing columns, delivery ownership and billing preferences.
+select ok(to_regclass('public.fisher_monthly_invoices') is not null, 'monthly fisher invoice table exists');
+select ok(to_regclass('public.fisher_monthly_invoice_items') is not null, 'monthly fisher invoice item table exists');
+select ok(has_column_privilege('authenticated', 'public.orders', 'product_subtotal', 'SELECT'), 'restaurant/fisher can read snapshotted product subtotal through order RLS');
+select ok(not has_table_privilege('authenticated', 'public.fisher_monthly_invoices', 'INSERT'), 'clients cannot create or alter monthly invoices directly');
+select ok(has_function_privilege('service_role', 'public.generate_fisher_monthly_invoices(date)', 'EXECUTE'), 'trusted scheduler can generate monthly invoices');
+select ok(has_function_privilege('authenticated', 'public.mark_fisher_invoice_paid(uuid,text,text)', 'EXECUTE'), 'authenticated fisher payment confirmation RPC is available');
+select ok(not has_function_privilege('anon', 'public.mark_fisher_invoice_paid(uuid,text,text)', 'EXECUTE'), 'anonymous users cannot confirm invoice payments');
 
 select * from finish();
 rollback;
