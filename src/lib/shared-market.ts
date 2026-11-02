@@ -127,6 +127,31 @@ export async function confirmFisherInvoicePaid(invoiceId:string,paymentMethod:st
   if(error) throw error;
 }
 
+export type SharedMareeCommissionInvoiceRow = {
+  id:string; restaurant_id:string; period_start:string; period_end:string; due_date:string;
+  commission_total:number|string; status:"open"|"declared_paid"|"paid"|"void";
+  declared_at:string|null; verified_at:string|null; payment_method:string|null; payment_reference:string|null;
+};
+
+export async function fetchMyMareeCommissionInvoices():Promise<SharedMareeCommissionInvoiceRow[]> {
+  const {data:{user},error:authError}=await supabase.auth.getUser();
+  if(authError) throw authError;
+  if(!user) return [];
+  const {data,error}=await supabase.from("maree_monthly_commission_invoices")
+    .select("id,restaurant_id,period_start,period_end,due_date,commission_total,status,declared_at,verified_at,payment_method,payment_reference")
+    .order("period_start",{ascending:false});
+  if(error && (error.code==="42P01" || error.code==="PGRST205")) return [];
+  if(error) throw error;
+  return (data??[]) as SharedMareeCommissionInvoiceRow[];
+}
+
+export async function declareMareeCommissionInvoicePaid(invoiceId:string,paymentMethod:string|null,paymentReference:string|null):Promise<void> {
+  const {error}=await supabase.rpc("declare_maree_commission_invoice_paid",{
+    p_invoice_id:invoiceId,p_payment_method:paymentMethod,p_payment_reference:paymentReference
+  });
+  if(error) throw error;
+}
+
 export async function setRestaurantFisherBillingMode(fisherId:string,mode:"immediate"|"monthly"):Promise<void>{
   const {data:{user},error:authError}=await supabase.auth.getUser();
   if(authError) throw authError;
