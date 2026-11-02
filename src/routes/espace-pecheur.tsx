@@ -284,7 +284,7 @@ function FisherSpace() {
             <strong>{c?.emoji} {Number(o.quantity_kg)} kg {t(c?.species??"Produit")}</strong>
             <p className="mb-2 text-sm text-muted-foreground">{t(o.fulfilment==="delivery"?"Livraison":"Retrait")} · {dt(o.requested_slot)} {o.note&&"· "+o.note}</p>
             {o.status==="cancelled"?<span className="inline-flex rounded-full bg-destructive/15 px-2.5 py-1 text-xs font-semibold text-destructive">{t("Refusée / annulée")}</span>:<OrderSteps s={labelStatus[o.status as keyof typeof labelStatus]}/>}
-            {o.status==="submitted"&&<div className="mt-3 flex flex-wrap gap-2"><button type="button" className="btn btn-accent text-sm" onClick={()=>void decideOrder(o,"confirmed")}>{t("Accepter la commande")}</button><button type="button" className="btn border border-destructive/40 text-sm text-destructive" onClick={()=>void decideOrder(o,"cancelled")}>{t("Refuser")}</button></div>}
+            {o.status==="submitted"&&<div className="mt-3 flex flex-col gap-2 sm:flex-row"><button type="button" className="btn btn-accent w-full justify-center text-sm sm:w-auto" onClick={()=>void decideOrder(o,"confirmed")}>{t("Accepter la commande")}</button><button type="button" className="btn w-full justify-center border border-destructive/40 text-sm text-destructive sm:w-auto" onClick={()=>void decideOrder(o,"cancelled")}>{t("Refuser")}</button></div>}
             {o.status in nextStatus&&<button type="button" className="btn btn-accent mt-3 text-sm" onClick={()=>void advance(o)}>{t("Passer à l'étape suivante")}</button>}
           </li>;
         })}</ul>}
