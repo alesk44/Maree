@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(113);
+select plan(119);
 
 -- Isolated auth users; the auth trigger creates their initial restaurant profiles.
 insert into auth.users (id, email) values
@@ -533,6 +533,91 @@ reset role;
 select is((select status from public.orders where id='20000000-0000-4000-8000-000000000004'),'cancelled'::public.order_status,'late cancellation completes only after buyer acceptance');
 select is((select cancellation_penalty from public.orders where id='20000000-0000-4000-8000-000000000004'),7.50::numeric,'accepted cancellation retains the agreed penalty');
 select is((select remaining_kg from public.catches where id='10000000-0000-4000-8000-000000000003'),1::numeric,'accepted late cancellation restores reserved stock');
+
+-- External QR references are persisted as append-only records scoped to the catch/order parties.
+select ok((select relrowsecurity from pg_class where oid = 'public.traceability_records'::regclass), 'traceability records have RLS enabled');
+select ok(not has_table_privilege('anon', 'public.traceability_records', 'SELECT'), 'anonymous users cannot read traceability records');
+select ok(not has_table_privilege('authenticated', 'public.traceability_records', 'INSERT'), 'clients cannot bypass the traceability RPC');
+select ok(not has_function_privilege('anon', 'public.attach_external_traceability(uuid,uuid,text,text,text,text,timestamptz,text,numeric,text)', 'EXECUTE'), 'anonymous users cannot attach external traceability');
+select ok(has_function_privilege('authenticated', 'public.attach_external_traceability(uuid,uuid,text,text,text,text,timestamptz,text,numeric,text)', 'EXECUTE'), 'authenticated users can attach external traceability through the guarded RPC');
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
+select lives_ok(
+  $select public.attach_external_traceability(
+    '10000000-0000-4000-8000-000000000001'::uuid, null, 'identifier',
+    'SUPPLIER-BATCH-001', null, 'North Coast Supplier',
+    now() - interval '1 hour', 'Pollock', 0.5, 'Fisher-side source reference'
+  )$,
+  'owning fisher can attach an external identifier to their catch'
+);
+reset role;
+select is((select count(*) from public.traceability_records), 1::bigint, 'owning fisher can read their traceability record');
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000003';
+select lives_ok(
+  $select public.attach_external_traceability(
+    null, '20000000-0000-4000-8000-000000000001'::uuid, 'url',
+    'https://supplier.example/lot/ABC-123', 'https://supplier.example/lot/ABC-123',
+    'North Coast Supplier', now() - interval '30 minutes', 'Pollock', 0.5, 'Restaurant receiving reference'
+  )$,
+  'restaurant can attach an HTTPS supplier QR reference to its own order'
+);
+select is((select count(*) from public.traceability_records), 1::bigint, 'restaurant sees only traceability records for its own order');
+select throws_ok(
+  $select public.attach_external_traceability(
+    '10000000-0000-4000-8000-000000000001'::uuid, null, 'identifier',
+    'OTHER-BATCH', null, 'Unknown Supplier', now(), 'Pollock', 0.5, null
+  )$,
+  'P0001', 'Restaurant traceability must reference one of its orders',
+  'restaurant cannot create a catch-only traceability record'
+);
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000002';
+select throws_ok(
+  $select public.attach_external_traceability(
+    '10000000-0000-4000-8000-000000000001'::uuid, null, 'identifier',
+    'OTHER-BATCH', null, 'Unknown Supplier', now(), 'Pollock', 0.5, null
+  )$,
+  'P0001', 'Catch not found or not owned by this fisher',
+  'fisher cannot attach a QR reference to another fisher catch'
+);
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000004';
+select throws_ok(
+  $select public.attach_external_traceability(
+    null, '20000000-0000-4000-8000-000000000001'::uuid, 'url',
+    'https://supplier.example/lot/ABC-123', 'https://supplier.example/lot/ABC-123',
+    'North Coast Supplier', now(), 'Pollock', 0.5, null
+  )$,
+  'P0001', 'Order not found for this restaurant',
+  'restaurant cannot attach a QR reference to another restaurant order'
+);
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000003';
+select throws_ok(
+  $update public.traceability_records set supplier_name='Tampered'$,
+  '42501', null,
+  'clients cannot update immutable traceability records'
+);
+select throws_ok(
+  $delete from public.traceability_records$,
+  '42501', null,
+  'clients cannot delete immutable traceability records'
+);
+reset role;
+
+set local role anon;
+set local "request.jwt.claim.sub" = '';
+select is((select count(*) from public.traceability_records), 0::bigint, 'anonymous catalogue cannot see traceability records');
+reset role;
 
 select * from finish();
 rollback;
