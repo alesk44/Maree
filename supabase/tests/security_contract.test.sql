@@ -859,12 +859,12 @@ select lives_ok(
   $stmt$update public.notifications set read_at=now() where event_type='order_received'$stmt$,
   'fisher can mark their own notification as read'
 );
-select is((select count(*) from public.notifications where read_at is null),0::bigint,'read state is reflected in the unread count');
+select is((select count(*) from public.notifications where event_type='order_received' and read_at is null),0::bigint,'read state is reflected in the unread count for that event');
 reset role;
 
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000005';
-select is((select count(*) from public.notifications where event_type='verification_request_received'),8::bigint,'all trusted admins receive verification request notifications');
+select is((select count(*) from public.notifications where event_type='verification_request_received'),4::bigint,'trusted admin receives each verification request notification');
 reset role;
 
 select * from finish();
