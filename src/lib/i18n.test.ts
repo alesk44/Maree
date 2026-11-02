@@ -35,6 +35,24 @@ describe("Marée internationalisation", () => {
     }
   });
 
+  it("traduit les parcours d’annulation dans les trois langues sans repli en français", () => {
+    const cancellationKeys = [
+      "Demander l’annulation",
+      "Annulation gratuite possible jusqu’à 24 h avant le créneau.",
+      "Demande d’annulation tardive",
+      "Accepter et fixer la pénalité",
+      "Accepter la pénalité et annuler",
+      "Refuser, garder la commande",
+      "Pénalité acceptée",
+      "Annulation tardive refusée. La commande reste active.",
+    ];
+    for (const key of cancellationKeys) {
+      expect(translations[key], key).toBeDefined();
+      expect(translate(key, "en"), key).not.toBe(key);
+      expect(translate(key, "ro"), key).not.toBe(key);
+    }
+  });
+
   it("formate les prix et dates avec le locale choisi", () => {
     expect(formatPrice(12.5, "en")).toContain("12.50");
     expect(formatPrice(12.5, "ro")).toContain("12,50");
