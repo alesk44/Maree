@@ -69,8 +69,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/admin/email-review': typeof AdminEmailReviewRoute
-  '/admin/email-review': typeof AdminEmailReviewRoute
-  '/admin/email-review': typeof AdminEmailReviewRoute
   '/catalogue': typeof CatalogueRoute
   '/espace-pecheur': typeof EspacePecheurRoute
   '/guide': typeof GuideRoute
@@ -81,6 +79,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/admin/email-review': typeof AdminEmailReviewRoute
   '/catalogue': typeof CatalogueRoute
   '/espace-pecheur': typeof EspacePecheurRoute
   '/guide': typeof GuideRoute
@@ -92,6 +91,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/admin/email-review': typeof AdminEmailReviewRoute
   '/catalogue': typeof CatalogueRoute
   '/espace-pecheur': typeof EspacePecheurRoute
   '/guide': typeof GuideRoute
@@ -125,6 +125,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
+    | '/admin/email-review'
     | '/catalogue'
     | '/espace-pecheur'
     | '/guide'
