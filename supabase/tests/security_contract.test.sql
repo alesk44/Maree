@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(83);
+select plan(93);
 
 -- Isolated auth users; the auth trigger creates their initial restaurant profiles.
 insert into auth.users (id, email) values
@@ -260,6 +260,96 @@ select is(
 reset role;
 select ok(has_function_privilege('authenticated', 'public.mark_fisher_invoice_paid(uuid,text,text)', 'EXECUTE'), 'authenticated fisher payment confirmation RPC is available');
 select ok(not has_function_privilege('anon', 'public.mark_fisher_invoice_paid(uuid,text,text)', 'EXECUTE'), 'anonymous users cannot confirm invoice payments');
+
+-- Verify the monthly fisher invoice path independently from Marée commission billing.
+update public.orders
+set status='delivered', delivered_at=now(), billing_mode='monthly',
+    fisher_id_snapshot='00000000-0000-4000-8000-000000000001',
+    unit_price_snapshot=8.50, product_subtotal=4.25,
+    maree_fee_rate=0.065, maree_fee=0.28,
+    delivery_fee_rate=0.20, delivery_fee=0, total_amount=4.53
+where id='20000000-0000-4000-8000-000000000001';
+select lives_ok(
+  $select public.generate_fisher_monthly_invoices(current_date)$,
+  'trusted scheduler can generate monthly fisher product invoices'
+);
+select is(
+  (select count(*) from public.fisher_monthly_invoices
+   where restaurant_id='00000000-0000-4000-8000-000000000003'
+     and fisher_id='00000000-0000-4000-8000-000000000001'),
+  1::bigint,
+  'monthly generator creates one fisher invoice per restaurant/fisher pair'
+);
+select is(
+  (select subtotal from public.fisher_monthly_invoices
+   where restaurant_id='00000000-0000-4000-8000-000000000003'
+     and fisher_id='00000000-0000-4000-8000-000000000001'),
+  4.25::numeric,
+  'fisher invoice contains the product-only subtotal'
+);
+select is(
+  (select count(*) from public.fisher_monthly_invoice_items i
+   join public.fisher_monthly_invoices f on f.id=i.invoice_id
+   where f.restaurant_id='00000000-0000-4000-8000-000000000003'
+     and f.fisher_id='00000000-0000-4000-8000-000000000001'),
+  1::bigint,
+  'fisher invoice includes its delivered order detail line'
+);
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
+select is((select count(*) from public.fisher_monthly_invoices),1::bigint,'fisher can read their own monthly product invoice');
+select lives_ok(
+  $select public.mark_fisher_invoice_paid(
+    (select id from public.fisher_monthly_invoices
+     where restaurant_id='00000000-0000-4000-8000-000000000003'
+       and fisher_id='00000000-0000-4000-8000-000000000001'),
+    'Bank transfer','FISHER-TEST-REF'
+  )$,
+  'fisher can confirm receipt of payment for their own invoice'
+);
+reset role;
+select is(
+  (select status from public.fisher_monthly_invoices
+   where restaurant_id='00000000-0000-4000-8000-000000000003'
+     and fisher_id='00000000-0000-4000-8000-000000000001'),
+  'paid'::text,
+  'fisher payment confirmation marks only the matching invoice as paid'
+);
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000003';
+select is((select count(*) from public.fisher_monthly_invoices),1::bigint,'restaurant can read its own fisher invoice');
+select throws_ok(
+  $select public.mark_fisher_invoice_paid(
+    (select id from public.fisher_monthly_invoices
+     where restaurant_id='00000000-0000-4000-8000-000000000003'
+       and fisher_id='00000000-0000-4000-8000-000000000001'),
+    'Bank transfer','UNAUTHORISED-REF'
+  )$,
+  'P0001','Only the invoice fisher or an admin can confirm payment',
+  'restaurant cannot falsely confirm the fisher payment receipt'
+);
+reset role;
+
+-- Three overdue, unpaid monthly fisher invoices trigger the ordering safeguard.
+insert into public.fisher_monthly_invoices
+  (restaurant_id,fisher_id,period_start,period_end,due_date,subtotal)
+values
+  ('00000000-0000-4000-8000-000000000003','00000000-0000-4000-8000-000000000002',
+   (current_date - interval '3 months')::date,(current_date - interval '3 months' + interval '1 month - 1 day')::date,current_date-1,10),
+  ('00000000-0000-4000-8000-000000000003','00000000-0000-4000-8000-000000000006',
+   (current_date - interval '2 months')::date,(current_date - interval '2 months' + interval '1 month - 1 day')::date,current_date-1,10),
+  ('00000000-0000-4000-8000-000000000003','00000000-0000-4000-8000-000000000007',
+   (current_date - interval '1 month')::date,(current_date - interval '1 month' + interval '1 month - 1 day')::date,current_date-1,10);
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000003';
+select throws_ok(
+  $select public.reserve_catch(
+    '10000000-0000-4000-8000-000000000001'::uuid,0.5,now()+interval '5 days','collection',null
+  )$,
+  'P0001','Ordering is blocked: at least three monthly invoices are overdue and unpaid',
+  'restaurant with three overdue unpaid fisher invoices cannot place another order'
+);
+reset role;
 
 -- Marée commission invoices are restaurant liabilities, separate from fisher invoices.
 select ok(to_regclass('public.maree_monthly_commission_invoices') is not null, 'monthly Marée commission invoice table exists');
