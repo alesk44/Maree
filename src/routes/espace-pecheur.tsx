@@ -59,7 +59,16 @@ function FisherSpace() {
           setVerificationStatus(request?.status==="pending"?"pending":request?.status==="rejected"?"rejected":null);
           setVerificationNote(request?.reviewer_note??null);
         } else {
-          setVerificationStatus("approved" as never);
+          const {data:details,error:detailsError}=await supabase.from("profiles")
+            .select("boat_name,home_port,fishing_method,vessel_type,crew_size,fishing_licence_number,bio,since_year")
+            .eq("id",user.id).single();
+          if(detailsError) throw detailsError;
+          setFisherProfile({
+            boat_name:details.boat_name??"",home_port:details.home_port??"",fishing_method:details.fishing_method??"",
+            vessel_type:details.vessel_type??"",crew_size:details.crew_size==null?"":String(details.crew_size),
+            fishing_licence_number:details.fishing_licence_number??"",bio:details.bio??"",
+            since_year:details.since_year==null?"":String(details.since_year)
+          });
           setOrders(await fetchMyOrders());
         }
       }
@@ -81,6 +90,24 @@ function FisherSpace() {
       setForm((f)=>({...f,species:"",grade:""}));
       await refresh();
     } catch(e) { toast.error(e instanceof Error?t(e.message):t("Impossible de publier cette prise.")); }
+  };
+
+  const saveFisherProfile = async (e:React.FormEvent) => {
+    e.preventDefault();
+    if(!userId) return;
+    const crew= fisherProfile.crew_size.trim()===""?null:Number(fisherProfile.crew_size);
+    const year= fisherProfile.since_year.trim()===""?null:Number(fisherProfile.since_year);
+    if(crew!==null&&(!Number.isInteger(crew)||crew<1||crew>100)){toast.error(t("Nombre d’équipiers invalide."));return;}
+    if(year!==null&&(!Number.isInteger(year)||year<1900||year>2100)){toast.error(t("Année de début invalide."));return;}
+    setSavingProfile(true);
+    const {error}=await supabase.from("profiles").update({
+      boat_name:fisherProfile.boat_name.trim()||null,home_port:fisherProfile.home_port.trim()||null,
+      fishing_method:fisherProfile.fishing_method.trim()||null,vessel_type:fisherProfile.vessel_type.trim()||null,
+      crew_size:crew,fishing_licence_number:fisherProfile.fishing_licence_number.trim()||null,
+      bio:fisherProfile.bio.trim()||null,since_year:year
+    }).eq("id",userId);
+    setSavingProfile(false);
+    if(error) toast.error(error.message); else {toast.success(t("Profil pêcheur enregistré."));await refresh();}
   };
 
   const saveCatch = async (id:string,patch:{qtyKg?:number;priceKg?:number;status?:Status}) => {
@@ -141,15 +168,20 @@ function FisherSpace() {
           <p className="mt-1 text-xs text-muted-foreground">{t("Relevé indicatif — commission non prélevée à ce stade ; ne constitue pas une facture fiscale ni une preuve de paiement.")}</p>
         </li>})}</ul>}
     </section>}
-    {accountTab==="profile" && <section className="card mb-8 grid gap-2 p-5">
-      <h2 className="text-xl font-semibold">{t("Mon profil professionnel")}</h2>
-      <p><span className="text-muted-foreground">{t("Nom")} :</span> <strong>{me.name}</strong></p>
-      <p><span className="text-muted-foreground">{t("Bateau")} :</span> <strong>{me.boat||t("Non renseigné")}</strong></p>
-      <p><span className="text-muted-foreground">{t("Port")} :</span> <strong>{me.port||t("Non renseigné")}</strong></p>
-      <p><span className="text-muted-foreground">{t("Méthode")} :</span> <strong>{t(me.method)}</strong></p>
-      <p className="text-sm text-muted-foreground">{t("Les coordonnées légales, l'adresse professionnelle et le numéro GST devront être complétés avant l'émission de factures officielles.")}</p>
-      <a className="btn btn-accent w-fit" href="/verification">{t("Gérer mes informations professionnelles")}</a>
-    </section>}
+    {accountTab==="profile" && <form onSubmit={saveFisherProfile} className="card mb-8 grid gap-4 p-5">
+      <div><h2 className="text-xl font-semibold">{t("Mon profil professionnel")}</h2><p className="text-sm text-muted-foreground">{t("Complétez les informations de votre bateau et de votre activité après validation du compte.")}</p></div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <L t={t("Nom du bateau")}><input className="field" maxLength={120} value={fisherProfile.boat_name} onChange={e=>setFisherProfile(p=>({...p,boat_name:e.target.value}))}/></L>
+        <L t={t("Port d’attache")}><input className="field" maxLength={120} value={fisherProfile.home_port} onChange={e=>setFisherProfile(p=>({...p,home_port:e.target.value}))}/></L>
+        <L t={t("Type de bateau")}><input className="field" maxLength={120} value={fisherProfile.vessel_type} onChange={e=>setFisherProfile(p=>({...p,vessel_type:e.target.value}))} placeholder={t("Ex. chalutier, vedette, open boat")}/></L>
+        <L t={t("Méthode de pêche")}><input className="field" maxLength={100} value={fisherProfile.fishing_method} onChange={e=>setFisherProfile(p=>({...p,fishing_method:e.target.value}))}/></L>
+        <L t={t("Nombre d’équipiers")}><input className="field" type="number" min={1} max={100} step={1} value={fisherProfile.crew_size} onChange={e=>setFisherProfile(p=>({...p,crew_size:e.target.value}))}/></L>
+        <L t={t("Année de début d’activité")}><input className="field" type="number" min={1900} max={2100} value={fisherProfile.since_year} onChange={e=>setFisherProfile(p=>({...p,since_year:e.target.value}))}/></L>
+        <L t={t("Numéro de licence de pêche")}><input className="field" maxLength={120} value={fisherProfile.fishing_licence_number} onChange={e=>setFisherProfile(p=>({...p,fishing_licence_number:e.target.value}))}/></L>
+      </div>
+      <L t={t("Présentation de votre activité")}><textarea className="field" rows={4} maxLength={2000} value={fisherProfile.bio} onChange={e=>setFisherProfile(p=>({...p,bio:e.target.value}))}/></L>
+      <button className="btn btn-accent w-fit" disabled={savingProfile}>{savingProfile?t("Enregistrement…"):t("Enregistrer mon profil professionnel")}</button>
+    </form>}
 
     {accountTab==="activity" && <>
     <section aria-label={t("Vue d'ensemble")} className="mb-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
