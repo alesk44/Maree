@@ -62,5 +62,10 @@ using ((select public.is_current_user_admin()));
 
 -- Grant admin access to the confirmed account while preserving its restaurant role.
 insert into private.admin_users (user_id)
-values ('780bc2e2-b40f-45f9-87b1-4ccec3391454'::uuid)
+select id
+from auth.users
+where id = '780bc2e2-b40f-45f9-87b1-4ccec3391454'::uuid
 on conflict (user_id) do nothing;
+
+-- In local CI databases this real production account is absent, so the SELECT
+-- inserts zero rows. The production migration grants admin only if the account exists.
