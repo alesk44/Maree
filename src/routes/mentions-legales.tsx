@@ -24,7 +24,7 @@ function LegalPage() {
       <div className="rounded-2xl border border-border p-5">
         <p><strong>{t("Nom :")}</strong> Cosqueric</p>
         <p><strong>{t("Prénom :")}</strong> Alexandre</p>
-        <p><strong>{t("Rôle :")}</strong> propriétaire et créateur de l'application Marée Jersey</p>
+        <p><strong>{t("Rôle :")}</strong> {t("propriétaire et créateur de l'application Marée Jersey")}</p>
         <p><strong>{t("Téléphone :")}</strong> <a className="underline" href="tel:07700343725">07700343725</a></p>
         <p><strong>{t("Adresse :")}</strong> 666 Phare Ouest, JE69C, St. Helier, Jersey, Channel Islands</p>
         <p><strong>{t("Nom du service :")}</strong> Marée Jersey</p>
@@ -49,7 +49,7 @@ function LegalPage() {
       <h2 className="text-2xl font-semibold">{t("4. GST — Jersey")}</h2>
       <p>{t("La GST de Jersey est distincte de la TVA britannique. Le taux standard indiqué par Revenue Jersey est de 5 %. L'obligation d'immatriculation dépend notamment du montant et de la nature des fournitures taxables, avec un seuil général de £300,000 sur une période de 12 mois. Une entreprise non immatriculée ne doit pas facturer la GST.")}</p>
       <p>{t("Le traitement fiscal de Marée Jersey dépendra de son rôle contractuel réel (agent ou vendeur agissant en son propre nom), de l'identité du fournisseur et de son statut GST. Aucun montant de GST ne sera ajouté automatiquement avant validation par un conseiller fiscal ou Revenue Jersey.")}</p>
-      <p className="text-sm text-muted-foreground">Références : <a className="underline" href="https://www.gov.je/taxesmoney/gst/businesses/registration/pages/shouldibe.aspx" target="_blank" rel="noreferrer">{t("seuils d'immatriculation GST")}</a> · <a className="underline" href="https://www.gov.je/Industry/BusinessAdviceHub/BusinessTaxesSocialSecurity/Pages/GoodsServicesTaxBusinesses.aspx" target="_blank" rel="noreferrer">{t("GST pour les entreprises")}</a>.</p>
+      <p className="text-sm text-muted-foreground">{t("Références :")} <a className="underline" href="https://www.gov.je/taxesmoney/gst/businesses/registration/pages/shouldibe.aspx" target="_blank" rel="noreferrer">{t("seuils d'immatriculation GST")}</a> · <a className="underline" href="https://www.gov.je/Industry/BusinessAdviceHub/BusinessTaxesSocialSecurity/Pages/GoodsServicesTaxBusinesses.aspx" target="_blank" rel="noreferrer">{t("GST pour les entreprises")}</a>.</p>
     </section>
 
     <section className="grid gap-3">
@@ -63,7 +63,7 @@ function LegalPage() {
       <h2 className="text-2xl font-semibold">{t("6. Données personnelles et confidentialité")}</h2>
       <p>{t("Le service peut traiter des données de compte, coordonnées professionnelles, informations de commandes, échanges et journaux techniques afin de gérer les comptes, les réservations, la traçabilité, la sécurité et les obligations légales. Les données ne doivent être accessibles qu'aux personnes qui en ont besoin pour ces finalités.")}</p>
       <p>{t("La politique de confidentialité définitive devra préciser le responsable du traitement, les bases légales, les durées de conservation, les destinataires et sous-traitants, les transferts éventuels hors de Jersey, les droits des personnes et les modalités de réclamation auprès de l'autorité compétente.")}</p>
-      <p className="text-sm text-muted-foreground">Référence : <a className="underline" href="https://admin.jerseylaw.je/laws/current/l_3_2018" target="_blank" rel="noreferrer">Data Protection (Jersey) Law 2018</a> · <a className="underline" href="https://www.jerseyoic.org/" target="_blank" rel="noreferrer">Jersey Office of the Information Commissioner</a>.</p>
+      <p className="text-sm text-muted-foreground">{t("Référence :")} <a className="underline" href="https://admin.jerseylaw.je/laws/current/l_3_2018" target="_blank" rel="noreferrer">Data Protection (Jersey) Law 2018</a> · <a className="underline" href="https://www.jerseyoic.org/" target="_blank" rel="noreferrer">Jersey Office of the Information Commissioner</a>.</p>
     </section>
 
     <section className="grid gap-3">
