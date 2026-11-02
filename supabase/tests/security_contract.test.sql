@@ -140,7 +140,7 @@ select throws_ok(
   'user cannot submit a verification request for another account'
 );
 select throws_ok(
-  $$select public.update_order_status('20000000-0000-4000-8000-000000000001'::uuid, 'confirmed'::public.order_status)$$,
+  $$$public.update_order_status('20000000-0000-4000-8000-000000000001'::uuid, 'confirmed'::public.order_status)$$$,
   'P0001', 'Only fisher accounts can update orders',
   'restaurant account cannot advance order status'
 );
@@ -157,22 +157,22 @@ select ok(
   'fisher clients cannot bypass the inventory ownership RPC with direct updates'
 );
 select throws_ok(
-  $$select public.update_order_status('20000000-0000-4000-8000-000000000002'::uuid, 'delivered'::public.order_status)$$,
+  $$$public.update_order_status('20000000-0000-4000-8000-000000000002'::uuid, 'delivered'::public.order_status)$$$,
   'P0001', 'Invalid order status transition',
   'fisher cannot skip required order status transitions'
 );
 select throws_ok(
-  $$select public.update_order_status('20000000-0000-4000-8000-000000000001'::uuid, 'confirmed'::public.order_status)$$,
+  $$$public.update_order_status('20000000-0000-4000-8000-000000000001'::uuid, 'confirmed'::public.order_status)$$$,
   'P0001', 'Only the lot owner can update this order',
   'fisher cannot update another fisher order'
 );
 select throws_ok(
-  $$select public.reserve_catch('10000000-0000-4000-8000-000000000001'::uuid, 0.5, now() + interval '1 day', 'collection', null)$$,
+  $$$public.reserve_catch('10000000-0000-4000-8000-000000000001'::uuid, 0.5, now() + interval '1 day', 'collection', null)$$$,
   'P0001', 'Only restaurant accounts can place orders',
   'fisher cannot reserve a catch'
 );
 select throws_ok(
-  $$select public.review_verification_request('30000000-0000-4000-8000-000000000001'::uuid, 'approved'::public.verification_status, null)$$,
+  $$$public.review_verification_request('30000000-0000-4000-8000-000000000001'::uuid, 'approved'::public.verification_status, null)$$$,
   'P0001', 'Admin access required',
   'fisher cannot review verification requests'
 );
@@ -182,7 +182,7 @@ reset role;
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000005';
 select lives_ok(
-  $$select public.review_verification_request('30000000-0000-4000-8000-000000000003'::uuid, 'approved'::public.verification_status, 'Approved by test admin')$$,
+  $$$public.review_verification_request('30000000-0000-4000-8000-000000000003'::uuid, 'approved'::public.verification_status, 'Approved by test admin')$$$,
   'admin can approve a pending verification request'
 );
 reset role;
@@ -194,7 +194,7 @@ select is(public.is_current_user_admin(), true, 'separate admin grant is recogni
 select is((select role::text from public.profiles where id = '00000000-0000-4000-8000-000000000007'), 'restaurant', 'separate admin grant preserves the restaurant business role');
 select is((select count(*) from public.verification_requests), 4::bigint, 'separate admin can read all verification requests');
 select lives_ok(
-  $$select public.review_verification_request('30000000-0000-4000-8000-000000000004'::uuid, 'approved'::public.verification_status, 'Approved by separate admin')$$,
+  $$$public.review_verification_request('30000000-0000-4000-8000-000000000004'::uuid, 'approved'::public.verification_status, 'Approved by separate admin')$$$,
   'separate admin can approve a pending verification request'
 );
 reset role;
@@ -223,11 +223,11 @@ select ok(exists (select 1 from cron.job where jobname = 'maree-monthly-fisher-i
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000003';
 select lives_ok(
-  $select public.reserve_catch('10000000-0000-4000-8000-000000000001'::uuid, 0.5, now() + interval '2 days', 'collection', 'commission test')$,
+  $$public.reserve_catch('10000000-0000-4000-8000-000000000001'::uuid, 0.5, now() + interval '2 days', 'collection', 'commission test')$$,
   'restaurant can reserve collection with commission'
 );
 select lives_ok(
-  $select public.reserve_catch('10000000-0000-4000-8000-000000000001'::uuid, 0.5, now() + interval '3 days', 'delivery', 'commission test')$,
+  $$public.reserve_catch('10000000-0000-4000-8000-000000000001'::uuid, 0.5, now() + interval '3 days', 'delivery', 'commission test')$$,
   'restaurant can reserve delivery with commission'
 );
 select is(
@@ -269,10 +269,12 @@ select ok(has_function_privilege('authenticated', 'public.verify_maree_commissio
 
 -- Exercise the actual monthly generator with a delivered order and its snapshotted commission.
 update public.orders
-set status='delivered', delivered_at=now()
+set status='delivered', delivered_at=now(), product_subtotal=6.00,
+    unit_price_snapshot=12.00, fisher_id_snapshot='00000000-0000-4000-8000-000000000002',
+    maree_fee_rate=0.065, maree_fee=0.39, total_amount=6.39
 where id='20000000-0000-4000-8000-000000000002';
 select lives_ok(
-  $select public.generate_maree_monthly_commission_invoices(current_date)$,
+  $$public.generate_maree_monthly_commission_invoices(current_date)$$,
   'trusted scheduler can generate monthly Marée commission statements'
 );
 select is(
@@ -306,7 +308,7 @@ set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000003';
 select is((select count(*) from public.maree_monthly_commission_invoices),1::bigint,'restaurant can read its own Marée commission statement');
 select lives_ok(
-  $select public.declare_maree_commission_invoice_paid('40000000-0000-4000-8000-000000000001'::uuid,'Bank transfer','TEST-REF')$,
+  $$public.declare_maree_commission_invoice_paid('40000000-0000-4000-8000-000000000001'::uuid,'Bank transfer','TEST-REF')$$,
   'restaurant can declare an off-platform commission payment'
 );
 select is((select status from public.maree_monthly_commission_invoices where id='40000000-0000-4000-8000-000000000001'),'declared_paid'::text,'restaurant declaration is not treated as verified payment');
@@ -316,7 +318,7 @@ set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
 select is((select count(*) from public.maree_monthly_commission_invoices),0::bigint,'fisher cannot read restaurant Marée commission statements');
 select throws_ok(
-  $select public.verify_maree_commission_invoice_paid('40000000-0000-4000-8000-000000000001'::uuid)$,
+  $$public.verify_maree_commission_invoice_paid('40000000-0000-4000-8000-000000000001'::uuid)$$,
   'P0001','Admin access required','fisher cannot verify a Marée commission payment'
 );
 reset role;
@@ -324,7 +326,7 @@ reset role;
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000005';
 select lives_ok(
-  $select public.verify_maree_commission_invoice_paid('40000000-0000-4000-8000-000000000001'::uuid)$,
+  $$public.verify_maree_commission_invoice_paid('40000000-0000-4000-8000-000000000001'::uuid)$$,
   'admin can verify a restaurant payment declaration'
 );
 select is((select status from public.maree_monthly_commission_invoices where id='40000000-0000-4000-8000-000000000001'),'paid'::text,'admin verification marks the commission invoice paid');
