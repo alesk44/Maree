@@ -1385,7 +1385,6 @@ Object.assign(translations, {
   "Photo supprimée.": ["Photo removed.", "Foto removida.", "Fotografie ștearsă."],
   "Vous êtes déconnecté.": ["You are signed out.", "Terminou a sessão.", "V-ați deconectat."],
   "Chargement du compte…": ["Loading account…", "A carregar a conta…", "Se încarcă contul…"],
-  "Connectez-vous pour gérer votre profil et votre photo.": ["Sign in to manage your profile and photo.", "Inicie sessão para gerir o seu perfil e fotografia.", "Conectați-vă pentru a vă gestiona profilul și fotografia."],
   "Connexion / Créer un compte": ["Sign in / Create an account", "Iniciar sessão / Criar conta", "Conectare / Creare cont"],
   "Gérez vos informations personnelles et votre photo de profil.": ["Manage your personal information and profile photo.", "Gira as suas informações pessoais e foto de perfil.", "Gestionați informațiile personale și fotografia de profil."],
   "Photo de profil": ["Profile photo", "Foto de perfil", "Fotografie de profil"],
