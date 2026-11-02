@@ -1,4 +1,5 @@
 -- Second notification tranche: verification decisions and monthly billing lifecycle.
+-- All lifecycle events reuse the recipient-scoped notifications table and its existing RLS contract.
 -- All rows are created by trusted database triggers; browser clients still cannot insert notifications.
 
 create or replace function private.create_verification_result_notification()
