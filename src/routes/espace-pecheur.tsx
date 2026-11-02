@@ -92,6 +92,8 @@ function FisherSpace() {
     if(!form.species.trim()||!form.zone.trim()||!form.caughtAt||!form.landedAt) { toast.error(t("Espèce, zone et horaires sont requis.")); return; }
     const caught=new Date(form.caughtAt), landed=new Date(form.landedAt);
     if(!Number.isFinite(caught.getTime())||!Number.isFinite(landed.getTime())||landed<caught) { toast.error(t("Les horaires de capture et de débarquement sont invalides.")); return; }
+    if(landed>Date.now()) { toast.error(t("L’heure de débarquement ne peut pas être dans le futur. Vérifiez l’heure locale et réessayez.")); return; }
+    if(!me.method.trim()) { toast.error(t("Renseignez d’abord votre méthode de pêche dans Mon profil professionnel.")); setAccountTab("profile"); return; }
     if(!Number.isFinite(form.qtyKg)||form.qtyKg<0.5||!Number.isFinite(form.priceKg)||form.priceKg<0) { toast.error(t("Quantité ou prix invalide.")); return; }
     try {
       await createSharedCatch({species:form.species.trim(),zone:form.zone.trim(),qtyKg:form.qtyKg,priceKg:form.priceKg,grade:form.grade.trim(),storage:form.storage,caughtAt:caught.toISOString(),landedAt:landed.toISOString(),fisherId:userId,method:me.method,emoji:EMOJI[me.method]??"🐟",status:"disponible"});
@@ -225,7 +227,7 @@ function FisherSpace() {
           <L t={t("Quantité (kg)")}><input required className="field" type="number" min={0.5} step={0.5} value={form.qtyKg} onChange={(e)=>up("qtyKg",+e.target.value)}/></L>
           <L t={t("Prix (£/kg)")}><input required className="field" type="number" min={0} step={0.5} value={form.priceKg} onChange={(e)=>up("priceKg",+e.target.value)}/></L>
           <L t={t("Calibre / qualité")}><input className="field" value={form.grade} onChange={(e)=>up("grade",e.target.value)}/></L>
-          <L t={t("Méthode")}><input className="field" value={t(me.method)} disabled/></L>
+          <L t={t("Méthode")}><input className="field" value={me.method?t(me.method):t("À renseigner dans Mon profil professionnel")} disabled/></L>
         </div>
         <L t={t("Conseils de conservation")}><input className="field" value={form.storage} onChange={(e)=>up("storage",e.target.value)}/></L>
         <button className="btn">{t("Publier")}</button>
