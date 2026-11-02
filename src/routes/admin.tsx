@@ -140,7 +140,8 @@ function Admin() {
         .select("id,restaurant_id,period_start,period_end,due_date,commission_total,delivery_total,status,declared_at,payment_method,payment_reference")
         .order("period_start", { ascending: false });
       if (!commissionError) setCommissionInvoices((commissionRows ?? []) as AdminCommissionInvoice[]);
-      if (commissionError && commissionError.code !== "42P01" && commissionError.code !== "PGRST205") {
+      if (commissionError) {
+        setReportingError(t("Relevés financiers Marée indisponibles : vérifiez la synchronisation du schéma Supabase."));
         console.warn("Marée commission statements could not be loaded", commissionError);
       }
       if (orderError) {
