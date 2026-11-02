@@ -2,7 +2,7 @@
 
 > **Mise à jour 2 novembre 2026 : paiements reportés à la demande du propriétaire. Aucun PSP n'est sélectionné. Le compte Revolut personnel ne sera pas utilisé pour l'activité commerciale. Le reste du produit (sécurité, UX, tests, conformité) continue indépendamment. La commission 13 % reste une simulation non encaissée.**
 
-Dernière revue : 1 novembre 2026 — Verify, Build et Marée CI verts sur `e0d1fac` ; tests Supabase en cours  
+Dernière revue : 2 novembre 2026 — tous les contrôles automatisés réussis sur `c4634ae5368ac5d4a738bb28f316ddcded27a20d` (Verify, Build verification, Marée CI, Supabase migrations/pgTAP et déploiement de prévisualisation Cloudflare).  
 Branche de travail : `feature/supabase-shared-data-v2`  
 Règle de livraison : aucun merge sur `main`, aucun déploiement public et aucune mise en production sans validation explicite du propriétaire.
 
@@ -51,7 +51,7 @@ Règle de livraison : aucun merge sur `main`, aucun déploiement public et aucun
 - [x] Workflow CI complet vert sur le commit `a92ad4c9b820850c02b07580ecb93600da9d3c1c` : build production, TypeScript, ESLint et tests.
 - [x] Restreindre les colonnes des profils exposées aux rôles navigateur : téléphone exclu, champs de fiche pêcheur uniquement pour anon, rôle lisible seulement par authenticated. Migration appliquée et droits revérifiés.\n- [x] Révoquer les privilèges génériques superflus sur catches, orders et verification_requests ; réaccorder uniquement SELECT/INSERT/UPDATE nécessaires. Les droits RPC ont été vérifiés : exécution réservée à authenticated.\n- [x] Tests pgTAP de contournement RLS avec sessions anon, restaurant et pêcheur : réussis en CI.
 - [x] Vérifier les transitions de commande, les permissions RPC et les cas limites de stock simultané : réussis en CI.
-- [ ] Vérifier la cohérence entre les statuts anglais en base et les libellés français dans l'interface.
+- [x] Vérifier la conversion des statuts de lots Supabase (`available`/`reserved`/`sold_out`) vers les clés françaises (`disponible`/`réservé`/`épuisé`) et leur traduction FR/EN/RO dans l'interface. La revue manuelle des statuts de commandes reste incluse dans les parcours inter-comptes.
 - [x] Ajouter une suite pgTAP pour RLS, privilèges RPC, visibilité anon/restaurant/fisher et refus des transitions non autorisées.\n- [x] Ajouter un script de test à deux connexions pour la réservation simultanée du dernier stock ; exécution CI en attente.\n- [x] Vérifier qu'un pêcheur ne peut pas modifier la prise d'un autre pêcheur (pgTAP, CI).
 - [x] Aucun échec restant dans les contrôles CI actuels.
 
@@ -109,3 +109,15 @@ Le build, les tests, le lint et le typecheck sont verts ; les tests RLS et les t
 - [ ] Le linter signale les trois RPC SECURITY DEFINER exécutables par authenticated. C'est intentionnel pour les transactions et le contrôle d'accès est dans le corps des fonctions ; conserver `search_path = ''`, les vérifications de rôle/propriété et les tests pgTAP.
 - [ ] Activer la protection des mots de passe compromis dans Supabase Auth avant ouverture publique, via le réglage Auth pris en charge.
 - [ ] Effectuer le parcours manuel mobile/desktop et le test réel avec deux comptes et un lot ; la base distante contient encore zéro lot et zéro commande.
+
+
+## Revue de feuille de route — 2 novembre 2026
+
+- [x] Dernière suite Supabase migration/pgTAP réussie sur `c4634ae5368ac5d4a738bb28f316ddcded27a20d`.
+- [x] Verify, Marée CI et Build verification réussis sur le même commit ; déploiement Cloudflare Preview réussi.
+- [x] PR #2 toujours ouverte en brouillon ; `main` n'a pas été modifiée et aucun merge n'a été effectué.
+- [x] Contrôle statique du mapping des statuts de lots : statuts anglais en base convertis en clés françaises puis traduits en anglais/roumain par le dictionnaire.
+- [ ] Vérifier visuellement les pages et les langues sur appareils réels ; l'aperçu web ne peut pas être contrôlé automatiquement par cette revue.
+- [ ] Effectuer les tests fonctionnels avec deux comptes réels, un lot et une réservation.
+- [ ] Reprendre le point de lockfile Bun : régénérer `bun.lock` depuis un environnement Bun et remettre le mode `--frozen-lockfile` après vérification.
+- [ ] Configurer et tester les URL Auth, e-mail/Resend et les paramètres de conformité avant ouverture publique.
