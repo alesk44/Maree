@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/sonner";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { supabase } from "@/lib/supabase";
+import { NotificationCenter } from "@/components/notification-center";
 
 function NotFoundComponent() {
   const { t, gbp, dt } = useLanguage();
@@ -141,6 +142,7 @@ function RootContent() {
                 <p className="hidden text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground lg:block">{t("Marché de la mer · Jersey")}</p>
               </div>
               <div className="flex items-center gap-2">
+                <NotificationCenter />
                 <Link to="/compte" className="flex items-center gap-2 rounded-full border border-border bg-card py-1 pl-1 pr-3 text-xs font-semibold text-foreground transition hover:border-accent" aria-label={t("Mon compte")}>
                   <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-secondary text-accent">{account?.avatarUrl ? <img src={account.avatarUrl} alt="" className="h-full w-full object-cover" /> : "♙"}</span>
                   <span className="hidden sm:inline">{t("Mon compte")}</span>
