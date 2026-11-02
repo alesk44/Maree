@@ -75,7 +75,7 @@ export type SharedOrderRow = {
   maree_fee_rate:number|string; maree_fee:number|string;
   delivery_fee_rate:number|string; delivery_fee:number|string; total_amount:number|string|null;
   billing_mode:"immediate"|"monthly"; delivered_at:string|null;
-  cancellation_request_status:"none"|"pending"|"approved"|"rejected"; cancellation_requested_at:string|null; cancellation_penalty:number|string|null;
+  cancellation_request_status:"none"|"pending"|"offered"|"approved"|"rejected"; cancellation_requested_at:string|null; cancellation_penalty:number|string|null;
 };
 
 export async function fetchMyOrders():Promise<SharedOrderRow[]> {
@@ -189,4 +189,9 @@ export async function requestMyOrderCancellation(id:string):Promise<"cancelled"|
   const {data,error}=await supabase.rpc("request_order_cancellation",{p_order_id:id});
   if(error) throw error;
   return data as "cancelled"|"requested";
+}
+
+export async function respondMyOrderCancellation(id:string,accept:boolean):Promise<void>{
+  const {error}=await supabase.rpc("respond_order_cancellation",{p_order_id:id,p_accept:accept});
+  if(error) throw error;
 }
