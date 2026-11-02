@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(58);
+select plan(64);
 
 -- Isolated auth users; the auth trigger creates their initial restaurant profiles.
 insert into auth.users (id, email) values
@@ -218,6 +218,44 @@ select ok(not has_table_privilege('authenticated', 'public.fisher_monthly_invoic
 select ok(has_function_privilege('service_role', 'public.generate_fisher_monthly_invoices(date)', 'EXECUTE'), 'trusted scheduler can generate monthly invoices');
 select ok(to_regclass('cron.job') is not null, 'pg_cron scheduler is installed');
 select ok(exists (select 1 from cron.job where jobname = 'maree-monthly-fisher-invoices'), 'monthly invoice generation is scheduled');
+
+-- Verify server-side Marée fee calculation for collection and delivery.
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000003';
+select lives_ok(
+  $select public.reserve_catch('10000000-0000-4000-8000-000000000001'::uuid, 0.5, now() + interval '2 days', 'collection', 'commission test')$,
+  'restaurant can reserve collection with commission'
+);
+select lives_ok(
+  $select public.reserve_catch('10000000-0000-4000-8000-000000000001'::uuid, 0.5, now() + interval '3 days', 'delivery', 'commission test')$,
+  'restaurant can reserve delivery with commission'
+);
+select is(
+  (select maree_fee from public.orders where restaurant_id = '00000000-0000-4000-8000-000000000003' and fulfilment = 'collection' and note = 'commission test' order by created_at desc limit 1),
+  0.28::numeric,
+  '6.5 percent Marée fee is charged on collection'
+);
+select is(
+  (select delivery_fee from public.orders where restaurant_id = '00000000-0000-4000-8000-000000000003' and fulfilment = 'collection' and note = 'commission test' order by created_at desc limit 1),
+  0::numeric,
+  'collection has no delivery fee'
+);
+select is(
+  (select maree_fee from public.orders where restaurant_id = '00000000-0000-4000-8000-000000000003' and fulfilment = 'delivery' and note = 'commission test' order by created_at desc limit 1),
+  0.28::numeric,
+  '6.5 percent Marée fee is charged on delivery'
+);
+select is(
+  (select delivery_fee from public.orders where restaurant_id = '00000000-0000-4000-8000-000000000003' and fulfilment = 'delivery' and note = 'commission test' order by created_at desc limit 1),
+  0.85::numeric,
+  '20 percent delivery fee is charged only on delivery'
+);
+select is(
+  (select total_amount from public.orders where restaurant_id = '00000000-0000-4000-8000-000000000003' and fulfilment = 'delivery' and note = 'commission test' order by created_at desc limit 1),
+  5.38::numeric,
+  'restaurant total includes products, 6.5 percent Marée fee and delivery'
+);
+reset role;
 select ok(has_function_privilege('authenticated', 'public.mark_fisher_invoice_paid(uuid,text,text)', 'EXECUTE'), 'authenticated fisher payment confirmation RPC is available');
 select ok(not has_function_privilege('anon', 'public.mark_fisher_invoice_paid(uuid,text,text)', 'EXECUTE'), 'anonymous users cannot confirm invoice payments');
 
