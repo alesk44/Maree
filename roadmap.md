@@ -230,3 +230,51 @@ Le build, les tests, le lint et le typecheck sont verts ; les tests RLS et les t
 - [x] Ajouter tests de normalisation météo, conversion vent m/s → km/h, dates Jersey, recommandations saisonnières et restriction ormeaux.
 - [ ] Vérifier la réponse réelle du proxy météo sur l’aperçu Cloudflare et confirmer l’attribution.
 - [ ] Terminer la suite Supabase pgTAP et la revue d’architecture avant toute fusion/production.
+
+
+## TRUTHMODE — reprise du 2 novembre 2026 (audit dépôt + Supabase connecté)
+
+### Corrections et avancées sur la branche
+- [x] Réintégrer dans le dépôt la migration historique `20261102055937_add_catch_traceability.sql`, déjà présente dans l'historique de la base Supabase connectée mais absente de la branche. Elle recrée les tables QR et événements sur une base locale vierge.
+- [x] Réutiliser `catch_traceability_codes` et `catch_traceability_events` pour éviter un second stockage de traçabilité parallèle.
+- [x] Ajouter une RPC transactionnelle `attach_external_traceability` : validation du rôle, association pêcheur→lot ou restaurant→commande propre, stockage du QR, et création de l'événement d'audit dans la même transaction.
+- [x] Lier la visibilité restaurant à la commande exacte; conserver la visibilité du lot pour son pêcheur et l'administration.
+- [x] Retirer les insertions directes des rôles navigateur sur les tables QR et événements; les écritures passent par la RPC protégée.
+- [x] Étendre le scanner QR pour enregistrer fournisseur, espèce, quantité, date de réception et note, avec historique visible selon RLS.
+- [x] Conserver le code brut et la source HTTPS comme référence non vérifiée; aucun site externe n'est aspiré et le QR n'est pas présenté comme certification légale, de fraîcheur ou sanitaire.
+- [x] Ajouter six index couvrant les clés étrangères signalées par l'advisor Supabase (jetons e-mail, documents de conformité, scans et événements QR).
+- [x] Ajouter les tests pgTAP d'accès inter-comptes, d'écriture QR par RPC, de visibilité ciblée, d'immutabilité côté API et de présence des index.
+- [ ] Attendre la réussite du workflow Supabase sur la nouvelle chaîne complète de migrations et des 140 assertions avant de déclarer cette intégration validée.
+
+### Vérifications live de la base Supabase connectée
+- [x] Projet `maree-jersey` observé actif et sain (PostgreSQL 17, région `eu-west-2`).
+- [x] Le schéma distant contient déjà `catch_traceability_codes` et `catch_traceability_events`; la migration version `20261102055937` est bien enregistrée à distance.
+- [x] Le dépôt contient maintenant cette migration historique manquante afin que `supabase db reset` reconstruise la même fondation.
+- [x] Comptages observés au dernier contrôle : 2 profils, 1 lot et 2 commandes. Cela remplace l'ancien relevé « zéro lot / zéro commande » qui n'est plus à jour.
+- [x] L'historique distant s'arrête à `20261102055937`; les migrations commerciales et d'annulation plus récentes de la branche ne sont pas présentes sur la base connectée.
+- [ ] Ne pas appliquer ces migrations distantes sans validation explicite du propriétaire; la production/instance connectée reste inchangée.
+
+### Advisor Supabase — points encore ouverts
+- [x] Six clés étrangères non indexées identifiées et index correspondants ajoutés à la branche.
+- [ ] Recontrôler l'advisor après exécution de la migration d'indexation; les avertissements de policies permissives multiples restent à examiner sans fusionner des politiques avant tests de rôles.
+- [ ] Confirmer que les tables privées `private.admin_users` et `private.verification_email_action_tokens` restent sans policy RLS volontairement et sans privilèges navigateur.
+- [ ] Réexaminer les fonctions SECURITY DEFINER signalées : elles doivent rester protégées par `search_path = ''`, contrôle de rôle/propriété et tests pgTAP; l'avertissement du linter n'est pas à lui seul une preuve de faille.
+- [ ] Activer la protection des mots de passe compromis dans Supabase Auth avant ouverture publique. Le connecteur disponible ne permet pas de changer ce réglage Auth.
+- [ ] Ajouter un contrôle manuel des paramètres d'URL Auth, confirmation e-mail, SMTP/Resend et redirections.
+
+### CI et état de livraison
+- [x] `bun install --frozen-lockfile` passe sur le commit `7bf45cc713b9ca837f9a0371b7d6bbf9fb7763f9`.
+- [x] Build verification réussie sur ce commit.
+- [x] Verify : build, TypeScript, lint et tests terminés avec succès; clôture du job encore en cours au dernier relevé.
+- [x] Marée CI : tests et build terminés avec succès; clôture du job réussie.
+- [ ] Workflow Supabase migration tests encore en attente au dernier relevé; ne pas annoncer les 140 assertions comme réussies avant son résultat final.
+- [ ] Aucun test manuel navigateur ni parcours réel inter-comptes effectué par cette revue.
+- [ ] Aucun merge, déploiement production ou changement de schéma sur la base distante effectué.
+
+### Obligations Jersey — éléments officiels à prendre en compte
+- [x] La Food (Jersey) Law 2023, article 12, impose aux opérateurs alimentaires des systèmes permettant d'identifier le fournisseur immédiat et les entreprises auxquelles leurs produits ont été fournis, ainsi que des informations/documentations permettant la traçabilité.
+- [x] L'article 12(3)(c) prévoit une conservation d'un an, sauf période différente prescrite ou notifiée. La politique de conservation de Marée doit donc être configurée et validée juridiquement avant ouverture.
+- [x] Government of Jersey indique que les entreprises alimentaires doivent être enregistrées 28 jours avant le début de l'activité; les distributeurs alimentaires sont inclus, même sans détention de stock. Applicabilité exacte au rôle contractuel de Marée à confirmer avec Environmental Health.
+- [x] Les exploitants alimentaires doivent disposer d'un système documenté de sécurité alimentaire basé sur les principes HACCP.
+- [x] Les licences de navire et obligations de logbook/déclaration dépendent de la catégorie du navire; les règles officielles prévoient notamment des délais de transmission des feuilles de logbook.
+- [ ] Obtenir une confirmation écrite d'Environmental Health et Marine Resources sur le périmètre exact de Marée, les champs à conserver, la durée, l'accès aux documents et les obligations propres aux espèces/navires.
