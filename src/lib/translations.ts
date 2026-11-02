@@ -1,6 +1,5 @@
 // French source keys keep existing demo records compatible.
 export const translations: Record<string, readonly [string, string]> = {
-  "Notifications": ["Notifications", "Notificări"],
   "Centre de notifications": ["Notification centre", "Centrul de notificări"],
   "{count} non lues": ["{count} unread", "{count} necitite"],
   "Tout lire": ["Mark all as read", "Marchează toate ca citite"],
