@@ -68,7 +68,7 @@ export const translations: Record<string, readonly [string, string]> = {
   "Port de": ["Harbour:", "Portul"],
   "depuis": ["since", "din"],
   "Présentation": ["About", "Prezentare"],
-  "Méthode": ["Method:", "Metodă:"],
+  "Méthode :": ["Method:", "Metodă:"],
   "Coordonnées (démo)": ["Contact details (demo)", "Date de contact (demo)"],
   "Coordonnées fictives — ne pas appeler.": ["Fictional contact details — do not call.", "Date de contact fictive — nu sunați."],
   "Historique des prises": ["Catch history", "Istoricul capturilor"],
@@ -119,7 +119,6 @@ export const translations: Record<string, readonly [string, string]> = {
   "Demandes reçues": ["Received requests", "Cereri primite"],
   "Aucune demande reçue.": ["No requests received.", "Nicio cerere primită."],
   "Passer à « {status} »": ["Move to “{status}”", "Treci la „{status}”"],
-  "Statut": ["Status: {status}", "Stare: {status}"],
   "Espèce, zone et horaires sont requis.": ["Species, area and times are required.", "Specia, zona și orele sunt obligatorii."],
   "Prise publiée dans le catalogue (enregistrée localement).": ["Catch posted in the catalogue (saved locally).", "Captură publicată în catalog (salvată local)."],
   "Tableau de bord": ["Dashboard", "Panou de control"],
@@ -779,4 +778,8 @@ Object.assign(translations, {
   "Pêcheur": ["Fisher", "Pescar"],
   "Marée Jersey — marché local de produits de la mer": ["Marée Jersey — local seafood marketplace", "Marée Jersey — piață locală de produse marine"],
   "Des produits de la mer frais de Jersey, directement des pêcheurs aux cuisines professionnelles.": ["Fresh Jersey seafood, directly from local fishers to professional kitchens.", "Produse marine proaspete din Jersey, direct de la pescari către bucătăriile profesionale."],
+});
+
+Object.assign(translations, {
+  "4. GST — Jersey": ["4. GST — Jersey", "4. GST — Jersey"],
 });
