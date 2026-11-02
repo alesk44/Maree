@@ -164,6 +164,7 @@ function RootContent() {
         <div className="mx-auto max-w-7xl px-4 py-8 text-sm text-muted-foreground lg:px-8">
           <p className="font-display text-lg">Marée Jersey</p>
           <p className="mt-1">{t("Les disponibilités et commandes affichées proviennent du marché partagé. Les réservations sont des demandes : aucun paiement en ligne n’est activé dans cette version.")}</p>
+          <div className="mt-4 flex flex-wrap gap-4 text-xs"><Link to="/mentions-legales" className="underline hover:text-foreground">{t("Informations légales & confidentialité")}</Link><a href="tel:07700343725" className="underline hover:text-foreground">Alexandre Cosqueric · 07700343725</a></div>
         </div>
       </footer>
         </div>
