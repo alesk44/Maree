@@ -56,6 +56,7 @@ export function WeatherSeasonPanel() {
     season: ["Saison actuelle", "Current season", "Sezonul actual"],
     seafood: ["Produits de la mer à privilégier", "Seafood to look for", "Produse marine de urmărit"],
     best: ["Période de meilleure qualité", "Best quality period", "Perioadă de calitate optimă"],
+    recipes: ["3 idées de recettes", "3 recipe ideas", "3 idei de rețete"],
     inSeason: ["En saison", "In season", "În sezon"],
     daily: ["Selon les débarquements du jour", "Check today's landings", "În funcție de capturile zilei"],
     disclaimer: ["La saisonnalité indique une tendance générale, pas une garantie de stock. Vérifiez les lots réellement publiés, la traçabilité, la taille minimale et les règles de pêche en vigueur à Jersey.", "Seasonality is a general guide, not a stock guarantee. Check actual published lots, traceability, minimum sizes and current Jersey fishing rules.", "Sezonalitatea este doar orientativă, nu o garanție de stoc. Verificați capturile publicate, trasabilitatea, dimensiunile minime și regulile actuale de pescuit din Jersey."],
@@ -115,14 +116,19 @@ export function WeatherSeasonPanel() {
               const name = langIndex === 0 ? item.nameFr : langIndex === 2 ? item.nameRo : item.name;
               const note = langIndex === 0 ? item.noteFr : langIndex === 2 ? item.noteRo : item.note;
               const months = langIndex === 0
-                ? item.name === "Chancre crab" ? "Novembre–mars" : item.name === "Jersey lobster" ? "Avril–décembre ; pic de mai à septembre" : item.name === "Ormers" ? "1er octobre–30 avril ; jours d’ouverture lunaires autorisés uniquement" : "Selon les débarquements du jour"
+                ? item.slug === "crabe-chancre" ? "Novembre–mars" : item.slug === "homard" ? "Avril–décembre ; pic de mai à septembre" : item.slug === "ormeaux" ? "1er octobre–30 avril ; jours d’ouverture autorisés uniquement" : "Selon les débarquements du jour"
                 : langIndex === 2
-                  ? item.name === "Chancre crab" ? "Noiembrie–martie" : item.name === "Jersey lobster" ? "Aprilie–decembrie; vârf mai–septembrie" : item.name === "Ormers" ? "1 octombrie–30 aprilie; doar zile lunare autorizate" : "În funcție de capturile zilei"
+                  ? item.slug === "crabe-chancre" ? "Noiembrie–martie" : item.slug === "homard" ? "Aprilie–decembrie; vârf mai–septembrie" : item.slug === "ormeaux" ? "1 octombrie–30 aprilie; doar zile autorizate" : "În funcție de capturile zilei"
                   : item.months;
-              return <article key={item.name} className="rounded-xl bg-secondary/70 p-4">
-                <div className="flex flex-wrap items-start justify-between gap-2"><h4 className="font-semibold">{name}</h4><span className="text-xs text-accent">{status}</span></div>
-                <p className="mt-1 text-xs text-muted-foreground">{months}</p>
-                <p className="mt-2 text-sm">{note}</p>
+              return <article key={item.slug} id={`espece-${item.slug}`} className="overflow-hidden rounded-xl bg-secondary/70">
+                {item.imageUrl ? <img src={item.imageUrl} alt={name} loading="lazy" className="h-40 w-full object-cover" /> : <div className="flex h-40 items-center justify-center bg-muted text-sm text-muted-foreground">Photo à venir</div>}
+                <div className="p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-2"><h4 className="font-semibold">{name}</h4><span className="text-xs text-accent">{status}</span></div>
+                  <p className="mt-1 text-xs text-muted-foreground">{months}</p>
+                  <p className="mt-2 text-sm">{note}</p>
+                  {item.imageUrl && <p className="mt-2 text-[11px] text-muted-foreground">Photo : <a href={item.imageSourceUrl} target="_blank" rel="noreferrer" className="underline">{item.imageCredit}</a> · {item.imageLicense}</p>}
+                  <a href={`/recettes#${item.slug}`} className="mt-3 inline-flex rounded-lg border border-border px-3 py-2 text-sm font-semibold text-primary hover:bg-background">{tr(labels.recipes)} <span aria-hidden="true" className="ml-1">→</span></a>
+                </div>
               </article>;
             })}
           </div>
