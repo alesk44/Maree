@@ -278,3 +278,20 @@ Le build, les tests, le lint et le typecheck sont verts ; les tests RLS et les t
 - [x] Les exploitants alimentaires doivent disposer d'un système documenté de sécurité alimentaire basé sur les principes HACCP.
 - [x] Les licences de navire et obligations de logbook/déclaration dépendent de la catégorie du navire; les règles officielles prévoient notamment des délais de transmission des feuilles de logbook.
 - [ ] Obtenir une confirmation écrite d'Environmental Health et Marine Resources sur le périmètre exact de Marée, les champs à conserver, la durée, l'accès aux documents et les obligations propres aux espèces/navires.
+
+
+### Durcissement RLS et configuration e-mail — 2 novembre 2026
+- [x] Consolider les politiques SELECT permissives sur `catches`, `orders`, `profiles` et `verification_requests`, en conservant explicitement les accès publics anonymes aux lots disponibles et aux profils pêcheurs.
+- [x] Remplacer la politique `ALL` des documents de vérification par des droits distincts : lecture propriétaire/admin, ajout par le propriétaire de sa demande, mise à jour de revue par l'administration.
+- [x] Révoquer les privilèges navigateur inutiles sur les documents de vérification (notamment DELETE, TRUNCATE et accès anon); conserver uniquement SELECT/INSERT/UPDATE pour authenticated, avec RLS.
+- [x] Ajouter des tests pgTAP pour la visibilité owner/admin, le refus de l'auto-approbation, la revue admin, les droits de suppression et l'unicité des politiques par rôle/action. Le plan de test est maintenant de 161 assertions.
+- [x] Supprimer l'adresse e-mail d'administration codée en dur de l'Edge Function et la remplacer par le secret `MAREE_ADMIN_EMAIL`.
+- [x] Supprimer l'ancien domaine de prévisualisation codé en dur; `MAREE_APP_URL` est maintenant obligatoire et doit être une origine HTTPS valide.
+- [x] Documenter les secrets requis dans le README : `RESEND_API_KEY`, `MAREE_FROM_EMAIL`, `MAREE_ADMIN_EMAIL`, `MAREE_APP_URL`.
+- [x] Retirer le contact e-mail non confirmé de la page publique de vérification; le repli renvoie vers les coordonnées des mentions légales.
+- [x] Ajouter un accès direct au scanner QR depuis les espaces pêcheur et restaurant.
+- [x] Corriger le dernier libellé légal « Références » non localisé.
+- [x] Audit statique des appels `t("…")` sur 19 fichiers routes/composants : 613 appels, 528 clés uniques, 0 clé manquante dans le dictionnaire FR/EN/RO. Ce contrôle ne prouve pas à lui seul que tous les textes rendus conditionnellement sont traduits.
+- [ ] Rejouer les workflows CI/pgTAP sur le dernier commit et corriger toute régression; la dernière suite Supabase observée a été annulée par la concurrence avant les tests SQL.
+- [ ] Relancer l'advisor Supabase après application contrôlée de la migration RLS; ne pas déclarer les avertissements résolus avant observation réelle.
+- [ ] Configurer les secrets e-mail dans l'environnement Edge Function avec le vrai destinataire et le domaine choisis par le propriétaire; aucun secret n'a été ajouté ni déployé depuis le dépôt.
