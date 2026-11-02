@@ -1,5 +1,7 @@
 -- Admin access is separate from the user's business role.
 -- This lets one account retain its restaurant/fisher role and also administer the platform.
+create schema if not exists private;
+
 create table if not exists private.admin_users (
   user_id uuid primary key references auth.users(id) on delete cascade,
   created_at timestamptz not null default now()
@@ -8,18 +10,36 @@ create table if not exists private.admin_users (
 alter table private.admin_users enable row level security;
 revoke all on private.admin_users from public, anon, authenticated;
 
-create or replace function public.is_current_user_admin()
+-- Keep SECURITY DEFINER code outside the API-exposed public schema.
+-- The explicit auth.uid() check ensures unauthenticated calls always return false.
+create or replace function private.is_current_user_admin()
 returns boolean
 language sql
 stable
 security definer
 set search_path = ''
 as $function$
-  select exists (
-    select 1
-    from private.admin_users a
-    where a.user_id = (select auth.uid())
-  );
+  select (select auth.uid()) is not null
+    and exists (
+      select 1
+      from private.admin_users a
+      where a.user_id = (select auth.uid())
+    );
+$function$;
+
+revoke all on function private.is_current_user_admin() from public, anon;
+grant usage on schema private to authenticated;
+grant execute on function private.is_current_user_admin() to authenticated;
+
+-- Public RPC wrapper is SECURITY INVOKER; privileged lookup stays in private schema.
+create or replace function public.is_current_user_admin()
+returns boolean
+language sql
+stable
+security invoker
+set search_path = ''
+as $function$
+  select private.is_current_user_admin();
 $function$;
 
 revoke all on function public.is_current_user_admin() from public, anon;
