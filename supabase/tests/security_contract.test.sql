@@ -152,12 +152,10 @@ set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000002';
 select is((select count(*) from public.catches), 2::bigint, 'fisher sees available lots and their own sold-out lot');
 select is((select count(*) from public.orders), 1::bigint, 'fisher sees only orders for their own catch');
-with changed as (
-  update public.catches set price_per_kg = 1
-  where id = '10000000-0000-4000-8000-000000000001'::uuid
-  returning id
-)
-select is((select count(*) from changed), 0::bigint, 'fisher cannot update another fisher catch');
+select ok(
+  not has_table_privilege('authenticated', 'public.catches', 'UPDATE'),
+  'fisher clients cannot bypass the inventory ownership RPC with direct updates'
+);
 select throws_ok(
   $$select public.update_order_status('20000000-0000-4000-8000-000000000002'::uuid, 'delivered'::public.order_status)$$,
   'P0001', 'Invalid order status transition',
