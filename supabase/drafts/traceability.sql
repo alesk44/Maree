@@ -82,9 +82,7 @@ create table if not exists public.catch_traceability_events (
     check (jsonb_typeof(metadata) = 'object' and octet_length(metadata::text) <= 8192),
   actor_id uuid not null default auth.uid() references auth.users(id),
   occurred_at timestamptz not null default now(),
-  created_at timestamptz not null default now(),
-  constraint catch_traceability_event_order_matches_catch
-    check (order_id is null or catch_id is not null)
+  created_at timestamptz not null default now()
 );
 
 create index if not exists catch_traceability_events_catch_occurred_idx
