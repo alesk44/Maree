@@ -1,6 +1,6 @@
 import { useLanguage } from "@/lib/i18n";
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { createSharedCatch, fetchMyOrders, updateMyCatch, updateMyOrderStatus, useSharedMarket, type SharedOrderRow } from "@/lib/shared-market";
 import { supabase } from "@/lib/supabase";
@@ -30,6 +30,13 @@ function FisherSpace() {
   const [profileLoading,setProfileLoading] = useState(true);
   const [accountTab,setAccountTab] = useState<"activity"|"sales"|"profile">("activity");
   const [orders,setOrders] = useState<SharedOrderRow[]>([]);
+  const [verificationStatus,setVerificationStatus] = useState<"pending"|"rejected"|null>(null);
+  const [verificationNote,setVerificationNote] = useState<string|null>(null);
+  const [fisherProfile,setFisherProfile] = useState({
+    boat_name:"",home_port:"",fishing_method:"",vessel_type:"",crew_size:"",
+    fishing_licence_number:"",bio:"",since_year:""
+  });
+  const [savingProfile,setSavingProfile] = useState(false);
   const [form,setForm] = useState({ species:"", zone:"", qtyKg:10, priceKg:15, grade:"", storage:"Sur glace pilée 0–2 °C", caughtAt:"", landedAt:"" });
   const up = (k:string,v:string|number) => setForm((f)=>({...f,[k]:v}));
   const me = fishers.find((f)=>f.id===userId);
