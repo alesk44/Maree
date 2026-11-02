@@ -732,3 +732,20 @@ Object.assign(translations, {
   "Contacter le responsable": ["Contact the project owner","Contactați responsabilul proiectului"],
   "Retour à l'accueil": ["Back to home","Înapoi la pagina principală"],
 });
+
+
+Object.assign(translations, {
+  "Nom :": ["Name:","Nume:"],
+  "Prénom :": ["First name:","Prenume:"],
+  "Rôle :": ["Role:","Rol:"],
+  "propriétaire et créateur de l'application Marée Jersey": ["owner and creator of the Marée Jersey app","proprietarul și creatorul aplicației Marée Jersey"],
+  "Téléphone :": ["Telephone:","Telefon:"],
+  "Adresse :": ["Address:","Adresă:"],
+  "Nom du service :": ["Service name:","Numele serviciului:"],
+  "Forme juridique, adresse électronique de contact et éventuel numéro d'immatriculation : à renseigner avant publication définitive.": ["Legal form, contact email address and any registration number: to be completed before final publication.","Forma juridică, adresa de e-mail de contact și eventualul număr de înregistrare: de completat înainte de publicarea finală."],
+  "Références :": ["References:","Referințe:"],
+  "Référence :": ["Reference:","Referință:"],
+  "seuils d'immatriculation GST": ["GST registration thresholds","Praguri de înregistrare GST"],
+  "GST pour les entreprises": ["GST for businesses","GST pentru întreprinderi"],
+  "enregistrement des entreprises alimentaires et Eat Safe": ["Food business registration and Eat Safe","Înregistrarea întreprinderilor alimentare și Eat Safe"],
+});
