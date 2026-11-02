@@ -37,6 +37,7 @@ function AuthPage() {
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
   const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false);
   const [profileName, setProfileName] = useState("");
+  const [accountRole, setAccountRole] = useState<string | null>(null);
   const [businessProfile, setBusinessProfile] = useState({ phone: "", business_address: "", business_postcode: "", business_city: "", business_email: "" });
   const [profileBusy, setProfileBusy] = useState(false);
 
@@ -47,6 +48,8 @@ function AuthPage() {
       const user = data.session?.user;
       setSessionEmail(user?.email ?? null);
       if (user) {
+        const { data: roleData } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+        if (active) setAccountRole(roleData?.role ?? null);
         const { data: rawProfile, error: profileError } = await supabase.rpc("get_my_business_profile").maybeSingle();
         if (profileError) toast.error(t("Impossible de charger les coordonnées professionnelles."));
         const profile = rawProfile as MyBusinessProfile | null;
@@ -59,6 +62,8 @@ function AuthPage() {
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       setSessionEmail(session?.user.email ?? null);
       if (event === "SIGNED_IN" && session?.user) {
+        void supabase.from("profiles").select("role").eq("id", session.user.id).maybeSingle()
+          .then(({ data }) => setAccountRole(data?.role ?? null));
         void supabase.rpc("get_my_business_profile").maybeSingle()
           .then(({ data: rawProfile, error }) => { if (error) { toast.error(t("Impossible de charger les coordonnées professionnelles.")); return; } const data = rawProfile as MyBusinessProfile | null; if (data) {
             setProfileName(data.display_name ?? "");
@@ -178,6 +183,13 @@ function AuthPage() {
         {sessionEmail && mode !== "update" ? (
           <div className="grid gap-4">
             <p className="rounded-lg bg-secondary p-4 text-sm">{t("Connecté en tant que")} <strong>{sessionEmail}</strong></p>
+            {accountRole === "fisher" ? (
+              <div className="grid gap-3 rounded-lg border border-border p-4">
+                <p className="text-sm text-muted-foreground">{t("Votre compte pêcheur est validé. Gérez votre bateau, votre licence et vos prises depuis votre espace professionnel.")}</p>
+                <Link to="/espace-pecheur" className="btn btn-accent">{t("Ouvrir mon espace pêcheur")}</Link>
+              </div>
+            ) : (
+              <>
             <p className="text-sm text-muted-foreground">{t("Votre compte est créé. Complétez les coordonnées de votre restaurant ci-dessous. Pour devenir pêcheur, envoyez une demande de vérification professionnelle.")}</p>
             <form onSubmit={saveRestaurantProfile} className="grid gap-3 rounded-lg border border-border p-4">
               <h2 className="font-semibold">{t("Profil restaurant")}</h2>
@@ -192,6 +204,8 @@ function AuthPage() {
                 <button className="btn btn-accent" disabled={profileBusy}>{profileBusy ? t("Enregistrement…") : t("Enregistrer mon profil restaurant")}</button>
             </form>
             <Link to="/verification" className="btn border border-accent text-foreground">{t("Demander la vérification comme pêcheur")}</Link>
+              </>
+            )}
             <Link to="/catalogue" className="btn">{t("Voir la pêche du jour")}</Link>
             <button className="btn" onClick={signOut}>{t("Se déconnecter")}</button>
           </div>
