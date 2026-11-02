@@ -179,7 +179,7 @@ function FisherSpace() {
       <button type="button" className={"btn "+(accountTab==="profile"?"btn-accent":"")} onClick={()=>setAccountTab("profile")}>{t("Mon profil professionnel")}</button>
     </section>
     {accountTab==="sales" && <section className="card mb-8 grid gap-4 p-5">
-      <div><h2 className="text-xl font-semibold">{t("Mes ventes et relevés")}</h2><p className="text-sm text-muted-foreground">{t("Synthèse calculée sur les commandes marquées livrées. Aucun paiement n'est encaissé ni confirmé dans cette version.")}</p></div>
+      <div><h2 className="text-xl font-semibold">{t("Mes ventes et relevés")}</h2><p className="text-sm text-muted-foreground">{t("Synthèse calculée sur les commandes livrées. Aucun paiement en ligne n'est encaissé ; vous pouvez confirmer un règlement reçu hors plateforme.")}</p></div>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Metric label={t("Ventes livrées")} value={myOrders.filter(o=>o.status==="delivered").length} detail={t("Commandes terminées")}/>
         <Metric label={t("Montant produits dû")} value={gbp(myOrders.filter(o=>o.status==="delivered").reduce((sum,o)=>sum+Number(o.product_subtotal??0),0))} detail={t("Votre chiffre produits")}/>
