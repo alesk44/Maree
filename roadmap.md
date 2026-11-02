@@ -320,11 +320,11 @@ Le build, les tests, le lint et le typecheck sont verts ; les tests RLS et les t
 - [ ] Configurer les secrets e-mail dans l'environnement Edge Function avec le vrai destinataire et le domaine choisis par le propriétaire; aucun secret n'a été ajouté ni déployé depuis le dépôt.
 
 
-## État de référence — 2 novembre 2026, HEAD 378240d
+## État de référence — 2 novembre 2026, HEAD bfb3947
 
 Ce bloc fait foi pour l'état courant ; les sections historiques datées plus bas ne doivent pas être interprétées comme le statut actuel.
 
-### Validé par le code
+### Validé par le code et les tests automatisés
 - [x] Règle tarifaire serveur : commission Marée 6,5 % sur livraison et retrait ; livraison 20 % uniquement si `fulfilment='delivery'`, zéro pour `collection`.
 - [x] Factures produits pêcheur distinctes des relevés Marée (commission et livraison).
 - [x] Générateurs mensuels idempotents et périodes fondées sur `Europe/Jersey`.
@@ -333,17 +333,19 @@ Ce bloc fait foi pour l'état courant ; les sections historiques datées plus ba
 - [x] Contrôle d'accès notifications : génération par triggers SQL de confiance, RLS par destinataire, aucun INSERT client, seul `read_at` modifiable par l'utilisateur.
 - [x] Centre global avec compteur non lu, 20 notifications récentes, lecture individuelle/globale, Realtime et traductions FR/EN/RO.
 - [x] Protection des changements de session et chargement initial après confirmation du canal Realtime.
-- [x] Plan pgTAP porté à 206 assertions ; comptage statique vérifié à 206.
+- [x] Suite pgTAP : **210 assertions exécutées et réussies** sur le HEAD `bfb39477f455b9c9ecdeb543dc5ccf005d6d9575`.
+- [x] Test automatisé de réservation concurrente du dernier stock : succès sur le même HEAD.
+- [x] Reconstruction complète de la base locale depuis toutes les migrations : succès.
 
-### CI du HEAD 378240d
-- [x] Build verification : succès (run 482).
-- [x] Verify : succès (run 1005).
-- [x] Marée CI : succès (run 933).
-- [ ] Supabase migration tests : en attente de démarrage/exécution ; doit reconstruire la base, exécuter les 206 assertions et le test de concurrence.
-- [x] Sur le HEAD antérieur `300655c`, reconstruction locale, les 191 assertions et le test de concurrence avaient terminé avec succès. Ce résultat ne valide pas la nouvelle migration de la deuxième tranche.
+### CI du HEAD bfb3947
+- [x] Build verification : succès (run 41496804634).
+- [x] Verify : succès (run 41496804536).
+- [x] Marée CI : succès (run 41496804627).
+- [x] Supabase migration tests : succès (run 41496804777), 210 assertions pgTAP et test de concurrence inclus.
+- [x] Correctif de la requête pgTAP inter-comptes : CTE de mise à jour déplacée au niveau supérieur ; la suite complète est ensuite passée.
+- [x] PR #2 actualisée et toujours ouverte en brouillon.
 
 ### Non validé / blocages avant ouverture
-- [ ] Résultat pgTAP + concurrence sur le HEAD 378240d, incluant la nouvelle migration de notifications et les 15 assertions supplémentaires.
 - [ ] Tests navigateur réels sur mobile et desktop avec comptes restaurant, pêcheur et admin distincts ; parcours commande, refus, annulation, stock, notifications et factures.
 - [ ] Vérifier les paramètres réels Supabase Auth, SMTP/Resend et les secrets de notification dans l'environnement de prévisualisation.
 - [ ] Vérifier le comportement opérationnel du job pg_cron sur l'instance cible ; sa déclaration dans la migration locale ne prouve pas son activation sur la base distante.
@@ -380,10 +382,10 @@ Ce bloc fait foi pour l'état courant ; les sections historiques datées plus ba
 - [x] Alertes de facture annulée.
 - [x] Destinations internes contrôlées par allowlist ; `/verification` ajouté pour les décisions de compte.
 - [x] Traductions FR/EN/RO pour les nouveaux titres et messages.
-- [x] 15 assertions pgTAP ajoutées ; plan total 206 et comptage statique vérifié.
+- [x] 19 assertions de durcissement supplémentaires au fil de la tranche ; plan total 210, avec 210 assertions réellement exécutées et réussies sur HEAD `bfb3947`.
 
 ### Validation restante
-- [ ] Supabase migration tests sur HEAD `378240d` : exécuter reconstruction locale, 206 assertions pgTAP et test de concurrence. Les 191 assertions et la concurrence avaient réussi sur le HEAD antérieur `300655c`, mais cela ne valide pas la nouvelle migration.
+- [x] Sur HEAD `bfb3947` : reconstruction locale complète, 210 assertions pgTAP et test de concurrence du dernier stock réussis (run 41496804777).
 - [ ] Tests navigateur avec de vrais comptes distincts restaurant, pêcheur et admin ; vérifier événements Realtime, liens, changements de compte et états sans réseau.
 - [ ] Vérifier les erreurs de livraison Realtime, les doublons et les mises à jour simultanées du compteur sur plusieurs onglets.
 - [ ] E-mail et push hors session non inclus ; ne pas confondre notification in-app et e-mail/SMS.
