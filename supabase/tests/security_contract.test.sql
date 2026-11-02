@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(134);
+select plan(140);
 
 -- Isolated auth users; the auth trigger creates their initial restaurant profiles.
 insert into auth.users (id, email) values
@@ -624,6 +624,14 @@ select is((select count(*) from public.catch_traceability_codes), 2::bigint, 'ow
 select is((select count(*) from public.catch_traceability_events), 2::bigint, 'owning fisher can inspect the complete QR audit timeline');
 select is((select count(*) from public.catch_traceability_codes where code_type='https_url'), 1::bigint, 'HTTPS QR payload is classified as an external URL');
 reset role;
+
+-- Indexes cover the foreign-key joins highlighted by the live Supabase advisor.
+select ok(to_regclass('private.verification_email_action_tokens_request_idx') is not null, 'verification email token request foreign key is indexed');
+select ok(to_regclass('public.verification_documents_request_idx') is not null, 'verification document request foreign key is indexed');
+select ok(to_regclass('public.verification_documents_user_idx') is not null, 'verification document owner foreign key is indexed');
+select ok(to_regclass('public.verification_documents_reviewed_by_idx') is not null, 'verification document reviewer foreign key is indexed');
+select ok(to_regclass('public.catch_traceability_codes_scanned_by_idx') is not null, 'traceability code actor foreign key is indexed');
+select ok(to_regclass('public.catch_traceability_events_actor_idx') is not null, 'traceability event actor foreign key is indexed');
 
 select * from finish();
 rollback;
