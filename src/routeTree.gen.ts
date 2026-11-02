@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as CompteRouteImport } from './routes/compte'
+import { Route as AdminEmailReviewRouteImport } from './routes/admin.email-review'
 import { Route as CatalogueRouteImport } from './routes/catalogue'
 import { Route as EspacePecheurRouteImport } from './routes/espace-pecheur'
 import { Route as GuideRouteImport } from './routes/guide'
@@ -23,9 +25,19 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CompteRoute = CompteRouteImport.update({
+  id: '/compte',
+  path: '/compte',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminEmailReviewRoute = AdminEmailReviewRouteImport.update({
+  id: '/admin/email-review',
+  path: '/admin/email-review',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CatalogueRoute = CatalogueRouteImport.update({
@@ -61,7 +73,9 @@ const PecheursIdRoute = PecheursIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/compte': typeof CompteRoute
   '/admin': typeof AdminRoute
+  '/admin/email-review': typeof AdminEmailReviewRoute
   '/catalogue': typeof CatalogueRoute
   '/espace-pecheur': typeof EspacePecheurRoute
   '/guide': typeof GuideRoute
@@ -71,7 +85,9 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/compte': typeof CompteRoute
   '/admin': typeof AdminRoute
+  '/admin/email-review': typeof AdminEmailReviewRoute
   '/catalogue': typeof CatalogueRoute
   '/espace-pecheur': typeof EspacePecheurRoute
   '/guide': typeof GuideRoute
@@ -81,8 +97,10 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/compte': typeof CompteRoute
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/admin/email-review': typeof AdminEmailReviewRoute
   '/catalogue': typeof CatalogueRoute
   '/espace-pecheur': typeof EspacePecheurRoute
   '/guide': typeof GuideRoute
@@ -94,7 +112,9 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/compte'
     | '/admin'
+    | '/admin/email-review'
     | '/catalogue'
     | '/espace-pecheur'
     | '/guide'
@@ -104,6 +124,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/compte'
     | '/admin'
     | '/catalogue'
     | '/espace-pecheur'
@@ -114,7 +135,9 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/compte'
     | '/admin'
+    | '/admin/email-review'
     | '/catalogue'
     | '/espace-pecheur'
     | '/guide'
@@ -125,7 +148,9 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CompteRoute: typeof CompteRoute
   AdminRoute: typeof AdminRoute
+  AdminEmailReviewRoute: typeof AdminEmailReviewRoute
   CatalogueRoute: typeof CatalogueRoute
   EspacePecheurRoute: typeof EspacePecheurRoute
   GuideRoute: typeof GuideRoute
@@ -143,11 +168,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/compte': {
+      id: '/compte'
+      path: '/compte'
+      fullPath: '/compte'
+      preLoaderRoute: typeof CompteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin': {
       id: '/admin'
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/email-review': {
+      id: '/admin/email-review'
+      path: '/admin/email-review'
+      fullPath: '/admin/email-review'
+      preLoaderRoute: typeof AdminEmailReviewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/catalogue': {
@@ -197,7 +236,9 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CompteRoute: CompteRoute,
   AdminRoute: AdminRoute,
+  AdminEmailReviewRoute: AdminEmailReviewRoute,
   CatalogueRoute: CatalogueRoute,
   EspacePecheurRoute: EspacePecheurRoute,
   GuideRoute: GuideRoute,
