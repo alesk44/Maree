@@ -99,7 +99,7 @@ export async function fetchMyOrders():Promise<SharedOrderRow[]> {
     })) as SharedOrderRow[];
   }
   if(error) throw error;
-  return (data??[]) as SharedOrderRow[];
+  return (data??[]).map(row=>({cancellation_request_status:"none",cancellation_requested_at:null,cancellation_penalty:0,...row})) as SharedOrderRow[];
 }
 
 export type SharedMonthlyInvoiceItemRow = { order_id:string; product_subtotal:number|string; quantity_kg:number|string; unit_price:number|string };
