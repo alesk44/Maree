@@ -306,6 +306,8 @@ comment on table public.fisher_monthly_invoices is 'Monthly product-only stateme
 -- Schedule generation for the previous calendar month at 03:00 UTC on day 1.
 -- The job is created only when this protected migration is applied to the approved database.
 create extension if not exists pg_cron with schema pg_catalog;
+grant usage on schema cron to postgres;
+grant all privileges on all tables in schema cron to postgres;
 select cron.unschedule(jobid) from cron.job where jobname = 'maree-monthly-fisher-invoices';
 select cron.schedule(
   'maree-monthly-fisher-invoices',
