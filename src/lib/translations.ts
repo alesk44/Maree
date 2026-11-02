@@ -754,3 +754,9 @@ Object.assign(translations, {
 Object.assign(translations, {
   "Une erreur technique est survenue. Réessayez.": ["A technical error occurred. Please try again.", "A apărut o eroare tehnică. Încercați din nou."],
 });
+
+Object.assign(translations, {
+  "Références :": ["References:", "Referințe:"],
+  "Référence :": ["Reference:", "Referință:"],
+  "propriétaire et créateur de l'application Marée Jersey": ["owner and creator of the Marée Jersey app", "proprietarul și creatorul aplicației Marée Jersey"],
+});
