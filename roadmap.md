@@ -10,19 +10,19 @@ Règle de livraison : aucun merge sur `main`, aucun déploiement public et aucun
 ## P0 — nouveau chantier commercial : livraison et facturation mensuelle (décision propriétaire, 2 novembre 2026)
 
 ### Règles validées
-- [ ] Frais de livraison : 20 % du sous-total des produits, facturés au restaurant et attribués à Marée Jersey à 100 % ; retrait au port gratuit.
+- [x] Frais de livraison : 20 % du sous-total des produits, facturés au restaurant et attribués à Marée Jersey à 100 % ; retrait au port gratuit. Calcul serveur dans `reserve_catch`, aperçu dans le formulaire.
 - [ ] Afficher séparément le montant des produits dû au pêcheur, les frais de livraison dus à Marée Jersey et le total restaurant. Aucun frais GST ne doit être ajouté avant confirmation du statut GST et du traitement applicable.
-- [ ] Enregistrer côté serveur un instantané immuable du prix/kg, de la quantité, du sous-total produits, du taux et montant de livraison, du total et du mode de remise au moment de la réservation. Ne jamais recalculer une ancienne commande à partir du prix actuel du lot.
-- [ ] Permettre au restaurant de choisir le paiement à la commande ou le relevé mensuel par pêcheur ; enregistrer la préférence par restaurant et pêcheur.
-- [ ] Regrouper les commandes livrées/terminées par restaurant, pêcheur et mois civil. Échéance : 7 jours calendaires après la fin du mois concerné.
+- [x] Enregistrer côté serveur un instantané du prix/kg, de la quantité, du sous-total produits, du taux et montant de livraison, du total et du mode de facturation au moment de la réservation. Les écrans utilisent ces snapshots plutôt que le prix courant du lot.
+- [x] Permettre au restaurant de choisir le paiement à la commande ou le relevé mensuel par pêcheur ; enregistrer la préférence par restaurant et pêcheur.
+- [x] Schéma de factures mensuelles et génération SQL idempotente par restaurant/pêcheur/mois, avec échéance à J+7 après fin de mois. Le déclenchement planifié reste à configurer.
 - [ ] Séparer les sommes dues au pêcheur des frais dus à Marée Jersey ; produire des relevés distincts et un historique d'audit.
-- [ ] Enregistrer le règlement d'une facture par le pêcheur concerné ou un administrateur ; un restaurant ne peut pas s'auto-déclarer payé. Conserver date, auteur, mode et référence du règlement.
-- [ ] Bloquer côté serveur toute nouvelle réservation du restaurant auprès de n'importe quel pêcheur dès qu'il existe au moins 3 factures mensuelles échues et impayées. Débloquer lorsque le nombre repasse sous 3.
-- [ ] Rendre la génération des factures mensuelles idempotente et empêcher les doublons ; gérer annulations, commandes partiellement livrées et ajustements sans modifier l'historique.
-- [ ] Ajouter des tests pgTAP pour snapshots, arrondis GBP, frais livraison/retrait, séparation des bénéficiaires, échéances, doublons, permissions de règlement et blocage/déblocage inter-pêcheurs.
+- [x] RPC de règlement réservée au pêcheur destinataire ou à un administrateur ; le restaurant ne peut pas s'auto-déclarer payé. Date, auteur, mode et référence sont enregistrés.
+- [x] Blocage serveur dans `reserve_catch` dès au moins 3 factures mensuelles échues impayées, tous pêcheurs confondus.
+- [x] Génération mensuelle idempotente et anti-doublon par restaurant/pêcheur/mois. Les règles d'ajustement/avoirs et de commandes partiellement livrées restent à préciser.
+- [ ] Tests pgTAP étendus au nouveau schéma, aux privilèges et RPC ; tests métier de bout en bout à compléter pour livraison/retrait, arrondis, factures mensuelles et blocage multi-pêcheurs.
 - [ ] Corriger l'écran restaurant et tous les libellés qui affichent encore la commission obsolète de 6,5 % côté restaurant et côté pêcheur.
 
-### Séquence d'implémentation
+### État de code au 2 novembre 2026\n- Migration additive `20261102110000_delivery_and_monthly_fisher_billing.sql` créée sur la branche ; non appliquée à la base distante.\n- `reserve_catch` calcule et fige le sous-total produits, les frais livraison et le total ; aucune GST n'est ajoutée.\n- Préférence immédiat/mensuel sauvegardée par couple restaurant/pêcheur ; interface restaurant mise à jour.\n- Les écrans restaurant/pêcheur utilisent les montants figés et l'ancienne commission 6,5 % est retirée des synthèses.\n- Le schéma de relevés mensuels, la RPC de génération (service_role), la RPC de règlement sécurisé et le blocage des commandes sont créés. Il reste à configurer le déclenchement mensuel, l'interface de relevés/règlements et les tests de bout en bout.\n- CI a détecté des erreurs de syntaxe dans les premières modifications frontend ; corrections commitées. Attendre les workflows du dernier commit avant de déclarer la branche verte.\n\n### Séquence d'implémentation
 1. Migration additive et RPC de réservation : snapshots tarifaires et frais calculés exclusivement côté serveur.
 2. Préférences de facturation et génération mensuelle idempotente des factures/relevés.
 3. Règlement sécurisé et règle de blocage dans la transaction de réservation.
