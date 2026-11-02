@@ -316,15 +316,15 @@ select ok(exists (select 1 from cron.job where jobname = 'maree-monthly-fisher-i
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000003';
 select lives_ok(
-  $insert$ into public.restaurant_fisher_billing_settings(restaurant_id,fisher_id,billing_mode)
-    values ('00000000-0000-4000-8000-000000000003'::uuid,'00000000-0000-4000-8000-000000000001'::uuid,'monthly')$insert$,
+  $insert into public.restaurant_fisher_billing_settings(restaurant_id,fisher_id,billing_mode)
+    values ('00000000-0000-4000-8000-000000000003'::uuid,'00000000-0000-4000-8000-000000000001'::uuid,'monthly')$,
   'restaurant can choose monthly billing for a fisher'
 );
 select throws_ok(
-  $update$ update public.restaurant_fisher_billing_settings
+  $update public.restaurant_fisher_billing_settings
     set fisher_id='00000000-0000-4000-8000-000000000003'::uuid
     where restaurant_id='00000000-0000-4000-8000-000000000003'::uuid
-      and fisher_id='00000000-0000-4000-8000-000000000001'::uuid$update$,
+      and fisher_id='00000000-0000-4000-8000-000000000001'::uuid$,
   '42501',
   'new row violates row-level security policy for table "restaurant_fisher_billing_settings"',
   'restaurant cannot change a billing preference to target a non-fisher account'
