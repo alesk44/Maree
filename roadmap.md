@@ -1,5 +1,7 @@
 # Marée Jersey — feuille de route vivante
 
+> **Mise à jour 2 novembre 2026 : paiements reportés à la demande du propriétaire. Aucun PSP n'est sélectionné. Le compte Revolut personnel ne sera pas utilisé pour l'activité commerciale. Le reste du produit (sécurité, UX, tests, conformité) continue indépendamment. La commission 13 % reste une simulation non encaissée.**
+
 Dernière revue : 1 novembre 2026 — Verify, Build et Marée CI verts sur `e0d1fac` ; tests Supabase en cours  
 Branche de travail : `feature/supabase-shared-data-v2`  
 Règle de livraison : aucun merge sur `main`, aucun déploiement public et aucune mise en production sans validation explicite du propriétaire.
