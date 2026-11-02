@@ -39,6 +39,12 @@ describe("Jersey seasonality", () => {
     expect(items.find((item) => item.name === "Jersey lobster")?.status).toBe("in_season");
   });
 
+  it("flags ormers as restricted rather than ordinary seasonal stock", () => {
+    const item = getSeasonalSeafood(11).find((entry) => entry.name === "Ormers");
+    expect(item?.status).toBe("restricted");
+    expect(item?.note).toContain("new-moon or full-moon");
+  });
+
   it("never labels local finfish as guaranteed stock", () => {
     const item = getSeasonalSeafood(11).find((entry) => entry.name.startsWith("Bass"));
     expect(item?.status).toBe("watch_daily_landing");
