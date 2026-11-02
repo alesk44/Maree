@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(79);
+select plan(83);
 
 -- Isolated auth users; the auth trigger creates their initial restaurant profiles.
 insert into auth.users (id, email) values
@@ -267,6 +267,32 @@ select ok(not has_function_privilege('authenticated', 'public.generate_maree_mon
 select ok(has_function_privilege('authenticated', 'public.declare_maree_commission_invoice_paid(uuid,text,text)', 'EXECUTE'), 'restaurant declaration RPC is available to authenticated users');
 select ok(has_function_privilege('authenticated', 'public.verify_maree_commission_invoice_paid(uuid)', 'EXECUTE'), 'admin verification RPC is available to authenticated users');
 
+-- Exercise the actual monthly generator with a delivered order and its snapshotted commission.
+update public.orders
+set status='delivered', delivered_at=now()
+where id='20000000-0000-4000-8000-000000000002';
+select lives_ok(
+  $select public.generate_maree_monthly_commission_invoices(current_date)$,
+  'trusted scheduler can generate monthly Marée commission statements'
+);
+select is(
+  (select count(*) from public.maree_monthly_commission_invoices where restaurant_id='00000000-0000-4000-8000-000000000004'),
+  1::bigint,
+  'monthly generator creates one commission statement for a restaurant'
+);
+select is(
+  (select commission_total from public.maree_monthly_commission_invoices where restaurant_id='00000000-0000-4000-8000-000000000004'),
+  0.39::numeric,
+  'monthly commission statement uses the snapshotted 6.5 percent fee'
+);
+select is(
+  (select count(*) from public.maree_monthly_commission_invoice_items i
+   join public.maree_monthly_commission_invoices m on m.id=i.invoice_id
+   where m.restaurant_id='00000000-0000-4000-8000-000000000004'),
+  1::bigint,
+  'monthly commission statement includes its order detail line'
+);
+
 insert into public.maree_monthly_commission_invoices
   (id,restaurant_id,period_start,period_end,due_date,commission_total)
 values
@@ -306,7 +332,7 @@ reset role;
 
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000004';
-select is((select count(*) from public.maree_monthly_commission_invoices),0::bigint,'other restaurant cannot read another restaurant commission statement');
+select is((select count(*) from public.maree_monthly_commission_invoices where id='40000000-0000-4000-8000-000000000001'),0::bigint,'other restaurant cannot read another restaurant commission statement');
 reset role;
 
 select * from finish();
