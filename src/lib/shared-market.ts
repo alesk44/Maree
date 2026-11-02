@@ -81,9 +81,19 @@ export async function fetchMyOrders():Promise<SharedOrderRow[]> {
   const {data:{user},error:authError}=await supabase.auth.getUser();
   if(authError) throw authError;
   if(!user) return [];
-  const {data,error}=await supabase.from("orders")
+  const query = supabase.from("orders");
+  const {data,error}=await query
     .select("id,catch_id,restaurant_id,quantity_kg,requested_slot,fulfilment,note,status,created_at,fisher_id_snapshot,unit_price_snapshot,product_subtotal,maree_fee_rate,maree_fee,delivery_fee_rate,delivery_fee,total_amount,billing_mode,delivered_at")
     .order("created_at",{ascending:false});
+  if(error && (error.code==="42703" || error.code==="PGRST204" || error.code==="PGRST200")) {
+    // Keep the current production-connected preview usable until the protected
+    // commercial migration is approved and applied. Legacy orders show no fee snapshot.
+    const legacy=await supabase.from("orders")
+      .select("id,catch_id,restaurant_id,quantity_kg,requested_slot,fulfilment,note,status,created_at,fisher_id_snapshot,unit_price_snapshot,product_subtotal,delivery_fee_rate,delivery_fee,total_amount,billing_mode,delivered_at")
+      .order("created_at",{ascending:false});
+    if(legacy.error) throw legacy.error;
+    return (legacy.data??[]).map(row=>({...row,maree_fee_rate:0,maree_fee:0})) as SharedOrderRow[];
+  }
   if(error) throw error;
   return (data??[]) as SharedOrderRow[];
 }
@@ -101,6 +111,7 @@ export async function fetchMyMonthlyInvoices():Promise<SharedMonthlyInvoiceRow[]
   const {data,error}=await supabase.from("fisher_monthly_invoices")
     .select("id,restaurant_id,fisher_id,period_start,period_end,due_date,subtotal,status,paid_at,payment_method,payment_reference")
     .order("period_start",{ascending:false});
+  if(error && (error.code==="42P01" || error.code==="PGRST205")) return [];
   if(error) throw error;
   return (data??[]) as SharedMonthlyInvoiceRow[];
 }
