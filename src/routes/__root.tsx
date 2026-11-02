@@ -39,8 +39,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Marée Jersey" },
-      { name: "description", content: "La pêche de Jersey, directement à votre cuisine." },
+      { title: "Marée Jersey — local seafood marketplace" },
+      { name: "description", content: "Fresh Jersey seafood, directly from local fishers to professional kitchens." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -88,6 +88,10 @@ function RootContent() {
   const { t, language, setLanguage } = useLanguage();
   const { queryClient } = Route.useRouteContext();
   const [open, setOpen] = useState(false);
+  useEffect(() => {
+    document.title = t("Marée Jersey — marché local de produits de la mer");
+    document.querySelector('meta[name="description"]')?.setAttribute("content", t("Des produits de la mer frais de Jersey, directement des pêcheurs aux cuisines professionnelles."));
+  }, [language, t]);
   const [account, setAccount] = useState<{ email: string; avatarUrl: string | null } | null>(null);
   useEffect(() => {
     let active = true;
