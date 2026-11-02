@@ -36,7 +36,7 @@ function parseHour(item: MetNoTimeseries): WeatherHour {
     time: typeof item.time === "string" ? item.time : "",
     temperatureC: numberOrNull(details["air_temperature"]),
     precipitationMm: precipitation,
-    windSpeedKmh: numberOrNull(details["wind_speed"]) === null ? null : (numberOrNull(details.wind_speed) as number) * 3.6,
+    windSpeedKmh: numberOrNull(details["wind_speed"]) === null ? null : (numberOrNull(details["wind_speed"]) as number) * 3.6,
     symbolCode: typeof symbol === "string" ? symbol : null,
   };
 }
