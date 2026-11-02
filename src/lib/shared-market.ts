@@ -178,7 +178,7 @@ export async function updateMyCatch(id:string,patch:{remainingKg?:number;priceKg
   if(error) throw error;
 }
 
-export async function updateMyOrderStatus(id:string,status:"confirmed"|"ready"|"delivered"):Promise<void>{
+export async function updateMyOrderStatus(id:string,status:"confirmed"|"ready"|"delivered"|"cancelled"):Promise<void>{
   const {error}=await supabase.rpc("update_order_status",{p_order_id:id,p_status:status});
   if(error) throw error;
 }
