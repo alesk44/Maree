@@ -29,6 +29,7 @@ function Restaurant() {
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [catchId, setCatchId] = useState(produit ?? "");
   const [qty, setQty] = useState(2);
+  const [tipAmount, setTipAmount] = useState(0);
   const [slot, setSlot] = useState("");
   const [mode, setMode] = useState<"livraison" | "retrait">("livraison");
   const [note, setNote] = useState("");
@@ -60,7 +61,17 @@ function Restaurant() {
   const estimatedSubtotal = sel ? Math.round(qty * sel.priceKg * 100) / 100 : 0;
   const estimatedMareeFee = Math.round(estimatedSubtotal * 0.065 * 100) / 100;
   const estimatedDeliveryFee = mode === "livraison" ? Math.round(estimatedSubtotal * 0.20 * 100) / 100 : 0;
-  const estimatedTotal = estimatedSubtotal + estimatedMareeFee + estimatedDeliveryFee;
+  const estimatedTotal = estimatedSubtotal + estimatedMareeFee + estimatedDeliveryFee + tipAmount;
+  const deliveredOrders = orders.filter(o=>o.status==="delivered");
+  const immediateUnpaid = deliveredOrders.filter(o=>o.billing_mode==="immediate" && o.fisher_payment_status==="unpaid");
+  const monthlyUnpaid = monthlyInvoices.filter(i=>i.status==="open");
+  const fisherDebt = immediateUnpaid.reduce((sum,o)=>sum+Number(o.product_subtotal??0)+Number(o.tip_amount??0),0)
+    + monthlyUnpaid.reduce((sum,i)=>sum+Number(i.subtotal)+Number(i.tip_total??0),0);
+  const fisherTipDebt = immediateUnpaid.reduce((sum,o)=>sum+Number(o.tip_amount??0),0)
+    + monthlyUnpaid.reduce((sum,i)=>sum+Number(i.tip_total??0),0);
+  const fisherPaid = deliveredOrders.filter(o=>o.fisher_payment_status==="paid").reduce((sum,o)=>sum+Number(o.product_subtotal??0)+Number(o.tip_amount??0),0);
+  const mareeOutstanding = mareeInvoices.filter(i=>i.status==="open"||i.status==="declared_paid").reduce((sum,i)=>sum+Number(i.commission_total)+Number(i.delivery_total),0);
+  const mareeSettled = mareeInvoices.filter(i=>i.status==="paid").reduce((sum,i)=>sum+Number(i.commission_total)+Number(i.delivery_total),0);
 
   useEffect(() => { void loadOrders(); }, []);
   useEffect(() => {
@@ -107,9 +118,10 @@ function Restaurant() {
     if (!Number.isFinite(new Date(slot).getTime())) { toast.error(t("Créneau invalide.")); return; }
     try {
       if (sel) await setRestaurantFisherBillingMode(sel.fisherId,billingMode);
-      await reserveSharedCatch({ catchId, qtyKg: qty, slot: new Date(slot).toISOString(), mode, note: note.trim() });
+      await reserveSharedCatch({ catchId, qtyKg: qty, slot: new Date(slot).toISOString(), mode, note: note.trim(), tipAmount });
       toast.success(t("Réservation envoyée au pêcheur."));
       setNote("");
+      setTipAmount(0);
       await Promise.all([refresh(), loadOrders()]);
     } catch (e) { toast.error(e instanceof Error ? t(e.message) : t("Impossible d'envoyer la réservation.")); return; }
   };
@@ -124,11 +136,13 @@ function Restaurant() {
     </section>
     {accountTab==="billing" && <section className="card mb-8 grid gap-4 p-5">
       <div><h2 className="text-xl font-semibold">{t("Facturation et relevés")}</h2><p className="text-sm text-muted-foreground">{t("Historique des commandes livrées. Les montants reprennent les prix et frais figés à la réservation ; aucun paiement n'est encaissé dans cette version.")}</p></div>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Metric label={t("Commandes livrées")} value={orders.filter(o=>o.status==="delivered").length} detail={t("Historique")}/>
-        <Metric label={t("Produits dus aux pêcheurs")} value={gbp(orders.filter(o=>o.status==="delivered").reduce((sum,o)=>sum+Number(o.product_subtotal??0),0))} detail={t("Sous-total produits")}/>
-        <Metric label={t("Commission Marée (6,5 %)")} value={gbp(orders.filter(o=>o.status==="delivered").reduce((sum,o)=>sum+Number(o.maree_fee??0),0))} detail={t("Sur chaque achat, livraison ou retrait")}/>
-        <Metric label={t("Livraison Marée (20 %)")} value={gbp(orders.filter(o=>o.status==="delivered").reduce((sum,o)=>sum+Number(o.delivery_fee??0),0))} detail={t("Uniquement si livraison")}/>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <Metric label={t("Commandes livrées")} value={deliveredOrders.length} detail={t("Historique")}/>
+        <Metric label={t("Dette pêcheurs")} value={gbp(fisherDebt)} detail={t("Produits et pourboires non réglés")}/>
+        <Metric label={t("Pourboires à reverser")} value={gbp(fisherTipDebt)} detail={t("100 % destinés aux pêcheurs")}/>
+        <Metric label={t("Paiements pêcheurs confirmés")} value={gbp(fisherPaid)} detail={t("Règlements enregistrés")}/>
+        <Metric label={t("Dette Marée à régler")} value={gbp(mareeOutstanding)} detail={t("Relevés ouverts ou en vérification")}/>
+        <Metric label={t("Paiements Marée vérifiés")} value={gbp(mareeSettled)} detail={t("Relevés réglés")}/>
       </div>
       <div className="grid gap-2">
         <h3 className="font-semibold">{t("Relevés mensuels de commission Marée")}</h3>
@@ -166,7 +180,7 @@ function Restaurant() {
         <ul className="grid gap-2">{orders.filter(o=>o.status==="delivered").map(o=>{const lot=catches.find(c=>c.id===o.catch_id);const products=Number(o.product_subtotal??0);return <li key={o.id} className="rounded-xl border border-border p-4">
           <div className="flex flex-wrap justify-between gap-2"><strong>{lot?.emoji} {t(lot?.species??"Produit")} · {Number(o.quantity_kg)} kg</strong><strong>{gbp(Number(o.total_amount??(products+Number(o.maree_fee??0)+Number(o.delivery_fee??0))))}</strong></div>
           <p className="text-xs text-muted-foreground">{t("Livrée")} · {dt(o.delivered_at??o.requested_slot)} · Réf. {o.id.slice(0,8).toUpperCase()}</p>
-          <p className="mt-1 text-sm">{t("Produits")} : {gbp(products)} · {t("Commission Marée (6,5 %)")} : {gbp(Number(o.maree_fee??0))} · {t("Livraison (20 %)")} : {gbp(Number(o.delivery_fee??0))}</p>
+          <p className="mt-1 text-sm">{t("Produits")} : {gbp(products)} · {t("Pourboire")} : {gbp(Number(o.tip_amount??0))} · {t("Commission Marée (6,5 %)")} : {gbp(Number(o.maree_fee??0))} · {t("Livraison (20 %)")} : {gbp(Number(o.delivery_fee??0))}</p>
           <p className="mt-1 text-xs text-muted-foreground">{t("Relevé indicatif — ne constitue pas une facture fiscale ni une preuve de paiement.")}</p>
         </li>})}</ul>}
     </section>}
@@ -213,6 +227,10 @@ function Restaurant() {
           <label className="grid gap-1 text-sm font-medium">{t("Créneau (heure de Jersey)")}
             <input className="field" type="datetime-local" required value={slot} onChange={(e) => setSlot(e.target.value)} />
           </label>
+          <label className="grid gap-1 text-sm font-medium">{t("Pourboire au pêcheur (£)")}
+            <input className="field" type="number" min={0} max={10000} step={0.01} value={tipAmount} onChange={(e)=>setTipAmount(Math.max(0,Number(e.target.value)||0))}/>
+            <span className="text-xs text-muted-foreground">{t("Facultatif — 100 % du pourboire revient au pêcheur, sans commission Marée.")}</span>
+          </label>
           <label className="grid gap-1 text-sm font-medium">{t("Note")}
             <textarea className="field" rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
           </label>
@@ -221,8 +239,9 @@ function Restaurant() {
             <p>{qty} kg de {t(sel.species)} × {gbp(sel.priceKg)} = <strong>{gbp(estimatedSubtotal)}</strong></p>
             <p>{t("Commission Marée Jersey (6,5 %, tous modes)")} : <strong>{gbp(estimatedMareeFee)}</strong></p>
             <p>{t("Frais de livraison Marée Jersey (20 %, livraison uniquement)")} : <strong>{gbp(estimatedDeliveryFee)}</strong></p>
+            <p>{t("Pourboire intégral au pêcheur")} : <strong>{gbp(tipAmount)}</strong></p>
             <p>{t("Total estimé pour le restaurant")} : <strong>{gbp(estimatedTotal)}</strong></p>
-            <p className="text-xs text-muted-foreground">{t("Le montant produits revient au pêcheur. La commission de 6,5 % revient à Marée pour chaque achat, livraison ou retrait. Les frais de livraison de 20 % sont appliqués uniquement en livraison. GST non ajouté.")}</p>
+            <p className="text-xs text-muted-foreground">{t("Le montant produits et le pourboire reviennent intégralement au pêcheur. Le pourboire n'est pas soumis à commission. La commission de 6,5 % revient à Marée pour chaque achat ; les frais de livraison de 20 % sont appliqués uniquement en livraison. GST non ajouté.")}</p>
             <p className="text-muted-foreground">{fishers.find((f) => f.id === sel.fisherId)?.boat} · {t(mode)}</p>
           </div>}
           <button className="btn" disabled={!signedIn}>{t("Envoyer la réservation")}</button>
