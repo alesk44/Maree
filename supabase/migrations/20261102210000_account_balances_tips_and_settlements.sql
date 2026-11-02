@@ -17,6 +17,7 @@ alter table public.fisher_monthly_invoice_items
 
 -- Repair the historical backfill: delivery was previously omitted and old delivered
 -- orders did not receive a delivered_at timestamp. Preserve the original product snapshots.
+alter table public.orders disable trigger orders_validate_slot;
 update public.orders
 set delivery_fee_rate = 0.20,
     delivery_fee = case when fulfilment = 'delivery' then round(coalesce(product_subtotal,0) * 0.20, 2) else 0 end,
@@ -25,6 +26,7 @@ set delivery_fee_rate = 0.20,
       + coalesce(tip_amount,0),
     delivered_at = case when status = 'delivered' then coalesce(delivered_at, updated_at, created_at) else delivered_at end
 where product_subtotal is not null;
+alter table public.orders enable trigger orders_validate_slot;
 
 -- The slot must be validated on insertion or when the slot itself changes,
 -- not on status/payment updates to an old order.
