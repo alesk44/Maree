@@ -37,8 +37,8 @@ begin
   if v_order.status not in ('submitted'::public.order_status, 'confirmed'::public.order_status) then
     raise exception 'This order can no longer be cancelled';
   end if;
-  if v_order.cancellation_request_status in ('pending','offered') then
-    raise exception 'Cancellation request is already awaiting a response';
+  if v_order.cancellation_request_status in ('pending','offered','rejected') then
+    raise exception 'Cancellation request has already been processed or is awaiting a response';
   end if;
   if v_order.requested_slot <= now() then raise exception 'The requested slot has already started'; end if;
 
