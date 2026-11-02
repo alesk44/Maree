@@ -24,7 +24,10 @@ set fisher_id_snapshot = c.fisher_id,
     product_subtotal = round(o.quantity_kg * c.price_per_kg, 2),
     maree_fee_rate = 0.065,
     maree_fee = round(o.quantity_kg * c.price_per_kg * 0.065, 2),
-    total_amount = round(o.quantity_kg * c.price_per_kg * 1.065, 2)
+    delivery_fee_rate = 0.20,
+    delivery_fee = case when o.fulfilment = 'delivery' then round(o.quantity_kg * c.price_per_kg * 0.20, 2) else 0 end,
+    total_amount = round(o.quantity_kg * c.price_per_kg * (1.065 + case when o.fulfilment = 'delivery' then 0.20 else 0 end), 2),
+    delivered_at = case when o.status = 'delivered' then coalesce(o.delivered_at, o.updated_at, o.created_at) else o.delivered_at end
 from public.catches c
 where c.id = o.catch_id and o.product_subtotal is null;
 alter table public.orders enable trigger orders_validate_slot;
