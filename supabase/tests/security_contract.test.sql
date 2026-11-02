@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(181);
+select plan(191);
 
 -- Isolated auth users; the auth trigger creates their initial restaurant profiles.
 insert into auth.users (id, email) values
@@ -842,6 +842,30 @@ select is((select count(*) from pg_policies where schemaname='public' and tablen
 select is((select count(*) from pg_policies where schemaname='public' and tablename='verification_documents' and cmd='SELECT' and roles='{authenticated}'),1::bigint,'verification documents have one authenticated SELECT policy');
 select is((select count(*) from pg_policies where schemaname='public' and tablename='verification_documents' and cmd='INSERT' and roles='{authenticated}'),1::bigint,'verification documents have one authenticated INSERT policy');
 select is((select count(*) from pg_policies where schemaname='public' and tablename='verification_requests' and cmd='SELECT' and roles='{authenticated}'),1::bigint,'verification requests have one authenticated SELECT policy');
+
+
+-- Persistent notifications are server-created and scoped to the recipient.
+select ok((select relrowsecurity from pg_class where oid='public.notifications'::regclass), 'notifications have RLS enabled');
+select ok(not has_table_privilege('anon','public.notifications','SELECT'), 'anonymous users cannot read notifications');
+select ok(not has_table_privilege('authenticated','public.notifications','INSERT'), 'clients cannot create notifications directly');
+select ok(has_column_privilege('authenticated','public.notifications','read_at','UPDATE'), 'users can update their own read timestamp');
+select ok(not has_column_privilege('authenticated','public.notifications','title','UPDATE'), 'users cannot rewrite notification content');
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
+select is((select count(*) from public.notifications where event_type='order_received'),1::bigint,'fisher receives a notification for a new order on their catch');
+select is((select count(*) from public.notifications where user_id='00000000-0000-4000-8000-000000000002'),0::bigint,'fisher cannot read another fisher notifications');
+select lives_ok(
+  $update public.notifications set read_at=now() where event_type='order_received'$,
+  'fisher can mark their own notification as read'
+);
+select is((select count(*) from public.notifications where read_at is null),0::bigint,'read state is reflected in the unread count');
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000005';
+select is((select count(*) from public.notifications where event_type='verification_request_received'),8::bigint,'all trusted admins receive verification request notifications');
+reset role;
 
 select * from finish();
 rollback;
