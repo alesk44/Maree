@@ -298,13 +298,30 @@ select is(
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
 select is((select count(*) from public.fisher_monthly_invoices),1::bigint,'fisher can read their own monthly product invoice');
+reset role;
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000003';
+select is((select count(*) from public.fisher_monthly_invoices),1::bigint,'restaurant can read its own fisher invoice');
+select throws_ok(
+  $$select public.mark_fisher_invoice_paid(
+    (select id from public.fisher_monthly_invoices
+     where restaurant_id='00000000-0000-4000-8000-000000000003'
+       and fisher_id='00000000-0000-4000-8000-000000000001'),
+    'Bank transfer','UNAUTHORISED-REF'
+  )$$,
+  'P0001','Only the invoice fisher or an admin can confirm payment',
+  'restaurant cannot falsely confirm the fisher payment receipt'
+);
+reset role;
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
 select lives_ok(
-  $select public.mark_fisher_invoice_paid(
+  $$select public.mark_fisher_invoice_paid(
     (select id from public.fisher_monthly_invoices
      where restaurant_id='00000000-0000-4000-8000-000000000003'
        and fisher_id='00000000-0000-4000-8000-000000000001'),
     'Bank transfer','FISHER-TEST-REF'
-  )$,
+  )$$,
   'fisher can confirm receipt of payment for their own invoice'
 );
 reset role;
@@ -315,21 +332,6 @@ select is(
   'paid'::text,
   'fisher payment confirmation marks only the matching invoice as paid'
 );
-set local role authenticated;
-set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000003';
-select is((select count(*) from public.fisher_monthly_invoices),1::bigint,'restaurant can read its own fisher invoice');
-select throws_ok(
-  $select public.mark_fisher_invoice_paid(
-    (select id from public.fisher_monthly_invoices
-     where restaurant_id='00000000-0000-4000-8000-000000000003'
-       and fisher_id='00000000-0000-4000-8000-000000000001'),
-    'Bank transfer','UNAUTHORISED-REF'
-  )$,
-  'P0001','Only the invoice fisher or an admin can confirm payment',
-  'restaurant cannot falsely confirm the fisher payment receipt'
-);
-reset role;
-
 -- Three overdue, unpaid monthly fisher invoices trigger the ordering safeguard.
 insert into public.fisher_monthly_invoices
   (restaurant_id,fisher_id,period_start,period_end,due_date,subtotal)
