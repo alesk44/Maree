@@ -1,7 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DB_URL="${SUPABASE_DB_URL:-postgresql://postgres:postgres@127.0.0.1:54322/postgres}"
+if [[ -n "${SUPABASE_DB_URL:-}" ]]; then
+  DB_URL="$SUPABASE_DB_URL"
+else
+  DB_URL="$(supabase status -o env | sed -n 's/^DB_URL=//p' | tr -d '"')"
+  if [[ -z "$DB_URL" ]]; then
+    echo "FAIL: could not resolve the local Supabase database URL."
+    exit 1
+  fi
+fi
 FISHER_ID="00000000-0000-4000-8000-000000000011"
 RESTAURANT_A="00000000-0000-4000-8000-000000000012"
 RESTAURANT_B="00000000-0000-4000-8000-000000000013"
