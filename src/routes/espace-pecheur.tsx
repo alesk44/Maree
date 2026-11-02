@@ -67,13 +67,15 @@ function FisherSpace() {
           setVerificationNote(request?.reviewer_note??null);
         } else {
           const {data:details,error:detailsError}=await supabase.from("profiles")
-            .select("boat_name,home_port,fishing_method,vessel_type,crew_size,fishing_licence_number,bio,since_year")
+            .select("boat_name,home_port,fishing_method,vessel_type,crew_size,bio,since_year")
             .eq("id",user.id).single();
           if(detailsError) throw detailsError;
+          const {data:privateDetails,error:privateDetailsError}=await supabase.rpc("get_my_fisher_private_details").maybeSingle();
+          if(privateDetailsError) throw privateDetailsError;
           setFisherProfile({
             boat_name:details.boat_name??"",home_port:details.home_port??"",fishing_method:details.fishing_method??"",
             vessel_type:details.vessel_type??"",crew_size:details.crew_size==null?"":String(details.crew_size),
-            fishing_licence_number:details.fishing_licence_number??"",bio:details.bio??"",
+            fishing_licence_number:(privateDetails as {fishing_licence_number?:string|null}|null)?.fishing_licence_number??"",bio:details.bio??"",
             since_year:details.since_year==null?"":String(details.since_year)
           });
           setOrders(await fetchMyOrders());
