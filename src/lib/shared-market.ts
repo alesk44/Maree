@@ -104,7 +104,7 @@ export async function fetchMyMonthlyInvoices():Promise<SharedMonthlyInvoiceRow[]
   if(authError) throw authError;
   if(!user) return [];
   const {data,error}=await supabase.from("fisher_monthly_invoices")
-    .select("id,restaurant_id,fisher_id,period_start,period_end,due_date,subtotal,status,paid_at,payment_method,payment_reference,items:fisher_monthly_invoice_items(order_id,product_subtotal,quantity_kg,unit_price,tip_amount)")
+    .select("id,restaurant_id,fisher_id,period_start,period_end,due_date,subtotal,tip_total,status,paid_at,payment_method,payment_reference,items:fisher_monthly_invoice_items(order_id,product_subtotal,quantity_kg,unit_price,tip_amount)")
     .order("period_start",{ascending:false});
   if(error && (error.code==="42P01" || error.code==="PGRST205")) return [];
   if(error) throw error;
