@@ -200,8 +200,8 @@ function Admin() {
         const fisherPaid = deliveredOrders.filter(order=>order.fisher_payment_status==="paid").reduce((sum,order)=>sum+Number(order.product_subtotal??0)+Number(order.tip_amount??0),0);
         const mareeCommission = deliveredOrders.reduce((sum, order) => sum + Number(order.maree_fee ?? 0), 0);
         const mareeDelivery = deliveredOrders.reduce((sum, order) => sum + Number(order.delivery_fee ?? 0), 0);
-        const mareeOutstanding = commissionInvoices.filter(invoice=>invoice.status==="open"||invoice.status==="declared_paid").reduce((sum,invoice)=>sum+Number(invoice.commission_total)+Number(invoice.delivery_total),0);
         const mareePaid = commissionInvoices.filter(invoice=>invoice.status==="paid").reduce((sum,invoice)=>sum+Number(invoice.commission_total)+Number(invoice.delivery_total),0);
+        const mareeOutstanding = Math.max(0,mareeCommission+mareeDelivery-mareePaid);
         const fmt = (value: number) => new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(value);
         return <section className="grid gap-4">
           <div><h2 className="font-display text-2xl font-semibold">{t("Vue d’ensemble de la plateforme")}</h2><p className="text-sm text-muted-foreground">{t("Montants calculés à partir des snapshots de commande ; aucun encaissement réel n’est activé.")}</p></div>
