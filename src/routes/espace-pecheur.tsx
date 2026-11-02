@@ -2,7 +2,7 @@ import { useLanguage } from "@/lib/i18n";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { createSharedCatch, fetchMyOrders, updateMyCatch, updateMyOrderStatus, useSharedMarket, type SharedOrderRow } from "@/lib/shared-market";
+import { createSharedCatch, fetchMyOrders, fetchMyMonthlyInvoices, confirmFisherInvoicePaid, updateMyCatch, updateMyOrderStatus, useSharedMarket, type SharedOrderRow, type SharedMonthlyInvoiceRow } from "@/lib/shared-market";
 import { supabase } from "@/lib/supabase";
 import { Empty, OrderSteps, PageHeader, StatusPill } from "@/components/ui-bits";
 import type { Status } from "@/lib/store";
@@ -30,6 +30,7 @@ function FisherSpace() {
   const [profileLoading,setProfileLoading] = useState(true);
   const [accountTab,setAccountTab] = useState<"activity"|"sales"|"profile">("activity");
   const [orders,setOrders] = useState<SharedOrderRow[]>([]);
+  const [monthlyInvoices,setMonthlyInvoices] = useState<SharedMonthlyInvoiceRow[]>([]);
   const [verificationStatus,setVerificationStatus] = useState<"pending"|"rejected"|null>(null);
   const [verificationNote,setVerificationNote] = useState<string|null>(null);
   const [fisherProfile,setFisherProfile] = useState({
@@ -78,7 +79,9 @@ function FisherSpace() {
             fishing_licence_number:(privateDetails as {fishing_licence_number?:string|null}|null)?.fishing_licence_number??"",bio:details.bio??"",
             since_year:details.since_year==null?"":String(details.since_year)
           });
-          setOrders(await fetchMyOrders());
+          const [nextOrders,nextInvoices] = await Promise.all([fetchMyOrders(),fetchMyMonthlyInvoices()]);
+          setOrders(nextOrders);
+          setMonthlyInvoices(nextInvoices);
         }
       }
     } catch(e) { toast.error(e instanceof Error?t(e.message):t("Impossible de charger le profil.")); return; }
@@ -133,6 +136,18 @@ function FisherSpace() {
     } catch(e) { toast.error(e instanceof Error?t(e.message):t("Impossible de modifier ce lot.")); }
   };
 
+  const confirmInvoicePayment = async (invoiceId:string) => {
+    const method=window.prompt(t("Mode de règlement reçu (ex. virement bancaire) :"));
+    if(method===null) return;
+    const reference=window.prompt(t("Référence du règlement (facultatif) :"));
+    if(reference===null) return;
+    try {
+      await confirmFisherInvoicePaid(invoiceId,method.trim()||null,reference.trim()||null);
+      toast.success(t("Règlement confirmé et enregistré."));
+      setMonthlyInvoices(await fetchMyMonthlyInvoices());
+    } catch(e) { toast.error(e instanceof Error?t(e.message):t("Impossible de confirmer ce règlement.")); }
+  };
+
   const advance = async (order:SharedOrderRow) => {
     const target=nextStatus[order.status as keyof typeof nextStatus];
     if(!target) return;
@@ -165,18 +180,28 @@ function FisherSpace() {
     </section>
     {accountTab==="sales" && <section className="card mb-8 grid gap-4 p-5">
       <div><h2 className="text-xl font-semibold">{t("Mes ventes et relevés")}</h2><p className="text-sm text-muted-foreground">{t("Synthèse calculée sur les commandes marquées livrées. Aucun paiement n'est encaissé ni confirmé dans cette version.")}</p></div>
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Metric label={t("Ventes livrées")} value={myOrders.filter(o=>o.status==="delivered").length} detail={t("Commandes terminées")}/>
-        <Metric label={t("Ventes livrées (prix de base)")} value={gbp(myOrders.filter(o=>o.status==="delivered").reduce((sum,o)=>{const lot=mine.find(c=>c.id===o.catch_id);return sum+(lot?.priceKg??0)*Number(o.quantity_kg);},0))} detail={t("Avant commission")}/>
-        <Metric label={t("Ventes livrées (prix produits)")} value={gbp(myOrders.filter(o=>o.status==="delivered").reduce((sum,o)=>sum+Number(o.product_subtotal??0),0))} detail={t("Montant dû au pêcheur")}/>
+        <Metric label={t("Montant produits dû")} value={gbp(myOrders.filter(o=>o.status==="delivered").reduce((sum,o)=>sum+Number(o.product_subtotal??0),0))} detail={t("Votre chiffre produits")}/>
+        <Metric label={t("Commission Marée (payée par le restaurant)")} value={gbp(myOrders.filter(o=>o.status==="delivered").reduce((sum,o)=>sum+Number(o.maree_fee??0),0))} detail={t("6,5 % — non déduits de votre prix")}/>
         <Metric label={t("En attente")} value={myOrders.filter(o=>o.status!=="delivered"&&o.status!=="cancelled").length} detail={t("Commandes à traiter")}/>
+      </div>
+      <div className="grid gap-2">
+        <h3 className="font-semibold">{t("Mes factures mensuelles et règlements")}</h3>
+        {monthlyInvoices.length===0?<Empty>{t("Aucun relevé mensuel généré pour le moment.")}</Empty>:
+          <ul className="grid gap-2">{monthlyInvoices.map(i=><li key={i.id} className="rounded-xl border border-border p-4">
+            <div className="flex flex-wrap justify-between gap-2"><strong>{t("Période")} {i.period_start} — {i.period_end}</strong><strong>{gbp(Number(i.subtotal))}</strong></div>
+            <p className="text-sm text-muted-foreground">{t("Échéance")} : {i.due_date} · {i.status==="paid"?t("Réglée"):i.status==="void"?t("Annulée"):t("En attente de règlement")}</p>
+            {i.paid_at&&<p className="text-xs text-muted-foreground">{t("Règlement reçu")} : {dt(i.paid_at)} {i.payment_method||""} {i.payment_reference||""}</p>}
+            {i.status==="open"&&<button type="button" className="btn btn-accent mt-3" onClick={()=>void confirmInvoicePayment(i.id)}>{t("Confirmer que le restaurant a réglé")}</button>}
+          </li>)}</ul>}
       </div>
       {myOrders.filter(o=>o.status==="delivered").length===0?<Empty>{t("Aucune vente livrée pour le moment.")}</Empty>:
         <ul className="grid gap-2">{myOrders.filter(o=>o.status==="delivered").map(o=>{const lot=mine.find(c=>c.id===o.catch_id);const total=Number(o.product_subtotal??0);return <li key={o.id} className="rounded-xl border border-border p-4">
           <div className="flex flex-wrap justify-between gap-2"><strong>{lot?.emoji} {t(lot?.species??"Produit")} · {Number(o.quantity_kg)} kg</strong><strong>{gbp(total)}</strong></div>
           <p className="text-xs text-muted-foreground">{t("Livrée")} · {dt(o.requested_slot)} · Réf. {o.id.slice(0,8).toUpperCase()}</p>
-          <p className="mt-1 text-sm">{t("Frais de livraison Marée Jersey")} : <strong>{gbp(Number(o.delivery_fee??0))}</strong> · {t("Votre montant produits")} : <strong>{gbp(total)}</strong></p>
-          <p className="mt-1 text-xs text-muted-foreground">{t("Les frais de livraison reviennent intégralement à Marée Jersey et ne sont pas déduits de votre prix produits. Aucun paiement n’est confirmé ici.")}</p>
+          <p className="mt-1 text-sm">{t("Commission Marée (6,5 %, payée par le restaurant)")} : <strong>{gbp(Number(o.maree_fee??0))}</strong> · {t("Frais de livraison Marée (si livraison)")} : <strong>{gbp(Number(o.delivery_fee??0))}</strong> · {t("Votre montant produits")} : <strong>{gbp(total)}</strong></p>
+          <p className="mt-1 text-xs text-muted-foreground">{t("La commission de 6,5 % et les frais de livraison éventuels sont payés par le restaurant à Marée et ne sont pas déduits de votre montant produits. Le règlement mensuel est confirmé séparément.")}</p>
         </li>})}</ul>}
     </section>}
     {accountTab==="profile" && <form onSubmit={saveFisherProfile} className="card mb-8 grid gap-4 p-5">
