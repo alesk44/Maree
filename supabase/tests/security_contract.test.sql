@@ -875,7 +875,7 @@ select ok(to_regprocedure('private.create_maree_invoice_notifications()') is not
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000005';
 select lives_ok(
-  $select public.review_verification_request('30000000-0000-4000-8000-000000000002'::uuid, 'rejected'::public.verification_status, 'Missing supporting evidence')$,
+  $review$select public.review_verification_request('30000000-0000-4000-8000-000000000002'::uuid, 'rejected'::public.verification_status, 'Missing supporting evidence')$review$,
   'admin rejection produces a final verification decision'
 );
 reset role;
