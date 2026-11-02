@@ -100,7 +100,7 @@ function RecipeSpecies({ slug, name, note, ideas, label }: { slug: string; name:
       </div>
       <div className="mt-4 grid gap-4 md:grid-cols-3">
         {ideas.map((idea) => <article key={idea.title} className="card flex flex-col overflow-hidden">
-          <img src={idea.imageUrl} alt={`${idea.title} — photo de référence de l’espèce, pas du plat`} loading="lazy" className="h-48 w-full object-cover" />
+          {idea.imageUrl ? <img src={idea.imageUrl} alt={`${idea.title} — photo de référence de l’espèce, pas du plat`} loading="lazy" className="h-48 w-full object-cover" /> : <div className="flex h-48 items-center justify-center bg-muted text-sm text-muted-foreground">{label("Photo de référence à ajouter", "Reference photo coming soon")}</div>}
           <div className="flex flex-1 flex-col p-5">
           <span className="text-xs font-semibold uppercase tracking-wide text-accent">{idea.source ? label("Recette publiée", "Published recipe") : label("Idée Marée", "Marée idea")}</span>
           <h3 className="mt-2 text-lg font-semibold">{idea.title}</h3>
