@@ -88,6 +88,26 @@ function FisherSpace() {
     finally { setProfileLoading(false); }
   };
   useEffect(()=>{void load();},[]);
+  useEffect(()=>{
+    if(!userId || !me) return;
+    let active=true;
+    const channel=supabase.channel("fisher-orders-"+userId)
+      .on("postgres_changes",{event:"*",schema:"public",table:"orders"},async()=>{
+        if(!active) return;
+        try {
+          const nextOrders=await fetchMyOrders();
+          if(active) setOrders(nextOrders);
+          if(active) await refresh();
+        } catch(e) {
+          if(active) toast.error(e instanceof Error ? t(e.message) : t("Impossible de charger les commandes."));
+        }
+      })
+      .subscribe();
+    return ()=>{
+      active=false;
+      void supabase.removeChannel(channel);
+    };
+  },[userId,me,refresh,t]);
 
   const publish = async (e:React.FormEvent) => {
     e.preventDefault();
