@@ -15,7 +15,7 @@ export const Route = createFileRoute("/admin")({
 });
 
 type AdminOrder = { id: string; catch_id: string; quantity_kg: number; status: string; created_at: string };
-type AdminCatch = { id: string; species: string; price_per_kg: number; fisher_id: string };
+type AdminCatch = { id: string; species: string; price_per_kg: number; fisher_id: string };\ntype VerificationDocument = { id:string; request_id:string; original_filename:string; document_type:string; file_path:string; expires_at:string|null; review_status:string; reviewer_note:string|null; signed_url?:string|null };
 
 type VerificationRequest = {
   id: string;
@@ -35,7 +35,7 @@ function Admin() {
   const { t, language } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [requests, setRequests] = useState<VerificationRequest[]>([]);
+  const [requests, setRequests] = useState<VerificationRequest[]>([]);\n  const [documents, setDocuments] = useState<VerificationDocument[]>([]);
   const [allOrders, setAllOrders] = useState<AdminOrder[]>([]);
   const [allCatches, setAllCatches] = useState<AdminCatch[]>([]);
   const [notes, setNotes] = useState<Record<string, string>>({});
@@ -70,7 +70,7 @@ function Admin() {
         .eq("status", "pending")
         .order("created_at", { ascending: true });
       if (requestsError) throw requestsError;
-      setRequests((data ?? []) as VerificationRequest[]);
+      setRequests((data ?? []) as VerificationRequest[]);\n      const requestIds = (data ?? []).map((item) => item.id);\n      if (requestIds.length) {\n        const { data: docs, error: docsError } = await supabase.from("verification_documents").select("id,request_id,original_filename,document_type,file_path,expires_at,review_status,reviewer_note").in("request_id", requestIds);\n        if (docsError) throw docsError;\n        const hydrated = await Promise.all((docs ?? []).map(async (doc) => { const { data: signed } = await supabase.storage.from("fisher-compliance").createSignedUrl(doc.file_path, 300); return { ...doc, signed_url: signed?.signedUrl ?? null }; }));\n        setDocuments(hydrated as VerificationDocument[]);\n      } else setDocuments([]);
 
       // Dashboard figures are secondary: a metrics/RLS issue must not block approvals.
       const [{ data: orderRows, error: orderError }, { data: catchRows, error: catchError }] = await Promise.all([
