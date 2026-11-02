@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(128);
+select plan(134);
 
 -- Isolated auth users; the auth trigger creates their initial restaurant profiles.
 insert into auth.users (id, email) values
@@ -534,42 +534,46 @@ select is((select status from public.orders where id='20000000-0000-4000-8000-00
 select is((select cancellation_penalty from public.orders where id='20000000-0000-4000-8000-000000000004'),7.50::numeric,'accepted cancellation retains the agreed penalty');
 select is((select remaining_kg from public.catches where id='10000000-0000-4000-8000-000000000003'),1::numeric,'accepted late cancellation restores reserved stock');
 
--- External QR references are persisted as append-only records scoped to the catch/order parties.
-select ok((select relrowsecurity from pg_class where oid = 'public.traceability_records'::regclass), 'traceability records have RLS enabled');
-select ok(not has_table_privilege('anon', 'public.traceability_records', 'SELECT'), 'anonymous users cannot read traceability records');
-select ok(not has_table_privilege('authenticated', 'public.traceability_records', 'INSERT'), 'clients cannot bypass the traceability RPC');
+-- External QR references are stored in the existing catch traceability tables.
+select ok((select relrowsecurity from pg_class where oid = 'public.catch_traceability_codes'::regclass), 'traceability QR codes have RLS enabled');
+select ok((select relrowsecurity from pg_class where oid = 'public.catch_traceability_events'::regclass), 'traceability timeline has RLS enabled');
+select ok(not has_table_privilege('anon', 'public.catch_traceability_codes', 'SELECT'), 'anonymous users cannot read QR payloads');
+select ok(not has_table_privilege('authenticated', 'public.catch_traceability_codes', 'INSERT'), 'clients cannot bypass the guarded QR RPC');
+select ok(not has_table_privilege('authenticated', 'public.catch_traceability_events', 'INSERT'), 'clients cannot forge timeline events directly');
 select ok(not has_function_privilege('anon', 'public.attach_external_traceability(uuid,uuid,text,text,text,text,timestamptz,text,numeric,text)', 'EXECUTE'), 'anonymous users cannot attach external traceability');
 select ok(has_function_privilege('authenticated', 'public.attach_external_traceability(uuid,uuid,text,text,text,text,timestamptz,text,numeric,text)', 'EXECUTE'), 'authenticated users can attach external traceability through the guarded RPC');
 
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
 select lives_ok(
-  $select public.attach_external_traceability(
+  $$select public.attach_external_traceability(
     '10000000-0000-4000-8000-000000000001'::uuid, null, 'identifier',
     'SUPPLIER-BATCH-001', null, 'North Coast Supplier',
     now() - interval '1 hour', 'Pollock', 0.5, 'Fisher-side source reference'
-  )$,
+  )$$,
   'owning fisher can attach an external identifier to their catch'
 );
+select is((select count(*) from public.catch_traceability_codes), 1::bigint, 'owning fisher can read their QR reference');
+select is((select count(*) from public.catch_traceability_events), 1::bigint, 'fisher QR attachment creates an audit timeline event');
 reset role;
-select is((select count(*) from public.traceability_records), 1::bigint, 'owning fisher can read their traceability record');
 
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000003';
 select lives_ok(
-  $select public.attach_external_traceability(
+  $$select public.attach_external_traceability(
     null, '20000000-0000-4000-8000-000000000001'::uuid, 'url',
     'https://supplier.example/lot/ABC-123', 'https://supplier.example/lot/ABC-123',
     'North Coast Supplier', now() - interval '30 minutes', 'Pollock', 0.5, 'Restaurant receiving reference'
-  )$,
+  )$$,
   'restaurant can attach an HTTPS supplier QR reference to its own order'
 );
-select is((select count(*) from public.traceability_records), 1::bigint, 'restaurant sees only traceability records for its own order');
+select is((select count(*) from public.catch_traceability_codes), 1::bigint, 'restaurant sees only QR references linked to its own order');
+select is((select count(*) from public.catch_traceability_events), 1::bigint, 'restaurant sees only timeline events linked to its own order');
 select throws_ok(
-  $select public.attach_external_traceability(
+  $$select public.attach_external_traceability(
     '10000000-0000-4000-8000-000000000001'::uuid, null, 'identifier',
     'OTHER-BATCH', null, 'Unknown Supplier', now(), 'Pollock', 0.5, null
-  )$,
+  )$$,
   'P0001', 'Restaurant traceability must reference one of its orders',
   'restaurant cannot create a catch-only traceability record'
 );
@@ -578,10 +582,10 @@ reset role;
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000002';
 select throws_ok(
-  $select public.attach_external_traceability(
+  $$select public.attach_external_traceability(
     '10000000-0000-4000-8000-000000000001'::uuid, null, 'identifier',
     'OTHER-BATCH', null, 'Unknown Supplier', now(), 'Pollock', 0.5, null
-  )$,
+  )$$,
   'P0001', 'Catch not found or not owned by this fisher',
   'fisher cannot attach a QR reference to another fisher catch'
 );
@@ -590,11 +594,11 @@ reset role;
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000004';
 select throws_ok(
-  $select public.attach_external_traceability(
+  $$select public.attach_external_traceability(
     null, '20000000-0000-4000-8000-000000000001'::uuid, 'url',
     'https://supplier.example/lot/ABC-123', 'https://supplier.example/lot/ABC-123',
     'North Coast Supplier', now(), 'Pollock', 0.5, null
-  )$,
+  )$$,
   'P0001', 'Order not found for this restaurant',
   'restaurant cannot attach a QR reference to another restaurant order'
 );
@@ -603,20 +607,22 @@ reset role;
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000003';
 select throws_ok(
-  $update public.traceability_records set supplier_name='Tampered'$,
+  $$update public.catch_traceability_codes set source_label='Tampered'$$,
   '42501', null,
-  'clients cannot update immutable traceability records'
+  'clients cannot update immutable QR references'
 );
 select throws_ok(
-  $delete from public.traceability_records$,
+  $$delete from public.catch_traceability_codes$$,
   '42501', null,
-  'clients cannot delete immutable traceability records'
+  'clients cannot delete QR references'
 );
 reset role;
 
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
-select is((select count(*) from public.traceability_records), 2::bigint, 'owning fisher can inspect all traceability records linked to their catch');
+select is((select count(*) from public.catch_traceability_codes), 2::bigint, 'owning fisher can inspect all QR references linked to their catch');
+select is((select count(*) from public.catch_traceability_events), 2::bigint, 'owning fisher can inspect the complete QR audit timeline');
+select is((select count(*) from public.catch_traceability_codes where code_type='https_url'), 1::bigint, 'HTTPS QR payload is classified as an external URL');
 reset role;
 
 select * from finish();
