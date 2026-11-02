@@ -100,7 +100,7 @@ function Restaurant() {
       <button type="button" className={"btn "+(accountTab==="profile"?"btn-accent":"")} onClick={()=>setAccountTab("profile")}>{t("Mon établissement")}</button>
     </section>
     {accountTab==="billing" && <section className="card mb-8 grid gap-4 p-5">
-      <div><h2 className="text-xl font-semibold">{t("Facturation et relevés")}</h2><p className="text-sm text-muted-foreground">{t("Historique des commandes livrées. Les montants sont calculés à partir du prix du lot au moment de l'affichage ; aucun paiement n'est encaissé dans cette version.")}</p></div>
+      <div><h2 className="text-xl font-semibold">{t("Facturation et relevés")}</h2><p className="text-sm text-muted-foreground">{t("Historique des commandes livrées. Les montants reprennent les prix et frais figés à la réservation ; aucun paiement n'est encaissé dans cette version.")}</p></div>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Metric label={t("Commandes livrées")} value={orders.filter(o=>o.status==="delivered").length} detail={t("Historique")}/>
         <Metric label={t("Produits dus aux pêcheurs")} value={gbp(orders.filter(o=>o.status==="delivered").reduce((sum,o)=>sum+Number(o.product_subtotal??0),0))} detail={t("Sous-total produits")}/>
@@ -114,6 +114,7 @@ function Restaurant() {
           <ul className="grid gap-2">{mareeInvoices.map(i=><li key={i.id} className="rounded-xl border border-border p-4">
             <div className="flex flex-wrap justify-between gap-2"><strong>{t("Période")} {i.period_start} — {i.period_end}</strong><strong>{gbp(Number(i.commission_total))}</strong></div>
             <p className="text-sm text-muted-foreground">{t("Échéance")} : {i.due_date} · {i.status==="paid"?t("Paiement vérifié par Marée"):i.status==="declared_paid"?t("Paiement déclaré — vérification Marée en attente"):i.status==="void"?t("Annulé"):t("À régler à Marée")}</p>
+            {i.items?.length ? <ul className="mt-2 grid gap-1 border-t border-border pt-2 text-xs">{i.items.map(item=><li key={item.order_id} className="flex flex-wrap justify-between gap-2"><span>Commande {item.order_id.slice(0,8).toUpperCase()} · {item.fulfilment==="delivery"?t("Livraison"):t("Retrait")} · {gbp(Number(item.product_subtotal))} {t("produits")}</span><strong>{gbp(Number(item.commission_amount))}</strong></li>)}</ul> : null}
             {i.payment_method&&<p className="text-xs text-muted-foreground">{t("Mode")} : {i.payment_method} {i.payment_reference?("· "+t("Référence")+" : "+i.payment_reference):""}</p>}
             {i.status==="open"&&<button type="button" className="btn btn-accent mt-3" onClick={async()=>{
               const method=window.prompt(t("Mode de paiement effectué (ex. virement bancaire)"));
@@ -132,14 +133,15 @@ function Restaurant() {
         {monthlyInvoices.length===0 ? <Empty>{t("Aucune facture mensuelle pour le moment. Elles apparaîtront après la génération mensuelle.")}</Empty> :
           <ul className="grid gap-2">{monthlyInvoices.map(i=><li key={i.id} className="rounded-xl border border-border p-4">
             <div className="flex flex-wrap justify-between gap-2"><strong>{t("Période")} {i.period_start} — {i.period_end}</strong><strong>{gbp(Number(i.subtotal))}</strong></div>
-            <p className="text-sm text-muted-foreground">{t("Échéance")} : {i.due_date} · {i.status==="paid"?t("Réglée"):i.status==="void"?t("Annulée"):t("À régler au pêcheur")}</p>
+            <p className="text-sm text-muted-foreground">{t("Pêcheur")} · {i.fisher_id.slice(0,8).toUpperCase()} · {t("Échéance")} : {i.due_date} · {i.status==="paid"?t("Réglée"):i.status==="void"?t("Annulée"):t("À régler au pêcheur")}</p>
+            {i.items?.length ? <ul className="mt-2 grid gap-1 border-t border-border pt-2 text-xs">{i.items.map(item=><li key={item.order_id} className="flex flex-wrap justify-between gap-2"><span>Commande {item.order_id.slice(0,8).toUpperCase()} · {Number(item.quantity_kg)} kg × {gbp(Number(item.unit_price))}/kg</span><strong>{gbp(Number(item.product_subtotal))}</strong></li>)}</ul> : null}
             {i.paid_at&&<p className="text-xs text-muted-foreground">{t("Règlement confirmé")} : {dt(i.paid_at)} {i.payment_method||""} {i.payment_reference||""}</p>}
           </li>)}</ul>}
       </div>
       {orders.filter(o=>o.status==="delivered").length===0 ? <Empty>{t("Aucune commande livrée à afficher pour le moment.")}</Empty> :
         <ul className="grid gap-2">{orders.filter(o=>o.status==="delivered").map(o=>{const lot=catches.find(c=>c.id===o.catch_id);const products=Number(o.product_subtotal??0);return <li key={o.id} className="rounded-xl border border-border p-4">
           <div className="flex flex-wrap justify-between gap-2"><strong>{lot?.emoji} {t(lot?.species??"Produit")} · {Number(o.quantity_kg)} kg</strong><strong>{gbp(Number(o.total_amount??(products+Number(o.maree_fee??0)+Number(o.delivery_fee??0))))}</strong></div>
-          <p className="text-xs text-muted-foreground">{t("Livrée")} · {dt(o.requested_slot)} · Réf. {o.id.slice(0,8).toUpperCase()}</p>
+          <p className="text-xs text-muted-foreground">{t("Livrée")} · {dt(o.delivered_at??o.requested_slot)} · Réf. {o.id.slice(0,8).toUpperCase()}</p>
           <p className="mt-1 text-sm">{t("Produits")} : {gbp(products)} · {t("Commission Marée (6,5 %)")} : {gbp(Number(o.maree_fee??0))} · {t("Livraison (20 %)")} : {gbp(Number(o.delivery_fee??0))}</p>
           <p className="mt-1 text-xs text-muted-foreground">{t("Relevé indicatif — ne constitue pas une facture fiscale ni une preuve de paiement.")}</p>
         </li>})}</ul>}
