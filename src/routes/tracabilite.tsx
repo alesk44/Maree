@@ -2,6 +2,7 @@ import { useLanguage } from "@/lib/i18n";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { PageHeader } from "@/components/ui-bits";
+import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/tracabilite")({
   head: () => ({
@@ -19,6 +20,7 @@ type DetectorWindow = typeof window & { BarcodeDetector?: new (options?: { forma
 
 function classifyCode(raw: string): ScanResult {
   const value = raw.trim();
+  if (value.length > 2048) throw new Error("Code invalide ou trop long.");
   if (/^https:\/\//i.test(value)) return { raw: value, kind: /\/(01)\d{14}/.test(value) || /\/(10|21)\//.test(value) ? "gs1" : "url" };
   if (/^https?:\/\//i.test(value) || /^(javascript|data|file|intent):/i.test(value)) throw new Error("URL refusée : seules les adresses HTTPS sont acceptées.");
   if (/^\d{8,14}$/.test(value)) return { raw: value, kind: "gs1" };
@@ -53,7 +55,7 @@ function TraceabilityScanner() {
     gs1: fr ? "Identifiant / format GS1 possible" : ro ? "Identificator / posibil format GS1" : "Identifier / possible GS1 format",
     id: fr ? "Identifiant de lot" : ro ? "Identificator lot" : "Batch identifier",
     privacy: fr ? "La caméra fonctionne sur votre appareil. Marée n'enregistre pas de vidéo. Aucun site tiers n'est ouvert automatiquement." : ro ? "Camera funcționează pe dispozitiv. Marée nu înregistrează video. Site-urile externe nu se deschid automat." : "Camera runs on your device. Marée does not record video. External websites are never opened automatically.",
-    association: fr ? "Association au lot Marée : étape suivante" : ro ? "Asociere la lotul Marée: pasul următor" : "Link to a Marée batch: next step",
+    association: fr ? "Associer au lot Marée" : ro ? "Asociază la lotul Marée" : "Link to a Marée catch",
     unsupported: fr ? "Ce navigateur ne prend pas en charge la lecture QR par caméra. Utilisez une photo ou collez le contenu." : ro ? "Browserul nu acceptă scanarea QR cu camera. Folosiți o fotografie sau lipiți conținutul." : "This browser does not support camera QR scanning. Use a photo or paste the code.",
   };
   const [input, setInput] = useState("");
@@ -61,6 +63,65 @@ function TraceabilityScanner() {
   const [error, setError] = useState("");
   const [cameraError, setCameraError] = useState("");
   const [scanning, setScanning] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [role, setRole] = useState<string | null>(null);
+  const [catches, setCatches] = useState<Array<{ id: string; species?: string | null; zone?: string | null }>>([]);
+  const [catchId, setCatchId] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
+  useEffect(() => {
+    let alive = true;
+    const loadAccess = async () => {
+      const { data: auth } = await supabase.auth.getUser();
+      if (!alive || !auth.user) return;
+      setUserId(auth.user.id);
+      const { data: profile } = await supabase.from("profiles").select("role").eq("id", auth.user.id).maybeSingle();
+      if (!alive || !profile?.role) return;
+      setRole(profile.role);
+      if (profile.role === "fisher") {
+        const { data } = await supabase.from("catches").select("id,species,zone").eq("fisher_id", auth.user.id);
+        if (alive) setCatches(data ?? []);
+      } else if (profile.role === "restaurant") {
+        const { data: orders } = await supabase.from("orders").select("catch_id").eq("restaurant_id", auth.user.id);
+        const ids = [...new Set((orders ?? []).map((o: { catch_id: string | null }) => o.catch_id).filter((id): id is string => Boolean(id)))];
+        if (ids.length) {
+          const { data } = await supabase.from("catches").select("id,species,zone").in("id", ids);
+          if (alive) setCatches(data ?? []);
+        }
+      }
+    };
+    void loadAccess();
+    return () => { alive = false; };
+  }, []);
+
+  const saveScan = async () => {
+    if (!result || !catchId || !userId || (role !== "fisher" && role !== "restaurant")) {
+      setSaveMessage(fr ? "Connectez-vous et choisissez un lot autorisé." : "Sign in and choose an accessible catch.");
+      return;
+    }
+    setSaving(true);
+    setSaveMessage("");
+    const codeType = result.kind === "url" ? "https_url" : result.kind;
+    const sourceUrl = result.kind === "url" ? safeExternalUrl(result.raw) : null;
+    const { error: codeError } = await supabase.from("catch_traceability_codes").insert({
+      catch_id: catchId, raw_code: result.raw, code_type: codeType, source_url: sourceUrl,
+      source_label: "QR scan", verification_status: "unverified", scanned_by: userId,
+    });
+    if (codeError) {
+      setSaveMessage(codeError.message);
+      setSaving(false);
+      return;
+    }
+    const { error: eventError } = await supabase.from("catch_traceability_events").insert({
+      catch_id: catchId, event_type: "external_code_scanned", actor_id: userId,
+      note: "External traceability code scanned", metadata: { code_type: codeType },
+    });
+    setSaveMessage(eventError
+      ? (fr ? "Code enregistré, mais l'événement n'a pas été ajouté. Contactez l'administrateur." : "Code saved, but event logging failed. Contact an administrator.")
+      : (fr ? "Code enregistré sur le lot. Il reste non vérifié jusqu'à validation." : "Code saved to catch. It remains unverified until reviewed."));
+    setSaving(false);
+  };
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<number | null>(null);
@@ -158,9 +219,19 @@ function TraceabilityScanner() {
       <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">{words.external}</p>
       {externalUrl && <a className="btn btn-accent inline-flex" href={externalUrl} target="_blank" rel="noopener noreferrer">{words.source} ↗</a>}
       {result.kind === "url" && !externalUrl && <p className="text-sm text-muted-foreground">{fr ? "Lien non ouvert : adresse non sécurisée ou invalide." : ro ? "Linkul nu a fost deschis: adresă nesigură sau invalidă." : "Link not opened: unsafe or invalid address."}</p>}
-      <div className="rounded-xl border border-dashed border-border p-4">
+      <div className="rounded-xl border border-dashed border-border p-4 space-y-3">
         <p className="font-semibold">{words.association}</p>
-        <p className="mt-1 text-sm text-muted-foreground">{fr ? "La lecture fonctionne. La sauvegarde durable et l'association à une commande nécessitent encore la table de traçabilité sécurisée." : ro ? "Scanarea funcționează. Salvarea și asocierea la comandă necesită încă tabelul securizat de trasabilitate." : "Scanning works. Persistent saving and linking to an order still require the secure traceability database table."}</p>
+        {!userId && <p className="text-sm text-muted-foreground">{fr ? "Connectez-vous pour associer un code à un lot." : "Sign in to link this code to a catch."}</p>}
+        {userId && role !== "fisher" && role !== "restaurant" && <p className="text-sm text-muted-foreground">{fr ? "Seuls les pêcheurs et restaurants peuvent associer un code." : "Only fishers and restaurants can link a code."}</p>}
+        {userId && (role === "fisher" || role === "restaurant") && <>
+          <label className="block text-sm" htmlFor="catch-select">{fr ? "Lot de poisson" : "Catch"}</label>
+          <select id="catch-select" className="input w-full" value={catchId} onChange={(e) => setCatchId(e.target.value)}>
+            <option value="">{fr ? "Choisir un lot…" : "Choose a catch…"}</option>
+            {catches.map((item) => <option key={item.id} value={item.id}>{[item.species, item.zone].filter(Boolean).join(" — ") || item.id.slice(0, 8)}</option>)}
+          </select>
+          <button type="button" className="btn btn-accent" disabled={!catchId || saving} onClick={() => void saveScan()}>{saving ? (fr ? "Enregistrement…" : "Saving…") : (fr ? "Enregistrer sur ce lot" : "Save to this catch")}</button>
+        </>}
+        {saveMessage && <p role="status" className="text-sm">{saveMessage}</p>}
       </div>
     </section>}
   </div>;
