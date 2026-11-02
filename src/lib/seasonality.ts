@@ -8,10 +8,10 @@ export type SeasonalSeafood = {
 };
 
 export function getJerseySeason(date = new Date()): { season: JerseySeason; month: number; monthLabel: string } {
-  const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Jersey", month: "numeric", month: "long" }).formatToParts(date);
-  const month = Number(parts.find((part) => part.type === "month")?.value ?? date.getUTCMonth() + 1);
+  const month = Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Jersey", month: "numeric" }).format(date));
+  const monthLabel = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Jersey", month: "long" }).format(date);
   const season: JerseySeason = month === 12 || month <= 2 ? "winter" : month <= 5 ? "spring" : month <= 8 ? "summer" : "autumn";
-  return { season, month, monthLabel: parts.find((part) => part.type === "month")?.value ?? "" };
+  return { season, month, monthLabel };
 }
 
 export function getSeasonalSeafood(month: number): SeasonalSeafood[] {
