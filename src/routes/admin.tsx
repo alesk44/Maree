@@ -15,7 +15,6 @@ export const Route = createFileRoute("/admin")({
 });
 
 type AdminOrder = { id: string; catch_id: string; quantity_kg: number; status: string; created_at: string; product_subtotal:number|string|null; maree_fee:number|string|null; delivery_fee:number|string|null };
-type AdminCatch = { id: string; species: string; price_per_kg: number; fisher_id: string };
 type AdminCommissionInvoice = { id:string; restaurant_id:string; period_start:string; period_end:string; due_date:string; commission_total:number|string; status:"open"|"declared_paid"|"paid"|"void"; declared_at:string|null; payment_method:string|null; payment_reference:string|null };
 type VerificationDocument = { id:string; request_id:string; original_filename:string; document_type:string; file_path:string; expires_at:string|null; review_status:string; reviewer_note:string|null; signed_url?:string|null };
 
@@ -40,7 +39,6 @@ function Admin() {
   const [requests, setRequests] = useState<VerificationRequest[]>([]);
   const [documents, setDocuments] = useState<VerificationDocument[]>([]);
   const [allOrders, setAllOrders] = useState<AdminOrder[]>([]);
-  const [allCatches, setAllCatches] = useState<AdminCatch[]>([]);
   const [commissionInvoices, setCommissionInvoices] = useState<AdminCommissionInvoice[]>([]);
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -134,9 +132,7 @@ function Admin() {
         orderError = legacy.error;
         orderRows = (legacy.data ?? []).map((row) => ({ ...row, product_subtotal:null, maree_fee:0, delivery_fee:0 })) as typeof orderRows;
       }
-      const { data: catchRows, error: catchError } = await supabase.from("catches").select("id,species,price_per_kg,fisher_id");
       if (!orderError) setAllOrders((orderRows ?? []) as AdminOrder[]);
-      if (!catchError) setAllCatches((catchRows ?? []) as AdminCatch[]);
       const { data: commissionRows, error: commissionError } = await supabase
         .from("maree_monthly_commission_invoices")
         .select("id,restaurant_id,period_start,period_end,due_date,commission_total,status,declared_at,payment_method,payment_reference")
@@ -145,8 +141,8 @@ function Admin() {
       if (commissionError && commissionError.code !== "42P01" && commissionError.code !== "PGRST205") {
         console.warn("Marée commission statements could not be loaded", commissionError);
       }
-      if (orderError || catchError) {
-        console.warn("Admin reporting data could not be fully loaded", { orderError, catchError });
+      if (orderError) {
+        console.warn("Admin reporting data could not be fully loaded", { orderError });
       }
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : t("Impossible de charger les demandes.");
