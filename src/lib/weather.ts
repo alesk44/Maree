@@ -44,11 +44,13 @@ function parseHour(item: MetNoTimeseries): WeatherHour {
 export function normalizeWeatherPayload(payload: MetNoPayload, now = Date.now()): JerseyWeather {
   const rows = payload.properties?.timeseries;
   if (!Array.isArray(rows) || rows.length === 0) throw new Error("Weather forecast is empty");
-  const parsed = rows.map((row) => parseHour(row as MetNoTimeseries)).filter((row) => row.time && Number.isFinite(Date.parse(row.time)));
+  const parsed = rows.map((row) => ({ source: row as MetNoTimeseries, hour: parseHour(row as MetNoTimeseries) }))
+    .filter((entry) => entry.hour.time && Number.isFinite(Date.parse(entry.hour.time)));
   if (parsed.length === 0) throw new Error("Weather forecast has no valid timestamps");
-  const currentIndex = Math.max(0, parsed.findIndex((row) => Date.parse(row.time) >= now));
-  const currentRow = parsed[currentIndex];
-  const details = (rows[currentIndex] as MetNoTimeseries)?.data?.instant?.details ?? {};
+  const futureIndex = parsed.findIndex((entry) => Date.parse(entry.hour.time) >= now);
+  const currentIndex = futureIndex === -1 ? parsed.length - 1 : futureIndex;
+  const currentRow = parsed[currentIndex].hour;
+  const details = parsed[currentIndex].source.data?.instant?.details ?? {};
   return {
     location: "Saint Helier, Jersey",
     timezone: "Europe/Jersey",
@@ -59,6 +61,6 @@ export function normalizeWeatherPayload(payload: MetNoPayload, now = Date.now())
       windDirectionDeg: numberOrNull(details.wind_from_direction),
       humidityPercent: numberOrNull(details.relative_humidity),
     },
-    nextHours: parsed.slice(currentIndex + 1).filter((row, index) => index % 2 === 0).slice(0, 6),
+    nextHours: parsed.slice(currentIndex + 1).filter((entry, index) => index % 2 === 0).slice(0, 6).map((entry) => entry.hour),
   };
 }
