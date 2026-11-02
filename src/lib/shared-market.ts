@@ -67,7 +67,6 @@ export async function reserveSharedCatch(input:{catchId:string;qtyKg:number;slot
   return data as string;
 }
 
-
 export type SharedOrderRow = {
   id:string; catch_id:string; restaurant_id:string; quantity_kg:number|string;
   requested_slot:string; fulfilment:"delivery"|"collection"; note:string|null;
@@ -86,11 +85,12 @@ export async function fetchMyOrders():Promise<SharedOrderRow[]> {
 }
 
 export async function updateMyCatch(id:string,patch:{remainingKg?:number;priceKg?:number;status?:"available"|"reserved"|"sold_out"}):Promise<void>{
-  const values:Record<string,unknown>={};
-  if(patch.remainingKg!==undefined) values["remaining_kg"]=patch.remainingKg;
-  if(patch.priceKg!==undefined) values["price_per_kg"]=patch.priceKg;
-  if(patch.status!==undefined) values["status"]=patch.status;
-  const {error}=await supabase.from("catches").update(values).eq("id",id);
+  if(patch.status==="reserved") throw new Error("Le statut réservé est géré automatiquement par les commandes.");
+  const {error}=await supabase.rpc("update_catch_inventory",{
+    p_catch_id:id,
+    p_remaining_kg:patch.remainingKg ?? null,
+    p_price_per_kg:patch.priceKg ?? null
+  });
   if(error) throw error;
 }
 
