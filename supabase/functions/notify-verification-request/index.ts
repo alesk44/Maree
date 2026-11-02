@@ -47,10 +47,12 @@ Deno.serve(async (req: Request) => {
 
   const [approveToken, rejectToken] = [randomToken(), randomToken()];
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-  const { error: tokenError } = await admin.from("verification_email_action_tokens").insert([
-    { request_id: row.id, action: "approved", token_hash: await hashToken(approveToken), expires_at: expiresAt },
-    { request_id: row.id, action: "rejected", token_hash: await hashToken(rejectToken), expires_at: expiresAt },
-  ]);
+  const { error: tokenError } = await admin.rpc("create_verification_email_action_tokens", {
+    p_request_id: row.id,
+    p_approved_hash: await hashToken(approveToken),
+    p_rejected_hash: await hashToken(rejectToken),
+    p_expires_at: expiresAt,
+  });
   if (tokenError) return json({ error: "Could not prepare secure email actions" }, 500);
 
   const appUrl = (Deno.env.get("MAREE_APP_URL") ?? "https://maree-jersey-preview.alexozo44760.workers.dev").replace(/\/$/, "");
