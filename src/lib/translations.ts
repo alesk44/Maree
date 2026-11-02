@@ -1464,7 +1464,7 @@ Object.assign(translations, {
   "Enregistrer mon profil": ["Save my profile", "Guardar o meu perfil", "Salvați profilul"],
   "Paramètres de connexion": ["Sign-in settings", "Definições de início de sessão", "Setări de conectare"],
   "Se déconnecter": ["Sign out", "Terminar sessão", "Deconectare"],
-  "Connectez-vous pour gérer votre profil et votre photo.": ["Sign in to manage your profile and photo.", "Inicie sessão para gerir o seu perfil e fotografia.", "Conectați-vă pentru a vă gestiona profilul și fotografia."]
+  "Connectez-vous pour gérer votre profil et votre photo.": ["Sign in to manage your profile and photo.", "Inicie sessão para gerir o seu perfil e fotografia.", "Conectați-vă pentru a vă gestiona profilul și fotografia."],
   "L’heure de débarquement ne peut pas être dans le futur. Vérifiez l’heure locale et réessayez.": ["Landing time cannot be in the future. Check your local time and try again.", "A hora de desembarque não pode estar no futuro. Verifique a hora local e tente novamente.", "Ora debarcării nu poate fi în viitor. Verificați ora locală și încercați din nou."],
   "Renseignez d’abord votre méthode de pêche dans Mon profil professionnel.": ["First add your fishing method in My professional profile.", "Indique primeiro o seu método de pesca em O meu perfil profissional.", "Adăugați mai întâi metoda de pescuit în Profilul meu profesional."],
   "À renseigner dans Mon profil professionnel": ["Set this in My professional profile", "A preencher em O meu perfil profissional", "Completați în Profilul meu profesional"]
