@@ -15,7 +15,7 @@ export const Route = createFileRoute("/admin")({
 });
 
 type AdminOrder = { id: string; catch_id: string; quantity_kg: number; status: string; created_at: string; product_subtotal:number|string|null; maree_fee:number|string|null; delivery_fee:number|string|null };
-type AdminCommissionInvoice = { id:string; restaurant_id:string; period_start:string; period_end:string; due_date:string; commission_total:number|string; status:"open"|"declared_paid"|"paid"|"void"; declared_at:string|null; payment_method:string|null; payment_reference:string|null };
+type AdminCommissionInvoice = { id:string; restaurant_id:string; period_start:string; period_end:string; due_date:string; commission_total:number|string; delivery_total:number|string; status:"open"|"declared_paid"|"paid"|"void"; declared_at:string|null; payment_method:string|null; payment_reference:string|null };
 type VerificationDocument = { id:string; request_id:string; original_filename:string; document_type:string; file_path:string; expires_at:string|null; review_status:string; reviewer_note:string|null; signed_url?:string|null };
 
 type VerificationRequest = {
@@ -135,7 +135,7 @@ function Admin() {
       if (!orderError) setAllOrders((orderRows ?? []) as AdminOrder[]);
       const { data: commissionRows, error: commissionError } = await supabase
         .from("maree_monthly_commission_invoices")
-        .select("id,restaurant_id,period_start,period_end,due_date,commission_total,status,declared_at,payment_method,payment_reference")
+        .select("id,restaurant_id,period_start,period_end,due_date,commission_total,delivery_total,status,declared_at,payment_method,payment_reference")
         .order("period_start", { ascending: false });
       if (!commissionError) setCommissionInvoices((commissionRows ?? []) as AdminCommissionInvoice[]);
       if (commissionError && commissionError.code !== "42P01" && commissionError.code !== "PGRST205") {
@@ -214,7 +214,8 @@ function Admin() {
         <div><h2 className="font-display text-2xl font-semibold">{t("Commissions Marée à vérifier")}</h2><p className="text-sm text-muted-foreground">{t("Les restaurants déclarent leurs règlements hors plateforme. Seule cette validation administrative marque le relevé comme payé.")}</p></div>
         {commissionInvoices.length===0 ? <p className="text-sm text-muted-foreground">{t("Aucun relevé mensuel de commission généré.")}</p> :
           <ul className="grid gap-2">{commissionInvoices.map((invoice)=><li key={invoice.id} className="rounded-xl border border-border p-4">
-            <div className="flex flex-wrap justify-between gap-2"><strong>{t("Restaurant")} · {invoice.restaurant_id.slice(0,8).toUpperCase()} · {invoice.period_start} — {invoice.period_end}</strong><strong>{new Intl.NumberFormat("en-GB",{style:"currency",currency:"GBP"}).format(Number(invoice.commission_total))}</strong></div>
+            <div className="flex flex-wrap justify-between gap-2"><strong>{t("Restaurant")} · {invoice.restaurant_id.slice(0,8).toUpperCase()} · {invoice.period_start} — {invoice.period_end}</strong><strong>{new Intl.NumberFormat("en-GB",{style:"currency",currency:"GBP"}).format(Number(invoice.commission_total)+Number(invoice.delivery_total))}</strong></div>
+            <p className="text-xs text-muted-foreground">{t("Commission Marée (6,5 %)")} : {new Intl.NumberFormat("en-GB",{style:"currency",currency:"GBP"}).format(Number(invoice.commission_total))} · {t("Livraison Marée (20 %)")} : {new Intl.NumberFormat("en-GB",{style:"currency",currency:"GBP"}).format(Number(invoice.delivery_total))}</p>
             <p className="text-sm text-muted-foreground">{t("Échéance")} : {invoice.due_date} · {invoice.status==="paid"?t("Vérifié / payé"):invoice.status==="declared_paid"?t("Déclaré — à vérifier"):invoice.status==="void"?t("Annulé"):t("Ouvert — non déclaré")}</p>
             {invoice.payment_method&&<p className="text-xs text-muted-foreground">{invoice.payment_method} {invoice.payment_reference?("· "+invoice.payment_reference):""}</p>}
             {invoice.status==="declared_paid"&&<button type="button" className="btn btn-accent mt-3" disabled={busyId!==null} onClick={()=>void verifyCommissionPayment(invoice.id)}>{t("Vérifier le paiement reçu")}</button>}
