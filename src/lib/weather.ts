@@ -34,9 +34,9 @@ function parseHour(item: MetNoTimeseries): WeatherHour {
   const symbol = item.data?.next_1_hours?.summary?.symbol_code;
   return {
     time: typeof item.time === "string" ? item.time : "",
-    temperatureC: numberOrNull(details.air_temperature),
+    temperatureC: numberOrNull(details["air_temperature"]),
     precipitationMm: precipitation,
-    windSpeedKmh: numberOrNull(details.wind_speed) === null ? null : (numberOrNull(details.wind_speed) as number) * 3.6,
+    windSpeedKmh: numberOrNull(details["wind_speed"]) === null ? null : (numberOrNull(details.wind_speed) as number) * 3.6,
     symbolCode: typeof symbol === "string" ? symbol : null,
   };
 }
@@ -49,8 +49,10 @@ export function normalizeWeatherPayload(payload: MetNoPayload, now = Date.now())
   if (parsed.length === 0) throw new Error("Weather forecast has no valid timestamps");
   const futureIndex = parsed.findIndex((entry) => Date.parse(entry.hour.time) >= now);
   const currentIndex = futureIndex === -1 ? parsed.length - 1 : futureIndex;
-  const currentRow = parsed[currentIndex].hour;
-  const details = parsed[currentIndex].source.data?.instant?.details ?? {};
+  const currentEntry = parsed[currentIndex];
+  if (!currentEntry) throw new Error("Weather forecast current conditions are missing");
+  const currentRow = currentEntry.hour;
+  const details = currentEntry.source.data?.instant?.details ?? {};
   return {
     location: "Saint Helier, Jersey",
     timezone: "Europe/Jersey",
@@ -58,8 +60,8 @@ export function normalizeWeatherPayload(payload: MetNoPayload, now = Date.now())
     updatedAt: typeof payload.properties?.meta?.updated_at === "string" ? payload.properties.meta.updated_at : null,
     current: {
       ...currentRow,
-      windDirectionDeg: numberOrNull(details.wind_from_direction),
-      humidityPercent: numberOrNull(details.relative_humidity),
+      windDirectionDeg: numberOrNull(details["wind_from_direction"]),
+      humidityPercent: numberOrNull(details["relative_humidity"]),
     },
     nextHours: parsed.slice(currentIndex + 1).filter((entry, index) => index % 2 === 0).slice(0, 6).map((entry) => entry.hour),
   };
