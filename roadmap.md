@@ -2,7 +2,6 @@
 
 Dernière revue technique : 2 novembre 2026 — HEAD `711f5e2cfea64ba1f06d86efa3b7f41abc49bda2`. Les workflows Verify, Build verification, Marée CI et Supabase migration tests sont verts. La reconstruction Supabase locale, le plan pgTAP de 181 assertions et le test de concurrence du dernier stock sont réussis. Aucun test navigateur E2E n'est déclaré. Aucune migration distante ni aucun déploiement n'a été effectué.
 Branche de travail : `feature/supabase-shared-data-v2`  
-Règle de livraison : aucun merge sur `main`, aucun déploiement public et aucune mise en production sans validation explicite du propriétaire.
 Règle de livraison : aucun merge sur `main`, aucune migration distante et aucun déploiement sans validation explicite du propriétaire.
 
 
