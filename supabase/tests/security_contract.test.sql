@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(172);
+select plan(175);
 
 -- Isolated auth users; the auth trigger creates their initial restaurant profiles.
 insert into auth.users (id, email) values
@@ -311,6 +311,32 @@ select ok(not has_table_privilege('authenticated', 'public.fisher_monthly_invoic
 select ok(has_function_privilege('service_role', 'public.generate_fisher_monthly_invoices(date)', 'EXECUTE'), 'trusted scheduler can generate monthly invoices');
 select ok(to_regclass('cron.job') is not null, 'pg_cron scheduler is installed');
 select ok(exists (select 1 from cron.job where jobname = 'maree-monthly-fisher-invoices'), 'monthly invoice generation is scheduled');
+
+-- Billing preference RLS: restaurants may configure only real fisher accounts.
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000003';
+select lives_ok(
+  $insert into public.restaurant_fisher_billing_settings(restaurant_id,fisher_id,billing_mode)
+    values ('00000000-0000-4000-8000-000000000003'::uuid,'00000000-0000-4000-8000-000000000001'::uuid,'monthly')$,
+  'restaurant can choose monthly billing for a fisher'
+);
+select throws_ok(
+  $update public.restaurant_fisher_billing_settings
+    set fisher_id='00000000-0000-4000-8000-000000000003'::uuid
+    where restaurant_id='00000000-0000-4000-8000-000000000003'::uuid
+      and fisher_id='00000000-0000-4000-8000-000000000001'::uuid$,
+  '42501',
+  'new row violates row-level security policy for table "restaurant_fisher_billing_settings"',
+  'restaurant cannot change a billing preference to target a non-fisher account'
+);
+select is(
+  (select billing_mode from public.restaurant_fisher_billing_settings
+   where restaurant_id='00000000-0000-4000-8000-000000000003'::uuid
+     and fisher_id='00000000-0000-4000-8000-000000000001'::uuid),
+  'monthly'::text,
+  'rejected billing preference update leaves the valid fisher setting unchanged'
+);
+reset role;
 
 -- Verify server-side Marée fee calculation for collection and delivery.
 set local role authenticated;
