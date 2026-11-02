@@ -1,7 +1,7 @@
 -- Private QR scan intake and append-only catch/order traceability.
 -- External QR payloads are untrusted and must remain private until reviewed.
 -- Public trace pages must use a separate opaque identifier and an allow-listed view.
-
+-- Validated against the feature/supabase-shared-data-v2 schema baseline.
 
 create table if not exists public.catch_traceability_codes (
   id uuid primary key default gen_random_uuid(),
