@@ -921,12 +921,13 @@ set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000003';
 select is((select count(*) from public.notifications where user_id='00000000-0000-4000-8000-000000000001'),0::bigint,'restaurant cannot read fisher notifications');
 select is((select count(*) from public.notifications where user_id='00000000-0000-4000-8000-000000000004'),0::bigint,'restaurant cannot read another restaurant notifications');
 select is((select count(*) from public.notifications where user_id='00000000-0000-4000-8000-000000000005'),0::bigint,'restaurant cannot read admin notifications');
+with attempted as (
+  update public.notifications set read_at=now()
+  where user_id='00000000-0000-4000-8000-000000000001'
+  returning id
+)
 select is(
-  (with attempted as (
-    update public.notifications set read_at=now()
-    where user_id='00000000-0000-4000-8000-000000000001'
-    returning id
-  ) select count(*) from attempted),
+  (select count(*) from attempted),
   0::bigint,
   'restaurant cannot mark another user notification as read'
 );
