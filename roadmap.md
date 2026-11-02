@@ -6,6 +6,29 @@ Dernière revue : 2 novembre 2026 — tous les contrôles automatisés réussis 
 Branche de travail : `feature/supabase-shared-data-v2`  
 Règle de livraison : aucun merge sur `main`, aucun déploiement public et aucune mise en production sans validation explicite du propriétaire.
 
+## Nouvelle fonctionnalité prioritaire — QR de traçabilité des lots
+
+Objectif : attribuer à chaque lot de pêche un identifiant de traçabilité stable et un QR code scannable par smartphone, depuis la capture jusqu'à la livraison au restaurant.
+
+### Parcours prévu
+- [ ] À la création du lot, générer un identifiant public aléatoire non séquentiel et un QR code qui ouvre une page de consultation dédiée.
+- [ ] Afficher sur la fiche de lot : espèce, zone de capture à la précision autorisée, date/heure de capture et de débarquement, poids initial, poids restant, méthode, conseils de conservation, pêcheur/vendeur et statut.
+- [ ] Enregistrer les événements d'historique sans écrasement : publication, pesée/ajustement, réservation, confirmation, préparation, remise/livraison, annulation et éventuelle division/fusion de lots.
+- [ ] Relier chaque transfert à l'opérateur expéditeur et destinataire (traçabilité un pas en arrière / un pas en avant), aux quantités et aux dates.
+- [ ] Donner au pêcheur et au restaurant un QR téléchargeable/imprimable pour l'étiquette du lot; permettre au restaurant de scanner à la réception et de confirmer quantité/état.
+- [ ] Fournir à l'administrateur un export horodaté des événements et des documents pour inspection/rappel.
+- [ ] Prévoir une page publique limitée aux informations produit; conserver les coordonnées, documents de conformité et détails privés dans une vue authentifiée réservée aux parties autorisées et administrateurs.
+- [ ] Ajouter tests RLS, tests d'accès croisé, tests de falsification d'URL/ID, tests de transfert de quantité et tests de conservation de l'historique.
+
+### Garde-fous juridiques et techniques
+- Le QR code est un pointeur vers les enregistrements; il ne constitue pas à lui seul une certification, une preuve de légalité de capture, un certificat sanitaire ou une autorisation de pêche.
+- Les opérateurs restent responsables de leurs obligations de traçabilité. Le système doit identifier le fournisseur immédiat, le client professionnel immédiat, le produit, les quantités, les dates et les lots.
+- Ne pas publier le numéro de licence, les documents, coordonnées personnelles, ni une localisation de pêche trop précise.
+- Les obligations propres aux navires, journaux de pêche, débarquements et exportations doivent être vérifiées selon le type de navire, l'espèce, la destination et les licences applicables à Jersey.
+- Avant d'afficher « conforme légalement », faire valider les champs et les durées de conservation par Environmental Health / Marine Resources à Jersey.
+
+Références de cadrage : Food (Jersey) Law 2023, article 12 (traçabilité et identification); informations Jersey sur les licences de navires et journaux de pêche; guidance sur la traçabilité des produits de la pêche.
+
 ## Dernier audit — 1 novembre 2026
 
 - [x] Après correction de l'assertion de visibilité des profils anonymes, le workflow Supabase a réussi : reconstruction des 15 migrations, suite pgTAP et test concurrent du dernier stock.
