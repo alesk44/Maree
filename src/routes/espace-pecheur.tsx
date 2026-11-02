@@ -192,6 +192,7 @@ function FisherSpace() {
           <ul className="grid gap-2">{monthlyInvoices.map(i=><li key={i.id} className="rounded-xl border border-border p-4">
             <div className="flex flex-wrap justify-between gap-2"><strong>{t("Période")} {i.period_start} — {i.period_end}</strong><strong>{gbp(Number(i.subtotal))}</strong></div>
             <p className="text-sm text-muted-foreground">{t("Échéance")} : {i.due_date} · {i.status==="paid"?t("Réglée"):i.status==="void"?t("Annulée"):t("En attente de règlement")}</p>
+            {i.items?.length ? <ul className="mt-2 grid gap-1 border-t border-border pt-2 text-xs">{i.items.map(item=><li key={item.order_id} className="flex flex-wrap justify-between gap-2"><span>Commande {item.order_id.slice(0,8).toUpperCase()} · {Number(item.quantity_kg)} kg × {gbp(Number(item.unit_price))}/kg</span><strong>{gbp(Number(item.product_subtotal))}</strong></li>)}</ul> : null}
             {i.paid_at&&<p className="text-xs text-muted-foreground">{t("Règlement reçu")} : {dt(i.paid_at)} {i.payment_method||""} {i.payment_reference||""}</p>}
             {i.status==="open"&&<button type="button" className="btn btn-accent mt-3" onClick={()=>void confirmInvoicePayment(i.id)}>{t("Confirmer que le restaurant a réglé")}</button>}
           </li>)}</ul>}
@@ -199,7 +200,7 @@ function FisherSpace() {
       {myOrders.filter(o=>o.status==="delivered").length===0?<Empty>{t("Aucune vente livrée pour le moment.")}</Empty>:
         <ul className="grid gap-2">{myOrders.filter(o=>o.status==="delivered").map(o=>{const lot=mine.find(c=>c.id===o.catch_id);const total=Number(o.product_subtotal??0);return <li key={o.id} className="rounded-xl border border-border p-4">
           <div className="flex flex-wrap justify-between gap-2"><strong>{lot?.emoji} {t(lot?.species??"Produit")} · {Number(o.quantity_kg)} kg</strong><strong>{gbp(total)}</strong></div>
-          <p className="text-xs text-muted-foreground">{t("Livrée")} · {dt(o.requested_slot)} · Réf. {o.id.slice(0,8).toUpperCase()}</p>
+          <p className="text-xs text-muted-foreground">{t("Livrée")} · {dt(o.delivered_at??o.requested_slot)} · Réf. {o.id.slice(0,8).toUpperCase()}</p>
           <p className="mt-1 text-sm">{t("Commission Marée (6,5 %, payée par le restaurant)")} : <strong>{gbp(Number(o.maree_fee??0))}</strong> · {t("Frais de livraison Marée (si livraison)")} : <strong>{gbp(Number(o.delivery_fee??0))}</strong> · {t("Votre montant produits")} : <strong>{gbp(total)}</strong></p>
           <p className="mt-1 text-xs text-muted-foreground">{t("La commission de 6,5 % et les frais de livraison éventuels sont payés par le restaurant à Marée et ne sont pas déduits de votre montant produits. Le règlement mensuel est confirmé séparément.")}</p>
         </li>})}</ul>}
