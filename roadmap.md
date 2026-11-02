@@ -29,6 +29,24 @@ Objectif : attribuer à chaque lot de pêche un identifiant de traçabilité sta
 
 Références de cadrage : Food (Jersey) Law 2023, article 12 (traçabilité et identification); informations Jersey sur les licences de navires et journaux de pêche; guidance sur la traçabilité des produits de la pêche.
 
+
+### Interopérabilité avec les QR codes externes — demande du propriétaire (2 novembre 2026)
+
+Objectif : Marée doit pouvoir lire et référencer les QR codes déjà utilisés par des pêcheurs, mareyeurs, grossistes, fournisseurs et systèmes de traçabilité des produits de la mer à Jersey, sans exiger que tous adoptent Marée.
+
+- [ ] Ajouter une action « Scanner un QR code externe » dans l'espace restaurant et l'espace pêcheur.
+- [ ] Scanner avec la caméra du téléphone lorsque le navigateur le permet; proposer en secours la saisie/coller du contenu ou de l'URL, sans imposer l'accès caméra.
+- [ ] Reconnaître les URL HTTPS, les identifiants de lot et les formats GS1 Digital Link/GTIN lorsque présents; conserver le contenu brut et le type détecté pour audit.
+- [ ] Ouvrir la source d'origine dans un navigateur sécurisé et afficher clairement « source externe — non vérifiée par Marée ».
+- [ ] Permettre d'associer l'URL/code externe à un lot Marée, avec fournisseur, date de réception, espèce, quantité et document justificatif saisis/confirmés par l'utilisateur.
+- [ ] Ne jamais aspirer automatiquement un site externe ni interpréter un QR comme une preuve de légalité, de fraîcheur, de certification sanitaire ou de licence.
+- [ ] Prévenir les URL non HTTPS, les schémas dangereux, les URL locales/privées et les redirections suspectes; ne pas charger de contenu externe dans une iframe.
+- [ ] Garder la provenance, l'horodatage du scan, l'utilisateur ayant associé le code et les modifications dans un historique non destructif.
+- [ ] Prévoir des adaptateurs dédiés uniquement lorsqu'un fournisseur/organisme confirme une API ou un format documenté; ne pas supposer qu'il existe une API publique Catch Jersey.
+- [ ] Tester QR malformés, URL malveillantes, doublons, codes expirés, absence de réseau et QR qui pointent vers un PDF ou une page non structurée.
+
+Constat initial : les sources officielles consultées décrivent les licences, logbooks et déclarations de débarquement, et Catch Jersey est cité pour certaines déclarations spécifiques de thon rouge; aucune plateforme publique universelle de QR traçabilité couvrant tous les poissons/fruits de mer de Jersey n'a été identifiée. Marée doit donc être un lecteur/agrégateur interopérable, pas prétendre se connecter à un registre central inexistant.
+
 ## Dernier audit — 1 novembre 2026
 
 - [x] Après correction de l'assertion de visibilité des profils anonymes, le workflow Supabase a réussi : reconstruction des 15 migrations, suite pgTAP et test concurrent du dernier stock.
