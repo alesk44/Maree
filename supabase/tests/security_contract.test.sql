@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(53);
+select plan(56);
 
 -- Isolated auth users; the auth trigger creates their initial restaurant profiles.
 insert into auth.users (id, email) values
@@ -211,6 +211,9 @@ select ok(to_regclass('public.verification_requests_reviewed_by_idx') is not nul
 select ok(to_regclass('public.fisher_monthly_invoices') is not null, 'monthly fisher invoice table exists');
 select ok(to_regclass('public.fisher_monthly_invoice_items') is not null, 'monthly fisher invoice item table exists');
 select ok(has_column_privilege('authenticated', 'public.orders', 'product_subtotal', 'SELECT'), 'restaurant/fisher can read snapshotted product subtotal through order RLS');
+select ok(has_column_privilege('authenticated', 'public.orders', 'maree_fee', 'SELECT'), 'restaurant/fisher can read the snapshotted Marée commission through order RLS');
+select ok(has_column_privilege('authenticated', 'public.orders', 'maree_fee_rate', 'SELECT'), 'restaurant/fisher can read the commission rate applied to each order');
+select is((select maree_fee_rate from public.maree_commercial_settings where id = true), 0.065::numeric, 'default Marée commission is 6.5 percent');
 select ok(not has_table_privilege('authenticated', 'public.fisher_monthly_invoices', 'INSERT'), 'clients cannot create or alter monthly invoices directly');
 select ok(has_function_privilege('service_role', 'public.generate_fisher_monthly_invoices(date)', 'EXECUTE'), 'trusted scheduler can generate monthly invoices');
 select ok(has_function_privilege('authenticated', 'public.mark_fisher_invoice_paid(uuid,text,text)', 'EXECUTE'), 'authenticated fisher payment confirmation RPC is available');
