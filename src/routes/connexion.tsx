@@ -28,6 +28,7 @@ function AuthPage() {
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
   const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false);
   const [profileName, setProfileName] = useState("");
+  const [businessProfile, setBusinessProfile] = useState({ phone: "", business_address: "", business_postcode: "", business_city: "", business_email: "" });
   const [profileBusy, setProfileBusy] = useState(false);
 
   useEffect(() => {
@@ -37,15 +38,21 @@ function AuthPage() {
       const user = data.session?.user;
       setSessionEmail(user?.email ?? null);
       if (user) {
-        const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle();
-        if (active && profile) { setProfileName(profile.display_name ?? ""); }
+        const { data: profile } = await supabase.from("profiles").select("display_name,phone,business_address,business_postcode,business_city,business_email").eq("id", user.id).maybeSingle();
+        if (active && profile) {
+          setProfileName(profile.display_name ?? "");
+          setBusinessProfile({ phone: profile.phone ?? "", business_address: profile.business_address ?? "", business_postcode: profile.business_postcode ?? "", business_city: profile.business_city ?? "", business_email: profile.business_email ?? user.email ?? "" });
+        }
       }
     });
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       setSessionEmail(session?.user.email ?? null);
       if (event === "SIGNED_IN" && session?.user) {
-        void supabase.from("profiles").select("display_name").eq("id", session.user.id).maybeSingle()
-          .then(({ data }) => { if (data) { setProfileName(data.display_name ?? ""); } });
+        void supabase.from("profiles").select("display_name,phone,business_address,business_postcode,business_city,business_email").eq("id", session.user.id).maybeSingle()
+          .then(({ data }) => { if (data) {
+            setProfileName(data.display_name ?? "");
+            setBusinessProfile({ phone: data.phone ?? "", business_address: data.business_address ?? "", business_postcode: data.business_postcode ?? "", business_city: data.business_city ?? "", business_email: data.business_email ?? session.user.email ?? "" });
+          } });
       }
       if (event === "PASSWORD_RECOVERY") setMode("update");
     });
@@ -127,7 +134,14 @@ function AuthPage() {
     if (!user) { toast.error(t("Connectez-vous pour enregistrer votre profil.")); return; }
     if (profileName.trim().length < 2) { toast.error(t("Entrez le nom de votre restaurant.")); return; }
     setProfileBusy(true);
-    const { error } = await supabase.from("profiles").update({ display_name: profileName.trim() }).eq("id", user.id);
+    const { error } = await supabase.from("profiles").update({
+      display_name: profileName.trim(),
+      phone: businessProfile.phone.trim() || null,
+      business_address: businessProfile.business_address.trim() || null,
+      business_postcode: businessProfile.business_postcode.trim() || null,
+      business_city: businessProfile.business_city.trim() || null,
+      business_email: businessProfile.business_email.trim() || null,
+    }).eq("id", user.id);
     setProfileBusy(false);
     if (error) toast.error(error.message);
     else toast.success(t("Profil restaurant enregistré."));
@@ -157,6 +171,13 @@ function AuthPage() {
             <form onSubmit={saveRestaurantProfile} className="grid gap-3 rounded-lg border border-border p-4">
               <h2 className="font-semibold">{t("Profil restaurant")}</h2>
               <label className="grid gap-1 text-sm font-medium">{t("Nom du restaurant / établissement")}<input className="field" value={profileName} onChange={(e) => setProfileName(e.target.value)} minLength={2} maxLength={120} required /></label>
+              <label className="grid gap-1 text-sm font-medium">{t("Adresse professionnelle")}<input className="field" autoComplete="street-address" value={businessProfile.business_address} onChange={e=>setBusinessProfile(p=>({...p,business_address:e.target.value}))} maxLength={240} /></label>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="grid gap-1 text-sm font-medium">{t("Code postal")}<input className="field" autoComplete="postal-code" value={businessProfile.business_postcode} onChange={e=>setBusinessProfile(p=>({...p,business_postcode:e.target.value}))} maxLength={20} /></label>
+                <label className="grid gap-1 text-sm font-medium">{t("Ville")}<input className="field" autoComplete="address-level2" value={businessProfile.business_city} onChange={e=>setBusinessProfile(p=>({...p,business_city:e.target.value}))} maxLength={100} /></label>
+              </div>
+              <label className="grid gap-1 text-sm font-medium">{t("Téléphone professionnel")}<input className="field" type="tel" autoComplete="tel" value={businessProfile.phone} onChange={e=>setBusinessProfile(p=>({...p,phone:e.target.value}))} maxLength={40} /></label>
+              <label className="grid gap-1 text-sm font-medium">{t("E-mail professionnel")}<input className="field" type="email" autoComplete="email" value={businessProfile.business_email} onChange={e=>setBusinessProfile(p=>({...p,business_email:e.target.value}))} maxLength={254} /></label>
                 <button className="btn btn-accent" disabled={profileBusy}>{profileBusy ? t("Enregistrement…") : t("Enregistrer mon profil restaurant")}</button>
             </form>
             <Link to="/verification" className="btn border border-accent text-foreground">{t("Demander la vérification comme pêcheur")}</Link>
