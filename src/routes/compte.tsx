@@ -18,6 +18,11 @@ function AccountPage() {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [role, setRole] = useState<string>("");
+  const [businessAddress, setBusinessAddress] = useState("");
+  const [businessPostcode, setBusinessPostcode] = useState("");
+  const [businessCity, setBusinessCity] = useState("");
+  const [businessEmail, setBusinessEmail] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -28,12 +33,18 @@ function AccountPage() {
       setUserId(data.user.id);
       setEmail(data.user.email ?? "");
       const { data: profile, error: profileError } = await supabase.from("profiles")
-        .select("display_name, avatar_url").eq("id", data.user.id).maybeSingle();
+        .select("display_name, avatar_url, role").eq("id", data.user.id).maybeSingle();
       const { data: privateProfile } = await supabase.rpc("get_my_business_profile").maybeSingle();
       if (!active) return;
       if (profileError) toast.error(profileError.message);
       setName(profile?.["display_name"] ?? String(data.user.user_metadata?.["display_name"] ?? ""));
-      setPhone((privateProfile as { phone?: string | null } | null)?.phone ?? "");
+      setRole(profile?.role ?? "");
+      const privateDetails = privateProfile as { phone?: string | null; business_address?: string | null; business_postcode?: string | null; business_city?: string | null; business_email?: string | null } | null;
+      setPhone(privateDetails?.phone ?? "");
+      setBusinessAddress(privateDetails?.business_address ?? "");
+      setBusinessPostcode(privateDetails?.business_postcode ?? "");
+      setBusinessCity(privateDetails?.business_city ?? "");
+      setBusinessEmail(privateDetails?.business_email ?? "");
       setAvatarUrl(profile?.["avatar_url"] ?? null);
       setLoading(false);
     });
@@ -45,7 +56,7 @@ function AccountPage() {
     if (!userId) return;
     if (name.trim().length < 2) { toast.error(t("Entrez un nom d'au moins 2 caractères.")); return; }
     setSaving(true);
-    const { error } = await supabase.from("profiles").update({ display_name: name.trim(), phone: phone.trim() || null }).eq("id", userId);
+    const { error } = await supabase.from("profiles").update({ display_name: name.trim(), phone: phone.trim() || null, ...(role === "restaurant" ? { business_address: businessAddress.trim() || null, business_postcode: businessPostcode.trim() || null, business_city: businessCity.trim() || null, business_email: businessEmail.trim() || null } : {}) }).eq("id", userId);
     setSaving(false);
     if (error) toast.error(error.message); else toast.success(t("Profil enregistré."));
   };
@@ -100,6 +111,7 @@ function AccountPage() {
         <label className="grid gap-1 text-sm font-medium">{t("Nom affiché")}<input className="field" value={name} onChange={(event) => setName(event.target.value)} maxLength={120} required /></label>
         <label className="grid gap-1 text-sm font-medium">{t("Adresse e-mail")}<input className="field opacity-70" value={email} readOnly disabled /></label>
         <label className="grid gap-1 text-sm font-medium">{t("Téléphone")}<input className="field" type="tel" autoComplete="tel" value={phone} onChange={(event) => setPhone(event.target.value)} maxLength={40} /></label>
+        {role === "restaurant" && <section className="grid gap-4 rounded-xl border border-border p-4"><div><h2 className="font-semibold">{t("Coordonnées du restaurant")}</h2><p className="text-xs text-muted-foreground">{t("Ces informations servent à vos échanges et commandes professionnelles.")}</p></div><label className="grid gap-1 text-sm font-medium">{t("Adresse")}<input className="field" autoComplete="street-address" value={businessAddress} onChange={(event) => setBusinessAddress(event.target.value)} maxLength={200} /></label><div className="grid gap-4 sm:grid-cols-2"><label className="grid gap-1 text-sm font-medium">{t("Code postal")}<input className="field" autoComplete="postal-code" value={businessPostcode} onChange={(event) => setBusinessPostcode(event.target.value)} maxLength={20} /></label><label className="grid gap-1 text-sm font-medium">{t("Ville")}<input className="field" autoComplete="address-level2" value={businessCity} onChange={(event) => setBusinessCity(event.target.value)} maxLength={100} /></label></div><label className="grid gap-1 text-sm font-medium">{t("E-mail professionnel")}<input className="field" type="email" autoComplete="email" value={businessEmail} onChange={(event) => setBusinessEmail(event.target.value)} maxLength={254} /></label></section>}
         <button className="btn btn-accent" type="submit" disabled={saving}>{saving ? t("Enregistrement…") : t("Enregistrer mon profil")}</button>
       </form>
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
