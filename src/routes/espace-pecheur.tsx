@@ -51,8 +51,17 @@ function FisherSpace() {
       if(user) {
         const {data:profile,error:profileError}=await supabase.from("profiles").select("role").eq("id",user.id).single();
         if(profileError) throw profileError;
-        if(profile.role!=="fisher") throw new Error("Ce compte n'est pas vérifié comme pêcheur.");
-        setOrders(await fetchMyOrders());
+        if(profile.role!=="fisher") {
+          const {data:request,error:requestError}=await supabase.from("verification_requests")
+            .select("status,reviewer_note").eq("user_id",user.id).eq("requested_role","fisher")
+            .order("created_at",{ascending:false}).limit(1).maybeSingle();
+          if(requestError) throw requestError;
+          setVerificationStatus(request?.status==="pending"?"pending":request?.status==="rejected"?"rejected":null);
+          setVerificationNote(request?.reviewer_note??null);
+        } else {
+          setVerificationStatus("approved" as never);
+          setOrders(await fetchMyOrders());
+        }
       }
     } catch(e) { toast.error(e instanceof Error?t(e.message):t("Impossible de charger le profil.")); return; }
     finally { setProfileLoading(false); }
@@ -97,7 +106,17 @@ function FisherSpace() {
   };
 
   if(profileLoading||loading) return <div className="mx-auto max-w-6xl px-4 py-10"><p role="status">{t("Chargement de votre espace pêcheur…")}</p></div>;
-  if(!userId||!me) return <div className="mx-auto max-w-3xl px-4 py-10"><PageHeader title={t("Espace pêcheur")} sub={t("Connectez-vous avec un compte pêcheur vérifié pour gérer vos prises.")}/><p className="card p-5"><a className="underline" href="/connexion">{t("Se connecter")}</a></p></div>;
+  if(!userId) return <div className="mx-auto max-w-3xl px-4 py-10"><PageHeader title={t("Espace pêcheur")} sub={t("Connectez-vous pour commencer votre demande de compte pêcheur.")}/><p className="card p-5"><a className="underline" href="/connexion">{t("Se connecter")}</a></p></div>;
+  if(!me) return <main className="mx-auto grid max-w-3xl gap-5 px-4 py-10">
+    <PageHeader title={t("Demande de compte pêcheur")} sub={t("L’accès professionnel est activé uniquement après validation manuelle de votre activité.")}/>
+    <section className="card grid gap-3 p-6">
+      <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold w-fit">{verificationStatus==="pending"?t("Demande en attente"):verificationStatus==="rejected"?t("Demande refusée"):t("Aucune demande validée")}</span>
+      <h2 className="text-xl font-semibold">{verificationStatus==="pending"?t("Votre dossier est en cours d’examen"):verificationStatus==="rejected"?t("Votre demande nécessite des corrections"):t("Commencez par faire vérifier votre activité")}</h2>
+      <p className="text-sm text-muted-foreground">{verificationStatus==="pending"?t("Vous pourrez compléter votre bateau, votre méthode de pêche et les informations de votre équipage dès que l’équipe aura approuvé votre demande."):t("Avant toute publication de pêche, envoyez les informations de votre activité et attendez la validation de l’équipe Marée Jersey.")}</p>
+      {verificationNote&&<p className="rounded-lg bg-secondary p-3 text-sm">{verificationNote}</p>}
+      <a className="btn btn-accent w-fit" href="/verification">{verificationStatus==="pending"?t("Voir ma demande"):t("Envoyer / corriger ma demande")}</a>
+    </section>
+  </main>;
 
   return <div className="mx-auto max-w-6xl px-4 py-10">
     <PageHeader title={t("Espace pêcheur")} sub={t("Connecté en tant que {name} — {boat}",{name:me.name,boat:me.boat})}/>
