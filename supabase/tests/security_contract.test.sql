@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(163);
+select plan(168);
 
 -- Isolated auth users; the auth trigger creates their initial restaurant profiles.
 insert into auth.users (id, email) values
@@ -600,6 +600,52 @@ reset role;
 select is((select status from public.orders where id='20000000-0000-4000-8000-000000000004'),'cancelled'::public.order_status,'late cancellation completes only after buyer acceptance');
 select is((select cancellation_penalty from public.orders where id='20000000-0000-4000-8000-000000000004'),7.50::numeric,'accepted cancellation retains the agreed penalty');
 select is((select remaining_kg from public.catches where id='10000000-0000-4000-8000-000000000003'),1::numeric,'accepted late cancellation restores reserved stock');
+
+-- Declining a late cancellation offer must leave the order active and stock reserved.
+update public.catches set remaining_kg=0.5,status='available'
+where id='10000000-0000-4000-8000-000000000003';
+insert into public.orders (
+  id,catch_id,restaurant_id,quantity_kg,requested_slot,fulfilment,status,
+  fisher_id_snapshot,product_subtotal,maree_fee,delivery_fee,total_amount
+) values (
+  '20000000-0000-4000-8000-000000000005',
+  '10000000-0000-4000-8000-000000000003',
+  '00000000-0000-4000-8000-000000000003',
+  0.5,now()+interval '12 hours','collection','confirmed',
+  '00000000-0000-4000-8000-000000000001',5,0.33,0,5.33
+);
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000003';
+select is(
+  public.request_order_cancellation('20000000-0000-4000-8000-000000000005'::uuid),
+  'requested'::text,
+  'second late cancellation request is sent to the fisher'
+);
+reset role;
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
+select lives_ok(
+  $select public.decide_order_cancellation('20000000-0000-4000-8000-000000000005'::uuid,true,4.00)$,
+  'fisher can offer a penalty on the second late cancellation'
+);
+reset role;
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000003';
+select lives_ok(
+  $select public.respond_order_cancellation('20000000-0000-4000-8000-000000000005'::uuid,false)$,
+  'buyer can decline a proposed late cancellation penalty'
+);
+reset role;
+select is(
+  (select status from public.orders where id='20000000-0000-4000-8000-000000000005'),
+  'confirmed'::public.order_status,
+  'declining the offer leaves the original order active'
+);
+select is(
+  (select remaining_kg from public.catches where id='10000000-0000-4000-8000-000000000003'),
+  0.5::numeric,
+  'declining the offer does not restore reserved stock'
+);
 
 -- External QR references are stored in the existing catch traceability tables.
 select ok((select relrowsecurity from pg_class where oid = 'public.catch_traceability_codes'::regclass), 'traceability QR codes have RLS enabled');
