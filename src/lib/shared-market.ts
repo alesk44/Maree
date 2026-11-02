@@ -55,14 +55,14 @@ export async function createSharedCatch(input:Omit<Catch,"id">):Promise<string>{
   return data.id;
 }
 
-export async function reserveSharedCatch(input:{catchId:string;qtyKg:number;slot:string;mode:"livraison"|"retrait";note:string}):Promise<string>{
+export async function reserveSharedCatch(input:{catchId:string;qtyKg:number;slot:string;mode:"livraison"|"retrait";note:string;tipAmount?:number}):Promise<string>{
   const {data:{user},error:authError}=await supabase.auth.getUser();
   if(authError) throw authError;
   if(!user) throw new Error("Connectez-vous avec votre compte restaurant pour réserver.");
   const {data:profile,error:profileError}=await supabase.from("profiles").select("role").eq("id",user.id).single();
   if(profileError) throw profileError;
   if(profile.role!=="restaurant") throw new Error("Seuls les comptes restaurant peuvent réserver.");
-  const {data,error}=await supabase.rpc("reserve_catch",{p_catch_id:input.catchId,p_quantity_kg:input.qtyKg,p_requested_slot:input.slot,p_fulfilment:input.mode==="livraison"?"delivery":"collection",p_note:input.note||null});
+  const {data,error}=await supabase.rpc("reserve_catch",{p_catch_id:input.catchId,p_quantity_kg:input.qtyKg,p_requested_slot:input.slot,p_fulfilment:input.mode==="livraison"?"delivery":"collection",p_note:input.note||null,p_tip_amount:input.tipAmount??0});
   if(error) throw error;
   return data as string;
 }
@@ -74,7 +74,9 @@ export type SharedOrderRow = {
   fisher_id_snapshot:string|null; unit_price_snapshot:number|string|null; product_subtotal:number|string|null;
   maree_fee_rate:number|string; maree_fee:number|string;
   delivery_fee_rate:number|string; delivery_fee:number|string; total_amount:number|string|null;
-  billing_mode:"immediate"|"monthly"; delivered_at:string|null;
+  billing_mode:"immediate"|"monthly"; delivered_at:string|null; tip_amount:number|string;
+  fisher_payment_status:"unpaid"|"paid"|"waived"; fisher_paid_at:string|null;
+  fisher_payment_method:string|null; fisher_payment_reference:string|null;
   cancellation_request_status:"none"|"pending"|"offered"|"approved"|"rejected"; cancellation_requested_at:string|null; cancellation_penalty:number|string|null;
 };
 
@@ -82,32 +84,17 @@ export async function fetchMyOrders():Promise<SharedOrderRow[]> {
   const {data:{user},error:authError}=await supabase.auth.getUser();
   if(authError) throw authError;
   if(!user) return [];
-  const query = supabase.from("orders");
-  const {data,error}=await query
-    .select("id,catch_id,restaurant_id,quantity_kg,requested_slot,fulfilment,note,status,created_at,fisher_id_snapshot,unit_price_snapshot,product_subtotal,maree_fee_rate,maree_fee,delivery_fee_rate,delivery_fee,total_amount,billing_mode,delivered_at,cancellation_request_status,cancellation_requested_at,cancellation_penalty")
+  const {data,error}=await supabase.from("orders")
+    .select("id,catch_id,restaurant_id,quantity_kg,requested_slot,fulfilment,note,status,created_at,fisher_id_snapshot,unit_price_snapshot,product_subtotal,maree_fee_rate,maree_fee,delivery_fee_rate,delivery_fee,total_amount,billing_mode,delivered_at,tip_amount,fisher_payment_status,fisher_paid_at,fisher_payment_method,fisher_payment_reference,cancellation_request_status,cancellation_requested_at,cancellation_penalty")
     .order("created_at",{ascending:false});
-  if(error && (error.code==="42703" || error.code==="PGRST204" || error.code==="PGRST200")) {
-    // Keep the current production-connected preview usable until the protected
-    // commercial migration is approved and applied. Legacy orders show no fee snapshot.
-    const legacy=await supabase.from("orders")
-      .select("id,catch_id,restaurant_id,quantity_kg,requested_slot,fulfilment,note,status,created_at")
-      .order("created_at",{ascending:false});
-    if(legacy.error) throw legacy.error;
-    return (legacy.data??[]).map(row=>({
-      ...row,fisher_id_snapshot:null,unit_price_snapshot:null,product_subtotal:null,
-      maree_fee_rate:0,maree_fee:0,delivery_fee_rate:0,delivery_fee:0,
-      total_amount:null,billing_mode:"immediate" as const,delivered_at:null,
-      cancellation_request_status:"none" as const,cancellation_requested_at:null,cancellation_penalty:0
-    })) as SharedOrderRow[];
-  }
-  if(error) throw error;
+  if(error) throw new Error("Impossible de charger les comptes financiers : schéma Supabase incomplet ou non synchronisé. "+error.message);
   return (data??[]) as SharedOrderRow[];
 }
 
-export type SharedMonthlyInvoiceItemRow = { order_id:string; product_subtotal:number|string; quantity_kg:number|string; unit_price:number|string };
+export type SharedMonthlyInvoiceItemRow = { order_id:string; product_subtotal:number|string; quantity_kg:number|string; unit_price:number|string; tip_amount:number|string };
 export type SharedMonthlyInvoiceRow = {
   id:string; restaurant_id:string; fisher_id:string; period_start:string; period_end:string;
-  due_date:string; subtotal:number|string; status:"open"|"paid"|"void";
+  due_date:string; subtotal:number|string; tip_total:number|string; status:"open"|"paid"|"void";
   paid_at:string|null; payment_method:string|null; payment_reference:string|null;
   items?:SharedMonthlyInvoiceItemRow[];
 };
@@ -117,11 +104,17 @@ export async function fetchMyMonthlyInvoices():Promise<SharedMonthlyInvoiceRow[]
   if(authError) throw authError;
   if(!user) return [];
   const {data,error}=await supabase.from("fisher_monthly_invoices")
-    .select("id,restaurant_id,fisher_id,period_start,period_end,due_date,subtotal,status,paid_at,payment_method,payment_reference,items:fisher_monthly_invoice_items(order_id,product_subtotal,quantity_kg,unit_price)")
+    .select("id,restaurant_id,fisher_id,period_start,period_end,due_date,subtotal,tip_total,status,paid_at,payment_method,payment_reference,items:fisher_monthly_invoice_items(order_id,product_subtotal,quantity_kg,unit_price,tip_amount)")
     .order("period_start",{ascending:false});
-  if(error && (error.code==="42P01" || error.code==="PGRST205")) return [];
-  if(error) throw error;
+  if(error) throw new Error("Impossible de charger les relevés pêcheurs : schéma Supabase incomplet ou non synchronisé. "+error.message);
   return (data??[]) as SharedMonthlyInvoiceRow[];
+}
+
+export async function markFisherOrderPaid(orderId:string,paymentMethod:string|null,paymentReference:string|null):Promise<void> {
+  const {error}=await supabase.rpc("mark_order_paid",{
+    p_order_id:orderId,p_payment_method:paymentMethod,p_payment_reference:paymentReference
+  });
+  if(error) throw error;
 }
 
 export async function confirmFisherInvoicePaid(invoiceId:string,paymentMethod:string|null,paymentReference:string|null):Promise<void> {
@@ -146,8 +139,7 @@ export async function fetchMyMareeCommissionInvoices():Promise<SharedMareeCommis
   const {data,error}=await supabase.from("maree_monthly_commission_invoices")
     .select("id,restaurant_id,period_start,period_end,due_date,commission_total,delivery_total,status,declared_at,verified_at,payment_method,payment_reference,items:maree_monthly_commission_invoice_items(order_id,commission_amount,delivery_amount,product_subtotal,fulfilment,delivered_at)")
     .order("period_start",{ascending:false});
-  if(error && (error.code==="42P01" || error.code==="PGRST205")) return [];
-  if(error) throw error;
+  if(error) throw new Error("Impossible de charger les relevés Marée : schéma Supabase incomplet ou non synchronisé. "+error.message);
   return (data??[]) as SharedMareeCommissionInvoiceRow[];
 }
 
@@ -163,11 +155,7 @@ export async function setRestaurantFisherBillingMode(fisherId:string,mode:"immed
   if(authError) throw authError;
   if(!user) throw new Error("Connectez-vous avec votre compte restaurant.");
   const {error}=await supabase.from("restaurant_fisher_billing_settings").upsert({restaurant_id:user.id,fisher_id:fisherId,billing_mode:mode,updated_at:new Date().toISOString()},{onConflict:"restaurant_id,fisher_id"});
-  if(error && (error.code==="42P01" || error.code==="PGRST205")) {
-    if(mode==="monthly") throw new Error("La facturation mensuelle sera disponible après validation de la migration Marée. Choisissez temporairement la facturation à chaque commande.");
-    return;
-  }
-  if(error) throw error;
+  if(error) throw new Error("Impossible d'enregistrer le mode de facturation : schéma Supabase incomplet ou non synchronisé. "+error.message);
 }
 
 export async function updateMyCatch(id:string,patch:{remainingKg?:number;priceKg?:number;status?:"available"|"reserved"|"sold_out"}):Promise<void>{

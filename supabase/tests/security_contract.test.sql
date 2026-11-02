@@ -115,8 +115,8 @@ select ok(not has_table_privilege('anon', 'public.orders', 'SELECT'), 'anonymous
 select ok(not has_table_privilege('authenticated', 'public.orders', 'INSERT'), 'authenticated clients cannot insert orders directly');
 select ok(not has_table_privilege('authenticated', 'public.orders', 'UPDATE'), 'authenticated clients cannot update orders directly');
 select ok(not has_column_privilege('authenticated', 'public.profiles', 'role', 'UPDATE'), 'authenticated clients cannot change profile roles');
-select ok(not has_function_privilege('anon', 'public.reserve_catch(uuid,numeric,timestamptz,text,text)', 'EXECUTE'), 'anonymous users cannot call reserve_catch');
-select ok(has_function_privilege('authenticated', 'public.reserve_catch(uuid,numeric,timestamptz,text,text)', 'EXECUTE'), 'restaurants can call the authenticated reservation RPC');
+select ok(not has_function_privilege('anon', 'public.reserve_catch(uuid,numeric,timestamptz,text,text,numeric)', 'EXECUTE'), 'anonymous users cannot call reserve_catch');
+select ok(has_function_privilege('authenticated', 'public.reserve_catch(uuid,numeric,timestamptz,text,text,numeric)', 'EXECUTE'), 'restaurants can call the authenticated reservation RPC');
 select ok(not has_function_privilege('anon', 'public.update_order_status(uuid,public.order_status)', 'EXECUTE'), 'anonymous users cannot update order status');
 select ok(has_function_privilege('authenticated', 'public.update_order_status(uuid,public.order_status)', 'EXECUTE'), 'authenticated users can call the order status RPC');
 select ok(has_table_privilege('anon', 'public.public_fisher_directory', 'SELECT'), 'anonymous users can read the public fisher directory');

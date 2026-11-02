@@ -2,7 +2,7 @@ name: Supabase migration tests
 
 on:
   pull_request:
-    branches: [main, "feature/supabase-shared-data-v2"]
+    branches: [main, "feature/**"]
     paths:
       - "supabase/**"
       - ".github/workflows/supabase-migrations.yml"
