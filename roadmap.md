@@ -320,22 +320,30 @@ Le build, les tests, le lint et le typecheck sont verts ; les tests RLS et les t
 - [ ] Configurer les secrets e-mail dans l'environnement Edge Function avec le vrai destinataire et le domaine choisis par le propriétaire; aucun secret n'a été ajouté ni déployé depuis le dépôt.
 
 
-## État de référence — 2 novembre 2026, HEAD 711f5e2
+## État de référence — 2 novembre 2026, HEAD 378240d
 
-Ce bloc fait foi pour l'état courant ; les anciennes sections datées plus bas sont conservées comme historique et ne doivent pas être interprétées comme le statut actuel.
+Ce bloc fait foi pour l'état courant ; les sections historiques datées plus bas ne doivent pas être interprétées comme le statut actuel.
 
-### Validé par le code et la CI
+### Validé par le code
 - [x] Règle tarifaire serveur : commission Marée 6,5 % sur livraison et retrait ; livraison 20 % uniquement si `fulfilment='delivery'`, zéro pour `collection`.
-- [x] Test pgTAP explicite : commission sur retrait, absence de frais de livraison sur retrait et frais de livraison sur commande livrée.
-- [x] Factures produits pêcheur distinctes des relevés de commission/frais de livraison Marée.
-- [x] Relevés mensuels Marée par restaurant : commission et livraison agrégées et détaillées par commande, incluant les commandes livrées en paiement immédiat ou mensuel.
-- [x] Idempotence des deux générateurs de factures vérifiée par pgTAP ; pas de duplication lors d'une seconde exécution.
-- [x] Déclaration de paiement restaurant séparée de la vérification admin ; test de refus pour un pêcheur et validation admin.
-- [x] Bornes de période calculées avec le fuseau `Europe/Jersey` dans les générateurs.
-- [x] Migration reconstruite sur Supabase local vierge par GitHub Actions ; suite pgTAP au plan 181 et test de concurrence du dernier stock réussis.
-- [x] Workflows du HEAD : Verify (`41434827961`), Build verification (`41434827815`), Supabase migration tests (`41434827892`) et Marée CI (`41434827821`) : succès.
+- [x] Factures produits pêcheur distinctes des relevés Marée (commission et livraison).
+- [x] Générateurs mensuels idempotents et périodes fondées sur `Europe/Jersey`.
+- [x] Déclaration de paiement restaurant séparée de la vérification administrative.
+- [x] Notifications persistantes : commandes, changements de statut, annulations, demandes et décisions de vérification, cycle des factures pêcheur et relevés Marée.
+- [x] Contrôle d'accès notifications : génération par triggers SQL de confiance, RLS par destinataire, aucun INSERT client, seul `read_at` modifiable par l'utilisateur.
+- [x] Centre global avec compteur non lu, 20 notifications récentes, lecture individuelle/globale, Realtime et traductions FR/EN/RO.
+- [x] Protection des changements de session et chargement initial après confirmation du canal Realtime.
+- [x] Plan pgTAP porté à 206 assertions ; comptage statique vérifié à 206.
+
+### CI du HEAD 378240d
+- [x] Build verification : succès (run 482).
+- [x] Verify : succès (run 1005).
+- [x] Marée CI : succès (run 933).
+- [ ] Supabase migration tests : en attente de démarrage/exécution ; doit reconstruire la base, exécuter les 206 assertions et le test de concurrence.
+- [x] Sur le HEAD antérieur `300655c`, reconstruction locale, les 191 assertions et le test de concurrence avaient terminé avec succès. Ce résultat ne valide pas la nouvelle migration de la deuxième tranche.
 
 ### Non validé / blocages avant ouverture
+- [ ] Résultat pgTAP + concurrence sur le HEAD 378240d, incluant la nouvelle migration de notifications et les 15 assertions supplémentaires.
 - [ ] Tests navigateur réels sur mobile et desktop avec comptes restaurant, pêcheur et admin distincts ; parcours commande, refus, annulation, stock, notifications et factures.
 - [ ] Vérifier les paramètres réels Supabase Auth, SMTP/Resend et les secrets de notification dans l'environnement de prévisualisation.
 - [ ] Vérifier le comportement opérationnel du job pg_cron sur l'instance cible ; sa déclaration dans la migration locale ne prouve pas son activation sur la base distante.
@@ -352,16 +360,32 @@ Ce bloc fait foi pour l'état courant ; les anciennes sections datées plus bas 
 
 ## Chantier notifications persistantes — 2 novembre 2026
 
-### Première tranche ajoutée sur la branche
-- [x] Migration additive `20261102190000_persistent_notifications.sql` : table persistante, clé anti-doublon, index utilisateur/non-lu et RLS par destinataire.
-- [x] Création côté base uniquement : nouvelle commande vers le pêcheur, changement de statut vers l'autre partie, demandes/réponses d'annulation, nouvelle demande de vérification vers les administrateurs.
+### Première tranche — commandes et vérification
+- [x] Migration `20261102190000_persistent_notifications.sql` : table persistante, clé anti-doublon, index utilisateur/non-lu et RLS par destinataire.
+- [x] Création côté base : nouvelle commande vers le pêcheur, changement de statut vers l'autre partie, demandes/réponses d'annulation et nouvelle demande de vérification vers les administrateurs.
 - [x] Publication Realtime de la table notifications lorsque `supabase_realtime` est disponible.
-- [x] Centre global dans l'en-tête : compteur exact de notifications non lues, 20 plus récentes, lecture individuelle et lecture globale, actualisation Realtime.
-- [x] Libellés et messages du centre traduits FR/EN/RO.
-- [x] Tests pgTAP ajoutés : RLS, interdiction d'insertion client, limitation de mise à jour à `read_at`, cloisonnement entre pêcheurs, création des alertes admin. Plan porté de 181 à 191 assertions.
-- [ ] Résultat du workflow Supabase migration tests sur le HEAD de cette tranche : en attente de vérification.
-- [ ] Tester dans le navigateur avec de vrais comptes distincts restaurant, pêcheur et admin ; vérifier les événements Realtime, les liens, les changements de compte et les états sans réseau.
-- [ ] Ajouter les notifications de résultat de vérification et de disponibilité des factures mensuelles après validation de cette première tranche.
+- [x] Centre global dans l'en-tête : compteur exact non lu, 20 plus récentes, lecture individuelle/globale et actualisation Realtime.
+- [x] Traductions FR/EN/RO.
+- [x] Protection contre les réponses asynchrones obsolètes lors d'un changement de compte/session.
+- [x] Chargement initial après confirmation de l'abonnement Realtime pour éviter une fenêtre de perte d'événement.
+
+### Deuxième tranche — décisions et facturation
+- [x] Migration additive `20261102200000_notification_followups.sql`.
+- [x] Notification privée au demandeur lors d'une approbation ou d'un refus de vérification ; le trigger commun couvre les décisions depuis l'interface admin et le lien e-mail.
+- [x] Notification au pêcheur et au restaurant lors de la création d'une facture mensuelle pêcheur.
+- [x] Notification au restaurant lorsque le pêcheur confirme la réception du paiement.
+- [x] Notification au restaurant lors de la création du relevé mensuel Marée.
+- [x] Notification aux administrateurs lorsqu'un restaurant déclare avoir réglé son relevé.
+- [x] Notification au restaurant après vérification administrative du règlement.
+- [x] Alertes de facture annulée.
+- [x] Destinations internes contrôlées par allowlist ; `/verification` ajouté pour les décisions de compte.
+- [x] Traductions FR/EN/RO pour les nouveaux titres et messages.
+- [x] 15 assertions pgTAP ajoutées ; plan total 206 et comptage statique vérifié.
+
+### Validation restante
+- [ ] Supabase migration tests sur HEAD `378240d` : exécuter reconstruction locale, 206 assertions pgTAP et test de concurrence. Les 191 assertions et la concurrence avaient réussi sur le HEAD antérieur `300655c`, mais cela ne valide pas la nouvelle migration.
+- [ ] Tests navigateur avec de vrais comptes distincts restaurant, pêcheur et admin ; vérifier événements Realtime, liens, changements de compte et états sans réseau.
+- [ ] Vérifier les erreurs de livraison Realtime, les doublons et les mises à jour simultanées du compteur sur plusieurs onglets.
 - [ ] E-mail et push hors session non inclus ; ne pas confondre notification in-app et e-mail/SMS.
 
 ### Limites et garde-fous
