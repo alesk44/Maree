@@ -111,6 +111,12 @@ Le build, les tests, le lint et le typecheck sont verts ; les tests RLS et les t
 - [ ] Effectuer le parcours manuel mobile/desktop et le test réel avec deux comptes et un lot ; la base distante contient encore zéro lot et zéro commande.
 
 
+## Validation fonctionnelle déclarée par le propriétaire — 2 novembre 2026
+
+- [x] Le propriétaire confirme que le parcours principal Marée est validé côté expérience : publication d'une pêche du jour, consultation/réservation côté restaurant et suivi côté pêcheur.
+- [ ] Cette validation utilisateur ne remplace pas les preuves techniques automatisées : conserver les tests CI de stock concurrent, RLS et permissions comme garde-fous.
+- [ ] Compléter la revue visuelle mobile/desktop, les états d'erreur/réseau et la validation des notifications avant ouverture publique.
+
 ## Revue de feuille de route — 2 novembre 2026
 
 - [x] Dernière suite Supabase migration/pgTAP réussie sur `c4634ae5368ac5d4a738bb28f316ddcded27a20d`.
