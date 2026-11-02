@@ -41,6 +41,7 @@ function LegalPage() {
     <section className="grid gap-3">
       <h2 className="text-2xl font-semibold">{t("3. Tarifs, livraison et facturation")}</h2>
       <p>{t("Le projet prévoit des frais de livraison de 20 % du sous-total des produits pour les commandes livrées. Ces frais sont destinés à Marée Jersey et ne constituent pas un montant dû au pêcheur. Le retrait par le restaurant est prévu sans frais de livraison.")}</p>
+      <p>{t("Le projet prévoit une commission de service de 6,5 % du sous-total des produits, payée par le restaurant à Marée Jersey pour chaque achat, que la commande soit livrée ou retirée. Cette commission n’est pas déduite du montant produits dû au pêcheur.")}</p>
       <p>{t("Le projet prévoit également une option de relevé mensuel entre un restaurant et chaque pêcheur. Les produits vendus par le pêcheur et les frais de service de la plateforme doivent apparaître séparément. Les factures et relevés affichés dans l'application ne doivent pas être considérés comme des factures fiscales tant que le dispositif de facturation n'a pas été validé.")}</p>
       <p>{t("Aucun paiement en ligne ne doit être considéré comme activé tant qu'un prestataire de paiement et son intégration ne sont pas effectivement mis en service.")}</p>
     </section>
