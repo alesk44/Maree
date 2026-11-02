@@ -225,11 +225,11 @@ select ok(exists (select 1 from cron.job where jobname = 'maree-monthly-fisher-i
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000003';
 select lives_ok(
-  $$public.reserve_catch('10000000-0000-4000-8000-000000000001'::uuid, 0.5, now() + interval '2 days', 'collection', 'commission test')$$,
+  $select public.reserve_catch('10000000-0000-4000-8000-000000000001'::uuid, 0.5, now() + interval '2 days', 'collection', 'commission test')$,
   'restaurant can reserve collection with commission'
 );
 select lives_ok(
-  $$public.reserve_catch('10000000-0000-4000-8000-000000000001'::uuid, 0.5, now() + interval '3 days', 'delivery', 'commission test')$$,
+  $select public.reserve_catch('10000000-0000-4000-8000-000000000001'::uuid, 0.5, now() + interval '3 days', 'delivery', 'commission test')$,
   'restaurant can reserve delivery with commission'
 );
 select is(
@@ -276,7 +276,7 @@ set status='delivered', delivered_at=now(), product_subtotal=6.00,
     maree_fee_rate=0.065, maree_fee=0.39, total_amount=6.39
 where id='20000000-0000-4000-8000-000000000002';
 select lives_ok(
-  $$public.generate_maree_monthly_commission_invoices(current_date)$$,
+  $select public.generate_maree_monthly_commission_invoices(current_date)$,
   'trusted scheduler can generate monthly Marée commission statements'
 );
 select is(
@@ -310,7 +310,7 @@ set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000003';
 select is((select count(*) from public.maree_monthly_commission_invoices),1::bigint,'restaurant can read its own Marée commission statement');
 select lives_ok(
-  $$public.declare_maree_commission_invoice_paid('40000000-0000-4000-8000-000000000001'::uuid,'Bank transfer','TEST-REF')$$,
+  $select public.declare_maree_commission_invoice_paid('40000000-0000-4000-8000-000000000001'::uuid,'Bank transfer','TEST-REF')$,
   'restaurant can declare an off-platform commission payment'
 );
 select is((select status from public.maree_monthly_commission_invoices where id='40000000-0000-4000-8000-000000000001'),'declared_paid'::text,'restaurant declaration is not treated as verified payment');
@@ -320,7 +320,7 @@ set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
 select is((select count(*) from public.maree_monthly_commission_invoices),0::bigint,'fisher cannot read restaurant Marée commission statements');
 select throws_ok(
-  $$public.verify_maree_commission_invoice_paid('40000000-0000-4000-8000-000000000001'::uuid)$$,
+  $select public.verify_maree_commission_invoice_paid('40000000-0000-4000-8000-000000000001'::uuid)$,
   'P0001','Admin access required','fisher cannot verify a Marée commission payment'
 );
 reset role;
@@ -328,7 +328,7 @@ reset role;
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000005';
 select lives_ok(
-  $$public.verify_maree_commission_invoice_paid('40000000-0000-4000-8000-000000000001'::uuid)$$,
+  $select public.verify_maree_commission_invoice_paid('40000000-0000-4000-8000-000000000001'::uuid)$,
   'admin can verify a restaurant payment declaration'
 );
 select is((select status from public.maree_monthly_commission_invoices where id='40000000-0000-4000-8000-000000000001'),'paid'::text,'admin verification marks the commission invoice paid');
