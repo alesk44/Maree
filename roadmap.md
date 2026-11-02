@@ -1,10 +1,10 @@
-# Marée Jersey — feuille de route vivante
+> **Modèle commercial courant (2 novembre 2026) :** commission Marée de 6,5 % du sous-total produits pour toute commande, livraison ou retrait ; frais de livraison de 20 % uniquement pour une livraison. Les produits restent dus à 100 % au pêcheur. Les frais GST sont désactivés en attente de validation fiscale. Aucun paiement en ligne ni prélèvement automatique n'est activé. Les deux familles de relevés mensuels sont implémentées séparément ; activation du job sur la base distante non confirmée.
 
-> **Mise à jour 2 novembre 2026 : modèle commercial révisé à la demande du propriétaire. La commission Marée est de 6,5 % du sous-total produits pour chaque achat restaurant→pêcheur, que la commande soit livrée ou retirée. Elle s'ajoute au montant dû au pêcheur ; les frais de livraison de 20 % sont distincts et s'appliquent uniquement à la livraison. Aucun prélèvement automatique ni PSP n'est activé. La facturation mensuelle par couple restaurant/pêcheur, l'échéance à J+7 après fin de mois et le blocage après au moins 3 factures mensuelles échues impayées restent à finaliser. L'ancien modèle à double commission 6,5 % + 6,5 % / 13 % est obsolète. Les frais GST restent désactivés tant que le statut et le traitement fiscal de Marée Jersey ne sont pas confirmés.**
-
-Dernière revue : 2 novembre 2026 — commit `fc2d498ea37b5f96a73a0738f6c410d07ffa9db6` : Verify, Build verification, Marée CI et Supabase migration tests terminés avec succès. La reconstruction locale Supabase, les 161 assertions pgTAP et le test de concurrence du dernier stock sont confirmés. Le contrôle visuel, les tests manuels inter-comptes et la validation juridique restent ouverts.  
+Dernière revue technique : 2 novembre 2026 — HEAD `711f5e2cfea64ba1f06d86efa3b7f41abc49bda2`. Les workflows Verify, Build verification, Marée CI et Supabase migration tests sont verts. La reconstruction Supabase locale, le plan pgTAP de 181 assertions et le test de concurrence du dernier stock sont réussis. Aucun test navigateur E2E n'est déclaré. Aucune migration distante ni aucun déploiement n'a été effectué.
 Branche de travail : `feature/supabase-shared-data-v2`  
 Règle de livraison : aucun merge sur `main`, aucun déploiement public et aucune mise en production sans validation explicite du propriétaire.
+Règle de livraison : aucun merge sur `main`, aucune migration distante et aucun déploiement sans validation explicite du propriétaire.
+
 
 
 ## P0 — nouveau chantier commercial : livraison et facturation mensuelle (décision propriétaire, 2 novembre 2026)
@@ -319,3 +319,34 @@ Le build, les tests, le lint et le typecheck sont verts ; les tests RLS et les t
 - [x] Rejouer les workflows CI/pgTAP sur le commit `fc2d498ea37b5f96a73a0738f6c410d07ffa9db6` : les quatre workflows sont verts, 161 assertions et le test de concurrence réussis.
 - [ ] Relancer l'advisor Supabase après application contrôlée de la migration RLS; ne pas déclarer les avertissements résolus avant observation réelle.
 - [ ] Configurer les secrets e-mail dans l'environnement Edge Function avec le vrai destinataire et le domaine choisis par le propriétaire; aucun secret n'a été ajouté ni déployé depuis le dépôt.
+
+
+## État de référence — 2 novembre 2026, HEAD 711f5e2
+
+Ce bloc fait foi pour l'état courant ; les anciennes sections datées plus bas sont conservées comme historique et ne doivent pas être interprétées comme le statut actuel.
+
+### Validé par le code et la CI
+- [x] Règle tarifaire serveur : commission Marée 6,5 % sur livraison et retrait ; livraison 20 % uniquement si `fulfilment='delivery'`, zéro pour `collection`.
+- [x] Test pgTAP explicite : commission sur retrait, absence de frais de livraison sur retrait et frais de livraison sur commande livrée.
+- [x] Factures produits pêcheur distinctes des relevés de commission/frais de livraison Marée.
+- [x] Relevés mensuels Marée par restaurant : commission et livraison agrégées et détaillées par commande, incluant les commandes livrées en paiement immédiat ou mensuel.
+- [x] Idempotence des deux générateurs de factures vérifiée par pgTAP ; pas de duplication lors d'une seconde exécution.
+- [x] Déclaration de paiement restaurant séparée de la vérification admin ; test de refus pour un pêcheur et validation admin.
+- [x] Bornes de période calculées avec le fuseau `Europe/Jersey` dans les générateurs.
+- [x] Migration reconstruite sur Supabase local vierge par GitHub Actions ; suite pgTAP au plan 181 et test de concurrence du dernier stock réussis.
+- [x] Workflows du HEAD : Verify (`41434827961`), Build verification (`41434827815`), Supabase migration tests (`41434827892`) et Marée CI (`41434827821`) : succès.
+
+### Non validé / blocages avant ouverture
+- [ ] Tests navigateur réels sur mobile et desktop avec comptes restaurant, pêcheur et admin distincts ; parcours commande, refus, annulation, stock, notifications et factures.
+- [ ] Vérifier les paramètres réels Supabase Auth, SMTP/Resend et les secrets de notification dans l'environnement de prévisualisation.
+- [ ] Vérifier le comportement opérationnel du job pg_cron sur l'instance cible ; sa déclaration dans la migration locale ne prouve pas son activation sur la base distante.
+- [ ] Valider le contrat commercial, la facturation, la GST, l'enregistrement alimentaire, la traçabilité et les responsabilités avec les interlocuteurs compétents de Jersey.
+- [ ] Compléter la revue de confidentialité : bases légales, durées, destinataires/sous-traitants, transferts, droits, réclamations et inventaire réel des cookies/traceurs.
+- [ ] Revue visuelle réelle de l'aperçu de cette branche ; aucun déploiement de prévisualisation de ce HEAD n'est confirmé.
+
+### Garde-fous maintenus
+- PR #2 ouverte en brouillon ; aucun merge.
+- Aucune migration appliquée à la base Supabase connectée.
+- Aucun déploiement Cloudflare exécuté.
+- Aucun paiement en ligne activé.
+- Le projet n'est pas déclaré prêt pour une commercialisation.
