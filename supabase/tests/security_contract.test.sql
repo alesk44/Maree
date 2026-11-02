@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(34);
+select plan(37);
 
 -- Isolated auth users; the auth trigger creates their initial restaurant profiles.
 insert into auth.users (id, email) values
@@ -10,7 +10,8 @@ insert into auth.users (id, email) values
   ('00000000-0000-4000-8000-000000000003', 'maree-restaurant-a@test.local'),
   ('00000000-0000-4000-8000-000000000004', 'maree-restaurant-b@test.local'),
   ('00000000-0000-4000-8000-000000000005', 'maree-admin@test.local'),
-  ('00000000-0000-4000-8000-000000000006', 'maree-fisher-upgrade@test.local')
+  ('00000000-0000-4000-8000-000000000006', 'maree-fisher-upgrade@test.local'),
+  ('00000000-0000-4000-8000-000000000007', 'maree-admin-restaurant@test.local')
 on conflict (id) do nothing;
 
 update public.profiles set role = 'fisher', display_name = 'Fisher A'
@@ -25,6 +26,11 @@ update public.profiles set role = 'admin', display_name = 'Marée Admin'
 where id = '00000000-0000-4000-8000-000000000005';
 update public.profiles set role = 'fisher', display_name = 'Fisher Upgrade'
 where id = '00000000-0000-4000-8000-000000000006';
+update public.profiles set role = 'restaurant', display_name = 'Restaurant Admin'
+where id = '00000000-0000-4000-8000-000000000007';
+insert into private.admin_users (user_id)
+values ('00000000-0000-4000-8000-000000000007')
+on conflict (user_id) do nothing;
 
 insert into public.catches (
   id, fisher_id, species, zone, caught_at, landed_at, quantity_kg,
@@ -67,7 +73,11 @@ insert into public.verification_requests (
   ('30000000-0000-4000-8000-000000000003',
    '00000000-0000-4000-8000-000000000006',
    'fisher', 'Harbour Fishing', 'Test Contact C', '+441534000003',
-   'Test evidence for a fisher role upgrade.')
+   'Test evidence for a fisher role upgrade.'),
+  ('30000000-0000-4000-8000-000000000004',
+   '00000000-0000-4000-8000-000000000004',
+   'restaurant', 'West Pier Kitchen', 'Test Contact D', '+441534000004',
+   'Test evidence for a second restaurant account.')
 on conflict (id) do nothing;
 
 -- Table-level security posture and least-privilege grants.
@@ -169,6 +179,18 @@ select lives_ok(
   'admin can approve a pending verification request'
 );
 reset role;
+
+-- A restaurant-role account with a separate admin grant can access admin functions.
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000007';
+select is(public.is_current_user_admin(), true, 'separate admin grant is recognized without changing restaurant role');
+select is((select count(*) from public.verification_requests), 4::bigint, 'separate admin can read all verification requests');
+select lives_ok(
+  $select public.review_verification_request('30000000-0000-4000-8000-000000000004'::uuid, 'approved'::public.verification_status, 'Approved by separate admin')$,
+  'separate admin can approve a pending verification request'
+);
+reset role;
+
 select is((select role::text from public.profiles where id = '00000000-0000-4000-8000-000000000006'), 'fisher', 'approval grants the requested professional role');
 select is((select status::text from public.verification_requests where id = '30000000-0000-4000-8000-000000000003'), 'approved', 'approval marks the verification request approved');
 select is((select reviewed_by from public.verification_requests where id = '30000000-0000-4000-8000-000000000003'), '00000000-0000-4000-8000-000000000005'::uuid, 'approval records the admin reviewer');
