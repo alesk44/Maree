@@ -5,6 +5,15 @@ import { toast } from "sonner";
 import { useLanguage } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase";
 
+type MyBusinessProfile = {
+  display_name: string | null;
+  phone: string | null;
+  business_address: string | null;
+  business_postcode: string | null;
+  business_city: string | null;
+  business_email: string | null;
+};
+
 export const Route = createFileRoute("/connexion")({
   head: () => ({
     meta: [
@@ -38,8 +47,9 @@ function AuthPage() {
       const user = data.session?.user;
       setSessionEmail(user?.email ?? null);
       if (user) {
-        const { data: profile, error: profileError } = await supabase.rpc("get_my_business_profile").maybeSingle();
+        const { data: rawProfile, error: profileError } = await supabase.rpc("get_my_business_profile").maybeSingle();
         if (profileError) toast.error(t("Impossible de charger les coordonnées professionnelles."));
+        const profile = rawProfile as MyBusinessProfile | null;
         if (active && profile) {
           setProfileName(profile.display_name ?? "");
           setBusinessProfile({ phone: profile.phone ?? "", business_address: profile.business_address ?? "", business_postcode: profile.business_postcode ?? "", business_city: profile.business_city ?? "", business_email: profile.business_email ?? user.email ?? "" });
@@ -50,7 +60,7 @@ function AuthPage() {
       setSessionEmail(session?.user.email ?? null);
       if (event === "SIGNED_IN" && session?.user) {
         void supabase.rpc("get_my_business_profile").maybeSingle()
-          .then(({ data, error }) => { if (error) { toast.error(t("Impossible de charger les coordonnées professionnelles.")); return; } if (data) {
+          .then(({ data: rawProfile, error }) => { if (error) { toast.error(t("Impossible de charger les coordonnées professionnelles.")); return; } const data = rawProfile as MyBusinessProfile | null; if (data) {
             setProfileName(data.display_name ?? "");
             setBusinessProfile({ phone: data.phone ?? "", business_address: data.business_address ?? "", business_postcode: data.business_postcode ?? "", business_city: data.business_city ?? "", business_email: data.business_email ?? session.user.email ?? "" });
           } });
