@@ -315,3 +315,159 @@ select cron.schedule(
   $job$select public.generate_fisher_monthly_invoices((date_trunc('month', now()) - interval '1 month')::date);$job$
 );
 
+
+
+-- Separate monthly Marée commission statements. These are owed by restaurants to
+-- Marée and must never be mixed into the fisher's product-only invoice.
+create table if not exists public.maree_monthly_commission_invoices (
+  id uuid primary key default gen_random_uuid(),
+  restaurant_id uuid not null references public.profiles(id) on delete restrict,
+  period_start date not null,
+  period_end date not null,
+  due_date date not null,
+  commission_total numeric(10,2) not null default 0 check (commission_total >= 0),
+  status text not null default 'open'
+    check (status in ('open','declared_paid','paid','void')),
+  declared_at timestamptz,
+  declared_by uuid references auth.users(id),
+  verified_at timestamptz,
+  verified_by uuid references auth.users(id),
+  payment_method text,
+  payment_reference text,
+  created_at timestamptz not null default now(),
+  unique (restaurant_id, period_start),
+  check (period_end >= period_start),
+  check ((status in ('declared_paid','paid') and declared_at is not null and declared_by is not null) or status not in ('declared_paid','paid')),
+  check ((status = 'paid' and verified_at is not null and verified_by is not null) or status <> 'paid')
+);
+create table if not exists public.maree_monthly_commission_invoice_items (
+  invoice_id uuid not null references public.maree_monthly_commission_invoices(id) on delete restrict,
+  order_id uuid not null unique references public.orders(id) on delete restrict,
+  commission_amount numeric(10,2) not null check (commission_amount >= 0),
+  product_subtotal numeric(10,2) not null check (product_subtotal >= 0),
+  fulfilment text not null check (fulfilment in ('delivery','collection')),
+  delivered_at timestamptz not null,
+  primary key (invoice_id, order_id)
+);
+alter table public.maree_monthly_commission_invoices enable row level security;
+alter table public.maree_monthly_commission_invoice_items enable row level security;
+drop policy if exists "Restaurant and admin can read Marée commission invoices" on public.maree_monthly_commission_invoices;
+create policy "Restaurant and admin can read Marée commission invoices"
+on public.maree_monthly_commission_invoices for select to authenticated
+using (restaurant_id = (select auth.uid()) or private.is_current_user_admin());
+drop policy if exists "Restaurant and admin can read Marée commission invoice items" on public.maree_monthly_commission_invoice_items;
+create policy "Restaurant and admin can read Marée commission invoice items"
+on public.maree_monthly_commission_invoice_items for select to authenticated
+using (exists (
+  select 1 from public.maree_monthly_commission_invoices i
+  where i.id = invoice_id and (i.restaurant_id = (select auth.uid()) or private.is_current_user_admin())
+));
+grant select on public.maree_monthly_commission_invoices, public.maree_monthly_commission_invoice_items to authenticated;
+revoke insert, update, delete on public.maree_monthly_commission_invoices, public.maree_monthly_commission_invoice_items from anon, authenticated;
+
+-- One statement per restaurant/month, covering all delivered orders regardless of
+-- immediate or monthly fisher billing mode. The commission is always restaurant-paid.
+create or replace function public.generate_maree_monthly_commission_invoices(p_month date)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  v_start date := date_trunc('month', p_month)::date;
+  v_end date := (date_trunc('month', p_month) + interval '1 month - 1 day')::date;
+  v_count integer := 0;
+  v_group record;
+  v_invoice uuid;
+begin
+  if auth.role() is distinct from 'service_role' and session_user <> 'postgres' then
+    raise exception 'Service role or trusted database scheduler required';
+  end if;
+  for v_group in
+    select o.restaurant_id, sum(o.maree_fee)::numeric(10,2) as commission_total
+    from public.orders o
+    where o.status = 'delivered' and o.delivered_at >= v_start::timestamptz
+      and o.delivered_at < (v_end + 1)::timestamptz and coalesce(o.maree_fee,0) > 0
+    group by o.restaurant_id
+  loop
+    insert into public.maree_monthly_commission_invoices
+      (restaurant_id,period_start,period_end,due_date,commission_total)
+    values (v_group.restaurant_id,v_start,v_end,v_end + 7,v_group.commission_total)
+    on conflict (restaurant_id,period_start) do nothing
+    returning id into v_invoice;
+    if v_invoice is not null then
+      insert into public.maree_monthly_commission_invoice_items
+        (invoice_id,order_id,commission_amount,product_subtotal,fulfilment,delivered_at)
+      select v_invoice,o.id,o.maree_fee,o.product_subtotal,o.fulfilment,o.delivered_at
+      from public.orders o
+      where o.restaurant_id=v_group.restaurant_id and o.status='delivered'
+        and o.delivered_at >= v_start::timestamptz and o.delivered_at < (v_end+1)::timestamptz
+        and coalesce(o.maree_fee,0) > 0;
+      v_count := v_count + 1;
+    end if;
+    v_invoice := null;
+  end loop;
+  return v_count;
+end;
+$function$;
+revoke all on function public.generate_maree_monthly_commission_invoices(date) from public, anon, authenticated;
+grant execute on function public.generate_maree_monthly_commission_invoices(date) to service_role;
+
+-- Restaurant declares an off-platform payment; only Marée admin can verify receipt.
+create or replace function public.declare_maree_commission_invoice_paid(
+  p_invoice_id uuid, p_payment_method text default null, p_payment_reference text default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  v_user_id uuid := (select auth.uid());
+  v_restaurant_id uuid;
+  v_role public.app_role;
+begin
+  if v_user_id is null then raise exception 'Authentication required'; end if;
+  select p.role into v_role from public.profiles p where p.id=v_user_id;
+  if v_role is distinct from 'restaurant'::public.app_role then
+    raise exception 'Only restaurant accounts can declare this payment';
+  end if;
+  select i.restaurant_id into v_restaurant_id from public.maree_monthly_commission_invoices i
+  where i.id=p_invoice_id and i.status='open' for update;
+  if not found or v_restaurant_id <> v_user_id then raise exception 'Open commission invoice not found'; end if;
+  update public.maree_monthly_commission_invoices
+  set status='declared_paid',declared_at=now(),declared_by=v_user_id,
+      payment_method=nullif(left(trim(coalesce(p_payment_method,'')),80),''),
+      payment_reference=nullif(left(trim(coalesce(p_payment_reference,'')),160),'')
+  where id=p_invoice_id;
+end;
+$function$;
+revoke all on function public.declare_maree_commission_invoice_paid(uuid,text,text) from public, anon;
+grant execute on function public.declare_maree_commission_invoice_paid(uuid,text,text) to authenticated;
+
+create or replace function public.verify_maree_commission_invoice_paid(p_invoice_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+begin
+  if not private.is_current_user_admin() then raise exception 'Admin access required'; end if;
+  update public.maree_monthly_commission_invoices
+  set status='paid',verified_at=now(),verified_by=(select auth.uid())
+  where id=p_invoice_id and status='declared_paid';
+  if not found then raise exception 'Declared commission invoice not found'; end if;
+end;
+$function$;
+revoke all on function public.verify_maree_commission_invoice_paid(uuid) from public, anon;
+grant execute on function public.verify_maree_commission_invoice_paid(uuid) to authenticated;
+
+comment on table public.maree_monthly_commission_invoices is 'Monthly 6.5% commission statements owed by restaurants to Marée; distinct from fisher product invoices. Restaurant declarations require separate admin verification.';
+
+-- Replace the monthly job so both separate statement families are generated.
+select cron.unschedule(jobid) from cron.job where jobname = 'maree-monthly-fisher-invoices';
+select cron.schedule(
+  'maree-monthly-fisher-invoices',
+  '0 3 1 * *',
+  $job$select public.generate_fisher_monthly_invoices((date_trunc('month', now()) - interval '1 month')::date); select public.generate_maree_monthly_commission_invoices((date_trunc('month', now()) - interval '1 month')::date);$job$
+);
