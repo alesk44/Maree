@@ -123,7 +123,7 @@ function AuthPage() {
       }
     } catch (error) {
       const message = error as AuthError;
-      toast.error(message?.message ?? t("La connexion a échoué."));
+      toast.error(t("La connexion a échoué."));
     } finally {
       setBusy(false);
     }
@@ -139,7 +139,7 @@ function AuthPage() {
       if (error) throw error;
     } catch (error) {
       const message = error as AuthError;
-      toast.error(message?.message ?? t("La connexion avec Google a échoué."));
+      toast.error(t("La connexion avec Google a échoué."));
       setBusy(false);
     }
   };
@@ -159,13 +159,13 @@ function AuthPage() {
       business_email: businessProfile.business_email.trim() || null,
     }).eq("id", user.id);
     setProfileBusy(false);
-    if (error) toast.error(error.message);
+    if (error) toast.error(t("Une erreur technique est survenue. Réessayez."));
     else toast.success(t("Profil restaurant enregistré."));
   };
 
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
-    if (error) toast.error(error.message);
+    if (error) toast.error(t("Une erreur technique est survenue. Réessayez."));
     else {
       setSessionEmail(null);
       toast.success(t("Vous êtes déconnecté."));
