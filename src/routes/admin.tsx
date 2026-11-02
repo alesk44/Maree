@@ -44,6 +44,15 @@ function Admin() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const reviewDocument = async (documentId: string, reviewStatus: "pending" | "approved" | "rejected" | "not_applicable") => {
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) { toast.error(t("Session administrateur requise.")); return; }
+    const { error: updateError } = await supabase.from("verification_documents").update({ review_status: reviewStatus, reviewed_at: new Date().toISOString(), reviewed_by: user.id }).eq("id", documentId);
+    if (updateError) { toast.error(updateError.message); return; }
+    setDocuments((current) => current.map((doc) => doc.id === documentId ? { ...doc, review_status: reviewStatus } : doc));
+    toast.success(t("Statut du justificatif mis à jour."));
+  };
+
   const loadRequests = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -189,7 +198,7 @@ function Admin() {
                 <pre className="mt-2 whitespace-pre-wrap break-words text-xs">{JSON.stringify(request.compliance_details ?? {}, null, 2)}</pre>
                 <p className="mt-2 text-xs text-muted-foreground">{t("Déclarations à contrôler avec les justificatifs avant approbation.")}</p>
               </div>}
-              {request.requested_role === "fisher" && <section className="grid gap-2 rounded-lg border p-4"><h3 className="font-semibold">{t("Justificatifs privés")}</h3>{documents.filter((doc) => doc.request_id === request.id).length === 0 ? <p className="text-sm text-muted-foreground">{t("Aucun justificatif déposé.")}</p> : documents.filter((doc) => doc.request_id === request.id).map((doc) => <div key={doc.id} className="flex flex-wrap items-center justify-between gap-2 border-b py-2 last:border-0"><div><p className="text-sm font-medium">{t(doc.document_type)} · {doc.original_filename}</p><p className="text-xs text-muted-foreground">{doc.expires_at ? t("Expiration") + " : " + doc.expires_at : t("Expiration non renseignée")} · {doc.review_status}{doc.expires_at && new Date(doc.expires_at + "T00:00:00") < new Date() ? " · " + t("Expiré") : doc.expires_at && new Date(doc.expires_at + "T00:00:00") < new Date(Date.now() + 30*86400000) ? " · " + t("Expire sous 30 jours") : ""}</p></div>{doc.signed_url && <a className="text-sm underline" href={doc.signed_url} target="_blank" rel="noreferrer">{t("Ouvrir (lien privé 5 min)")}</a>}</div>)}</section>}
+              {request.requested_role === "fisher" && <section className="grid gap-2 rounded-lg border p-4"><h3 className="font-semibold">{t("Justificatifs privés")}</h3>{documents.filter((doc) => doc.request_id === request.id).length === 0 ? <p className="text-sm text-muted-foreground">{t("Aucun justificatif déposé.")}</p> : documents.filter((doc) => doc.request_id === request.id).map((doc) => <div key={doc.id} className="flex flex-wrap items-center justify-between gap-2 border-b py-2 last:border-0"><div><p className="text-sm font-medium">{t(doc.document_type)} · {doc.original_filename}</p><p className="text-xs text-muted-foreground">{doc.expires_at ? t("Expiration") + " : " + doc.expires_at : t("Expiration non renseignée")} · {doc.review_status}{doc.expires_at && new Date(doc.expires_at + "T00:00:00") < new Date() ? " · " + t("Expiré") : doc.expires_at && new Date(doc.expires_at + "T00:00:00") < new Date(Date.now() + 30*86400000) ? " · " + t("Expire sous 30 jours") : ""}</p><select className="field mt-1 text-xs" value={doc.review_status} onChange={(event) => void reviewDocument(doc.id, event.target.value as "pending" | "approved" | "rejected" | "not_applicable")}><option value="pending">{t("À examiner")}</option><option value="approved">{t("Validé")}</option><option value="rejected">{t("Refusé")}</option><option value="not_applicable">{t("Non applicable")}</option></select></div>{doc.signed_url && <a className="text-sm underline" href={doc.signed_url} target="_blank" rel="noreferrer">{t("Ouvrir (lien privé 5 min)")}</a>}</div>)}</section>}
               <label className="grid gap-1 text-sm font-medium">
                 {t("Note à l’utilisateur (facultatif)")}
                 <textarea className="field" rows={2} maxLength={2000} value={notes[request.id] ?? ""} onChange={(event) => setNotes((current) => ({ ...current, [request.id]: event.target.value }))} />
