@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(175);
+select plan(179);
 
 -- Isolated auth users; the auth trigger creates their initial restaurant profiles.
 insert into auth.users (id, email) values
@@ -412,6 +412,19 @@ select is(
   1::bigint,
   'fisher invoice includes its delivered order detail line'
 );
+select is(
+  public.generate_fisher_monthly_invoices((current_date - interval '1 month')::date),
+  0,
+  'rerunning fisher monthly generation creates no duplicate invoice'
+);
+select is(
+  (select count(*) from public.fisher_monthly_invoice_items i
+   join public.fisher_monthly_invoices f on f.id=i.invoice_id
+   where f.restaurant_id='00000000-0000-4000-8000-000000000003'
+     and f.fisher_id='00000000-0000-4000-8000-000000000001'),
+  1::bigint,
+  'rerunning fisher monthly generation does not duplicate invoice items'
+);
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
 select is((select count(*) from public.fisher_monthly_invoices),1::bigint,'fisher can read their own monthly product invoice');
@@ -504,6 +517,18 @@ select is(
    where m.restaurant_id='00000000-0000-4000-8000-000000000004'),
   1::bigint,
   'monthly commission statement includes its order detail line'
+);
+select is(
+  public.generate_maree_monthly_commission_invoices(current_date),
+  0,
+  'rerunning Marée commission generation creates no duplicate invoice'
+);
+select is(
+  (select count(*) from public.maree_monthly_commission_invoice_items i
+   join public.maree_monthly_commission_invoices m on m.id=i.invoice_id
+   where m.restaurant_id='00000000-0000-4000-8000-000000000004'),
+  1::bigint,
+  'rerunning Marée commission generation does not duplicate invoice items'
 );
 
 insert into public.maree_monthly_commission_invoices
