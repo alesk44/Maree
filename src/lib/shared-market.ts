@@ -132,6 +132,10 @@ export async function setRestaurantFisherBillingMode(fisherId:string,mode:"immed
   if(authError) throw authError;
   if(!user) throw new Error("Connectez-vous avec votre compte restaurant.");
   const {error}=await supabase.from("restaurant_fisher_billing_settings").upsert({restaurant_id:user.id,fisher_id:fisherId,billing_mode:mode,updated_at:new Date().toISOString()},{onConflict:"restaurant_id,fisher_id"});
+  if(error && (error.code==="42P01" || error.code==="PGRST205")) {
+    if(mode==="monthly") throw new Error("La facturation mensuelle sera disponible après validation de la migration Marée. Choisissez temporairement la facturation à chaque commande.");
+    return;
+  }
   if(error) throw error;
 }
 
