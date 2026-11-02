@@ -833,3 +833,33 @@ Object.assign(translations, {
   "Pour toute question sur la vérification, utilisez les coordonnées indiquées dans les mentions légales.": ["For verification questions, use the contact details in the legal notice.", "Pentru întrebări despre verificare, folosiți datele de contact din informațiile legale."],
   "Demande enregistrée, mais l’e-mail automatique n’a pas pu partir. Utilisez les coordonnées des mentions légales pour contacter l’équipe.": ["Your request was saved, but the automatic email could not be sent. Use the contact details in the legal notice to reach the team.", "Cererea a fost salvată, dar e-mailul automat nu a putut fi trimis. Folosiți datele de contact din informațiile legale pentru a contacta echipa."],
 });
+
+
+Object.assign(translations, {
+  "Dette pêcheurs": ["Owed to fishers", "Datorii către pescari"],
+  "Produits et pourboires non réglés": ["Unpaid products and tips", "Produse și bacșișuri neachitate"],
+  "Pourboires à reverser": ["Tips payable to fishers", "Bacșișuri de plătit pescarilor"],
+  "100 % destinés aux pêcheurs": ["100% goes to fishers", "100% pentru pescari"],
+  "Paiements pêcheurs confirmés": ["Payments to fishers confirmed", "Plăți către pescari confirmate"],
+  "Règlements enregistrés": ["Recorded settlements", "Decontări înregistrate"],
+  "Dette Marée à régler": ["Marée balance due", "Sold datorat către Marée"],
+  "Relevés ouverts ou en vérification": ["Statements open or awaiting verification", "Extrase deschise sau în curs de verificare"],
+  "Paiements Marée vérifiés": ["Marée payments verified", "Plăți Marée verificate"],
+  "Pourboire au pêcheur (£)": ["Tip for the fisher (£)", "Bacșiș pentru pescar (£)"],
+  "Facultatif — 100 % du pourboire revient au pêcheur, sans commission Marée.": ["Optional — 100% of the tip goes to the fisher, with no Marée commission.", "Opțional — 100% din bacșiș revine pescarului, fără comision Marée."],
+  "Pourboire intégral au pêcheur": ["Full tip to the fisher", "Bacșiș integral pentru pescar"],
+  "Le montant produits et le pourboire reviennent intégralement au pêcheur. Le pourboire n'est pas soumis à commission. La commission de 6,5 % revient à Marée pour chaque achat ; les frais de livraison de 20 % sont appliqués uniquement en livraison. GST non ajouté.": ["The product amount and tip go entirely to the fisher. Tips are not commissionable. Marée receives 6.5% commission on every purchase; the 20% delivery fee applies only to delivery. No GST added.", "Suma produselor și bacșișul revin integral pescarului. Bacșișurile nu sunt comisionate. Marée primește un comision de 6,5% pentru fiecare achiziție; taxa de livrare de 20% se aplică doar la livrare. GST nu este adăugat."],
+  "Produits vendus": ["Products sold", "Produse vândute"],
+  "Montant produits brut": ["Gross product amount", "Valoare brută produse"],
+  "Pourboires reçus": ["Tips earned", "Bacșișuri primite"],
+  "100 % pour vous, sans commission": ["100% for you, no commission", "100% pentru dvs., fără comision"],
+  "À recevoir": ["Receivable", "De încasat"],
+  "Commandes et relevés non réglés": ["Unpaid orders and statements", "Comenzi și extrase neachitate"],
+  "Paiements reçus": ["Payments received", "Plăți primite"],
+  "Règlements confirmés": ["Confirmed settlements", "Decontări confirmate"],
+  "Pourboires": ["Tips", "Bacșișuri"],
+  "Pourboire": ["Tip", "Bacșiș"],
+  "Confirmer le règlement reçu": ["Confirm payment received", "Confirmă plata primită"],
+  "Réglé": ["Settled", "Achitat"],
+  "Impossible de charger les comptes financiers : schéma Supabase incomplet ou non synchronisé. ": ["Unable to load financial accounts: the Supabase schema is incomplete or out of sync. ", "Nu se pot încărca conturile financiare: schema Supabase este incompletă sau nesincronizată. "]
+});
