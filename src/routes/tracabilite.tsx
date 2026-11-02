@@ -23,13 +23,17 @@ function classifyCode(raw: string): ScanResult {
   if (/^https:\/\//i.test(value)) return { raw: value, kind: /\/(01)\d{14}/.test(value) || /\/(10|21)\//.test(value) ? "gs1" : "url" };
   if (/^https?:\/\//i.test(value) || /^(javascript|data|file|intent):/i.test(value)) throw new Error("URL refusée : seules les adresses HTTPS sont acceptées.");
   if (/^\d{8,14}$/.test(value)) return { raw: value, kind: "gs1" };
-  if (value.length > 0 && value.length <= 240) return { raw: value, kind: "identifier" };
+  if (value.length > 0 && value.length <= 2048) return { raw: value, kind: "identifier" };
   throw new Error("Code invalide ou trop long.");
 }
 
 function safeExternalUrl(value: string) {
   const url = new URL(value);
-  if (url.protocol !== "https:" || url.username || url.password || url.hostname === "localhost" || url.hostname.endsWith(".local") || !url.hostname.includes(".")) {
+  const host = url.hostname.toLowerCase();
+  const isIpLiteral = /^(?:\d{1,3}\.){3}\d{1,3}$/.test(host) || host.startsWith("[");
+  if (url.protocol !== "https:" || url.username || url.password || isIpLiteral ||
+      host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") ||
+      host.endsWith(".internal") || !host.includes(".")) {
     throw new Error("Cette adresse externe n'est pas considérée comme sûre.");
   }
   return url.toString();
