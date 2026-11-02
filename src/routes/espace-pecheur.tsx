@@ -52,8 +52,11 @@ function FisherSpace() {
   const deliveredOrders=myOrders.filter(o=>o.status==="delivered");
   const immediateReceivables=deliveredOrders.filter(o=>o.billing_mode==="immediate"&&o.fisher_payment_status==="unpaid");
   const openMonthlyInvoices=monthlyInvoices.filter(i=>i.status==="open");
+  const openMonthlyOrderIds=new Set(openMonthlyInvoices.flatMap(i=>i.items?.map(item=>item.order_id)??[]));
+  const monthlyUnbilled=deliveredOrders.filter(o=>o.billing_mode==="monthly"&&o.fisher_payment_status==="unpaid"&&!openMonthlyOrderIds.has(o.id));
   const receivableTotal=immediateReceivables.reduce((sum,o)=>sum+Number(o.product_subtotal??0)+Number(o.tip_amount??0),0)
-    +openMonthlyInvoices.reduce((sum,i)=>sum+Number(i.subtotal)+Number(i.tip_total??0),0);
+    +openMonthlyInvoices.reduce((sum,i)=>sum+Number(i.subtotal)+Number(i.tip_total??0),0)
+    +monthlyUnbilled.reduce((sum,o)=>sum+Number(o.product_subtotal??0)+Number(o.tip_amount??0),0);
   const tipsEarned=deliveredOrders.reduce((sum,o)=>sum+Number(o.tip_amount??0),0);
   const paymentsReceived=deliveredOrders.filter(o=>o.fisher_payment_status==="paid").reduce((sum,o)=>sum+Number(o.product_subtotal??0)+Number(o.tip_amount??0),0)
     +monthlyInvoices.filter(i=>i.status==="paid").reduce((sum,i)=>sum+Number(i.subtotal)+Number(i.tip_total??0),0);
