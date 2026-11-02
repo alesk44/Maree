@@ -25,9 +25,10 @@ export function NotificationCenter() {
 
   useEffect(() => {
     let active = true;
+    let generation = 0;
     let channel: ReturnType<typeof supabase.channel> | null = null;
 
-    const load = async (id: string) => {
+    const load = async (id: string, requestGeneration: number) => {
       setLoading(true);
       const [rows, unreadCount] = await Promise.all([
         supabase
@@ -42,26 +43,29 @@ export function NotificationCenter() {
           .eq("user_id", id)
           .is("read_at", null),
       ]);
-      if (active && !rows.error) setItems((rows.data ?? []) as NotificationRow[]);
-      if (active && !unreadCount.error) setUnread(unreadCount.count ?? 0);
-      if (active) setLoading(false);
+      if (active && requestGeneration === generation && !rows.error) setItems((rows.data ?? []) as NotificationRow[]);
+      if (active && requestGeneration === generation && !unreadCount.error) setUnread(unreadCount.count ?? 0);
+      if (active && requestGeneration === generation) setLoading(false);
     };
 
     const connect = async (id: string | null) => {
+      const requestGeneration = ++generation;
       if (channel) {
         await supabase.removeChannel(channel);
         channel = null;
       }
-      if (!active) return;
+      if (!active || requestGeneration !== generation) return;
       setUserId(id);
       setItems([]);
       setUnread(0);
       setOpen(false);
+      setLoading(Boolean(id));
       if (!id) {
+        setLoading(false);
         return;
       }
-      await load(id);
-      if (!active) return;
+      await load(id, requestGeneration);
+      if (!active || requestGeneration !== generation) return;
       channel = supabase
         .channel("user-notifications-" + id)
         .on("postgres_changes", {
@@ -69,7 +73,7 @@ export function NotificationCenter() {
           schema: "public",
           table: "notifications",
           filter: "user_id=eq." + id,
-        }, () => { if (active) void load(id); })
+        }, () => { if (active && requestGeneration === generation) void load(id, requestGeneration); })
         .subscribe();
     };
 
@@ -98,6 +102,7 @@ export function NotificationCenter() {
       .is("read_at", null);
     if (!error) {
       setItems((current) => current.map((item) => item.id === id ? { ...item, read_at: readAt } : item));
+      setUnread((current) => Math.max(0, current - 1));
     }
   };
 
