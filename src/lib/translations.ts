@@ -765,3 +765,18 @@ Object.assign(translations, {
   "Espace privé : seuls vous et l’administration autorisée peuvent consulter les fichiers. PDF, JPG ou PNG — 10 Mo maximum par fichier.": ["Private storage: only you and authorised administrators can view these files. PDF, JPG or PNG — maximum 10 MB per file.", "Spațiu privat: doar dumneavoastră și administratorii autorizați pot consulta aceste fișiere. PDF, JPG sau PNG — maximum 10 MB per fișier."],
   "Méthode :": ["Method:", "Metodă:"],
 });
+
+Object.assign(translations, {
+  "Accueil": ["Home", "Acasă"],
+  "Connexion / Créer un compte": ["Sign in / Create account", "Autentificare / Creează un cont"],
+  "Mon compte": ["My account", "Contul meu"],
+  "Vérification": ["Verification", "Verificare"],
+  "Espace pêcheur": ["Fisher workspace", "Spațiul pescarului"],
+  "Admin": ["Admin", "Administrator"],
+  "Guide": ["Guide", "Ghid"],
+  "Recettes": ["Recipes", "Rețete"],
+  "Scanner QR": ["QR scanner", "Scaner QR"],
+  "Pêcheur": ["Fisher", "Pescar"],
+  "Marée Jersey — marché local de produits de la mer": ["Marée Jersey — local seafood marketplace", "Marée Jersey — piață locală de produse marine"],
+  "Des produits de la mer frais de Jersey, directement des pêcheurs aux cuisines professionnelles.": ["Fresh Jersey seafood, directly from local fishers to professional kitchens.", "Produse marine proaspete din Jersey, direct de la pescari către bucătăriile profesionale."],
+});
