@@ -70,7 +70,10 @@ export async function reserveSharedCatch(input:{catchId:string;qtyKg:number;slot
 export type SharedOrderRow = {
   id:string; catch_id:string; restaurant_id:string; quantity_kg:number|string;
   requested_slot:string; fulfilment:"delivery"|"collection"; note:string|null;
-  status:"submitted"|"confirmed"|"ready"|"delivered"|"cancelled"; created_at:string;\n  fisher_id_snapshot:string|null; unit_price_snapshot:number|string|null; product_subtotal:number|string|null;\n  delivery_fee_rate:number|string; delivery_fee:number|string; total_amount:number|string|null;\n  billing_mode:"immediate"|"monthly"; delivered_at:string|null;
+  status:"submitted"|"confirmed"|"ready"|"delivered"|"cancelled"; created_at:string;
+  fisher_id_snapshot:string|null; unit_price_snapshot:number|string|null; product_subtotal:number|string|null;
+  delivery_fee_rate:number|string; delivery_fee:number|string; total_amount:number|string|null;
+  billing_mode:"immediate"|"monthly"; delivered_at:string|null;
 };
 
 export async function fetchMyOrders():Promise<SharedOrderRow[]> {
