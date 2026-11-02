@@ -14,7 +14,7 @@ export const Route = createFileRoute("/admin")({
   component: Admin,
 });
 
-type AdminOrder = { id: string; catch_id: string; quantity_kg: number; status: string; created_at: string };
+type AdminOrder = { id: string; catch_id: string; quantity_kg: number; status: string; created_at: string; product_subtotal:number|string|null; maree_fee:number|string|null; delivery_fee:number|string|null };
 type AdminCatch = { id: string; species: string; price_per_kg: number; fisher_id: string };
 type AdminCommissionInvoice = { id:string; restaurant_id:string; period_start:string; period_end:string; due_date:string; commission_total:number|string; status:"open"|"declared_paid"|"paid"|"void"; declared_at:string|null; payment_method:string|null; payment_reference:string|null };
 type VerificationDocument = { id:string; request_id:string; original_filename:string; document_type:string; file_path:string; expires_at:string|null; review_status:string; reviewer_note:string|null; signed_url?:string|null };
@@ -126,10 +126,15 @@ function Admin() {
       } else setDocuments([]);
 
       // Dashboard figures are secondary: a metrics/RLS issue must not block approvals.
-      const [{ data: orderRows, error: orderError }, { data: catchRows, error: catchError }] = await Promise.all([
-        supabase.from("orders").select("id,catch_id,quantity_kg,status,created_at").order("created_at", { ascending: false }),
-        supabase.from("catches").select("id,species,price_per_kg,fisher_id"),
-      ]);
+      let { data: orderRows, error: orderError } = await supabase.from("orders")
+        .select("id,catch_id,quantity_kg,status,created_at,product_subtotal,maree_fee,delivery_fee")
+        .order("created_at", { ascending: false });
+      if (orderError && ["42703","PGRST204","PGRST200"].includes(orderError.code ?? "")) {
+        const legacy = await supabase.from("orders").select("id,catch_id,quantity_kg,status,created_at").order("created_at", { ascending: false });
+        orderError = legacy.error;
+        orderRows = (legacy.data ?? []).map((row) => ({ ...row, product_subtotal:null, maree_fee:0, delivery_fee:0 })) as typeof orderRows;
+      }
+      const { data: catchRows, error: catchError } = await supabase.from("catches").select("id,species,price_per_kg,fisher_id");
       if (!orderError) setAllOrders((orderRows ?? []) as AdminOrder[]);
       if (!catchError) setAllCatches((catchRows ?? []) as AdminCatch[]);
       const { data: commissionRows, error: commissionError } = await supabase
@@ -190,22 +195,24 @@ function Admin() {
       </header>
 
       {isAdmin && !loading && (() => {
-        const lotById = new Map(allCatches.map((lot) => [lot.id, lot]));
-        const deliveredBase = allOrders.filter((order) => order.status === "delivered").reduce((sum, order) => sum + (Number(lotById.get(order.catch_id)?.price_per_kg ?? 0) * Number(order.quantity_kg)), 0);
+        const deliveredOrders = allOrders.filter((order) => order.status === "delivered");
+        const deliveredBase = deliveredOrders.reduce((sum, order) => sum + Number(order.product_subtotal ?? 0), 0);
+        const mareeCommission = deliveredOrders.reduce((sum, order) => sum + Number(order.maree_fee ?? 0), 0);
+        const mareeDelivery = deliveredOrders.reduce((sum, order) => sum + Number(order.delivery_fee ?? 0), 0);
         const fmt = (value: number) => new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(value);
         return <section className="grid gap-4">
-          <div><h2 className="font-display text-2xl font-semibold">{t("Vue d’ensemble de la plateforme")}</h2><p className="text-sm text-muted-foreground">{t("Estimations calculées sur le prix actuel des lots ; pas encore des encaissements réels.")}</p></div>
+          <div><h2 className="font-display text-2xl font-semibold">{t("Vue d’ensemble de la plateforme")}</h2><p className="text-sm text-muted-foreground">{t("Montants calculés à partir des snapshots de commande ; aucun encaissement réel n’est activé.")}</p></div>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <div className="card p-4"><p className="text-xs text-muted-foreground">{t("Commandes totales")}</p><p className="mt-1 text-2xl font-semibold">{allOrders.length}</p></div>
             <div className="card p-4"><p className="text-xs text-muted-foreground">{t("Volume livré (base)")}</p><p className="mt-1 text-2xl font-semibold">{fmt(deliveredBase)}</p></div>
-            <div className="card p-4"><p className="text-xs text-muted-foreground">{t("Part pêcheur (6,5 %)")}</p><p className="mt-1 text-2xl font-semibold">{fmt(deliveredBase * .065)}</p></div>
-            <div className="card p-4"><p className="text-xs text-muted-foreground">{t("Part restaurant (6,5 %)")}</p><p className="mt-1 text-2xl font-semibold">{fmt(deliveredBase * .065)}</p></div>
+            <div className="card p-4"><p className="text-xs text-muted-foreground">{t("Produits dus aux pêcheurs")}</p><p className="mt-1 text-2xl font-semibold">{fmt(deliveredBase)}</p></div>
+            <div className="card p-4"><p className="text-xs text-muted-foreground">{t("Commission Marée (6,5 %)")}</p><p className="mt-1 text-2xl font-semibold">{fmt(mareeCommission)}</p></div>
           </div>
           <div className="card flex flex-wrap items-center justify-between gap-3 p-5">
             <div><p className="text-sm text-muted-foreground">{t("Commission Marée Jersey estimée (13 %) sur commandes livrées")}</p><p className="font-display text-3xl font-semibold text-accent">{fmt(deliveredBase * .13)}</p></div>
             <div className="text-sm text-muted-foreground">{t("En attente")}: <strong>{allOrders.filter((order) => !["delivered", "cancelled"].includes(order.status)).length}</strong></div>
           </div>
-          <p className="text-xs text-muted-foreground">{t("Important : les prix sont relus depuis les lots, pas figés à la réservation. Ces chiffres sont provisoires. Aucun paiement ni prélèvement de commission n’est activé. La commission totale de 13 % est répartie entre 6,5 % côté pêcheur et 6,5 % côté restaurant.")}</p>
+          <p className="text-xs text-muted-foreground">{t("Les montants proviennent des prix et frais figés à la réservation : le pêcheur reçoit le sous-total produits, Marée facture 6,5 % au restaurant sur chaque achat et les frais de livraison de 20 % ne s’appliquent qu’en livraison. Aucun paiement réel n’est activé.")}</p>
         </section>;
       })()}
       {isAdmin && !loading && <section className="card grid gap-3 p-5">
