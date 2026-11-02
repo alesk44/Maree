@@ -1,10 +1,36 @@
 # Marée Jersey — feuille de route vivante
 
-> **Mise à jour 2 novembre 2026 : paiements reportés à la demande du propriétaire. Aucun PSP n'est sélectionné. Le compte Revolut personnel ne sera pas utilisé pour l'activité commerciale. Le reste du produit (sécurité, UX, tests, conformité) continue indépendamment. La commission 13 % reste une simulation non encaissée.**
+> **Mise à jour 2 novembre 2026 : modèle commercial révisé à la demande du propriétaire. La livraison facturée au restaurant correspond à 20 % du sous-total produits et revient intégralement à Marée Jersey ; le retrait est gratuit. Aucun prélèvement automatique ni PSP n'est activé. La facturation mensuelle par couple restaurant/pêcheur, l'échéance à J+7 après fin de mois et le blocage après au moins 3 factures mensuelles échues impayées sont à développer. L'ancienne simulation de commission 6,5 % + 6,5 % / 13 % est obsolète et ne doit plus être affichée. Les frais GST restent désactivés tant que le statut et le traitement fiscal de Marée Jersey ne sont pas confirmés.**
 
 Dernière revue : 2 novembre 2026 — tous les contrôles automatisés réussis sur `c4634ae5368ac5d4a738bb28f316ddcded27a20d` (Verify, Build verification, Marée CI, Supabase migrations/pgTAP et déploiement de prévisualisation Cloudflare).  
 Branche de travail : `feature/supabase-shared-data-v2`  
 Règle de livraison : aucun merge sur `main`, aucun déploiement public et aucune mise en production sans validation explicite du propriétaire.
+
+
+## P0 — nouveau chantier commercial : livraison et facturation mensuelle (décision propriétaire, 2 novembre 2026)
+
+### Règles validées
+- [ ] Frais de livraison : 20 % du sous-total des produits, facturés au restaurant et attribués à Marée Jersey à 100 % ; retrait au port gratuit.
+- [ ] Afficher séparément le montant des produits dû au pêcheur, les frais de livraison dus à Marée Jersey et le total restaurant. Aucun frais GST ne doit être ajouté avant confirmation du statut GST et du traitement applicable.
+- [ ] Enregistrer côté serveur un instantané immuable du prix/kg, de la quantité, du sous-total produits, du taux et montant de livraison, du total et du mode de remise au moment de la réservation. Ne jamais recalculer une ancienne commande à partir du prix actuel du lot.
+- [ ] Permettre au restaurant de choisir le paiement à la commande ou le relevé mensuel par pêcheur ; enregistrer la préférence par restaurant et pêcheur.
+- [ ] Regrouper les commandes livrées/terminées par restaurant, pêcheur et mois civil. Échéance : 7 jours calendaires après la fin du mois concerné.
+- [ ] Séparer les sommes dues au pêcheur des frais dus à Marée Jersey ; produire des relevés distincts et un historique d'audit.
+- [ ] Enregistrer le règlement d'une facture par le pêcheur concerné ou un administrateur ; un restaurant ne peut pas s'auto-déclarer payé. Conserver date, auteur, mode et référence du règlement.
+- [ ] Bloquer côté serveur toute nouvelle réservation du restaurant auprès de n'importe quel pêcheur dès qu'il existe au moins 3 factures mensuelles échues et impayées. Débloquer lorsque le nombre repasse sous 3.
+- [ ] Rendre la génération des factures mensuelles idempotente et empêcher les doublons ; gérer annulations, commandes partiellement livrées et ajustements sans modifier l'historique.
+- [ ] Ajouter des tests pgTAP pour snapshots, arrondis GBP, frais livraison/retrait, séparation des bénéficiaires, échéances, doublons, permissions de règlement et blocage/déblocage inter-pêcheurs.
+- [ ] Corriger l'écran restaurant et tous les libellés qui affichent encore la commission obsolète de 6,5 % côté restaurant et côté pêcheur.
+
+### Séquence d'implémentation
+1. Migration additive et RPC de réservation : snapshots tarifaires et frais calculés exclusivement côté serveur.
+2. Préférences de facturation et génération mensuelle idempotente des factures/relevés.
+3. Règlement sécurisé et règle de blocage dans la transaction de réservation.
+4. Interfaces restaurant, pêcheur et admin, puis tests inter-comptes.
+
+### Limites actuelles
+- Ce chantier ne met pas en place de paiement en ligne, prélèvement automatique ou PSP ; le statut « payé » doit refléter un règlement confirmé hors plateforme.
+- La livraison est un revenu de Marée Jersey selon la décision produit ; le contrat commercial et le traitement GST doivent être validés avant facturation réelle.
 
 ## Nouvelle fonctionnalité prioritaire — QR de traçabilité des lots
 
