@@ -60,7 +60,7 @@ export function getSeasonalSeafood(month: number): SeasonalSeafood[] {
       imageSourceUrl: "https://commons.wikimedia.org/wiki/File:Homarus_gammarus_001.jpg",
     },
     {
-      name: "European sea bass", nameFr: "Bar", nameRo: "Biban de mare", slug: "bar",
+      name: "Bass", nameFr: "Bar", nameRo: "Biban de mare", slug: "bar",
       ...daily,
       imageUrl: "https://commons.wikimedia.org/wiki/Special:FilePath/Dicentrarchus_labrax.jpeg",
       imageCredit: "Dezidor",
@@ -95,7 +95,7 @@ export function getSeasonalSeafood(month: number): SeasonalSeafood[] {
       name: "Ormers", nameFr: "Ormeaux de Jersey", nameRo: "Abalone (ormers)", slug: "ormeaux",
       status: "restricted",
       months: "1 October–30 April; authorised lunar opening days only",
-      note: "Strictly regulated: collection is allowed only on specific authorised opening days and subject to licence conditions. Never imply general daily availability.",
+      note: "Strictly regulated: collection is allowed only on specific new-moon or full-moon opening days and subject to licence conditions. Never imply general daily availability.",
       noteFr: "Pêche strictement réglementée : uniquement certains jours d’ouverture autorisés et sous réserve des conditions de licence. Ne jamais présenter comme disponible tous les jours.",
       noteRo: "Recoltarea este strict reglementată: doar în anumite zile autorizate și cu respectarea licenței. Nu prezentați produsul ca disponibil zilnic.",
       source: "Government of Jersey",
