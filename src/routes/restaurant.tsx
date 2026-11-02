@@ -144,7 +144,7 @@ function Restaurant() {
               <option value="immediate">{t("À chaque commande")}</option><option value="monthly">{t("Relevé mensuel (échéance à 7 jours)")}</option>
             </select>
           </label>
-          <label className="grid gap-1 text-sm font-medium">{t("Créneau (heure de Jersey)")
+          <label className="grid gap-1 text-sm font-medium">{t("Créneau (heure de Jersey)")}
             <input className="field" type="datetime-local" required value={slot} onChange={(e) => setSlot(e.target.value)} />
           </label>
           <label className="grid gap-1 text-sm font-medium">{t("Note")}
