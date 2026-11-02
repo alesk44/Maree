@@ -188,7 +188,7 @@ function TraceabilityScanner() {
       const { error: saveError } = await supabase.rpc("attach_external_traceability", {
         p_catch_id: accountRole === "fisher" ? selectedTarget : null,
         p_order_id: accountRole === "restaurant" ? selectedTarget : null,
-        p_source_kind: externalUrl ? "url" : result.kind === "gs1" ? "gs1" : "identifier",
+        p_source_kind: result.kind === "gs1" ? "gs1" : externalUrl ? "url" : "identifier",
         p_external_code: result.raw,
         p_source_url: externalUrl,
         p_supplier_name: supplierName.trim(),
@@ -211,7 +211,7 @@ function TraceabilityScanner() {
   };
 
   let externalUrl: string | null = null;
-  if (result?.kind === "url") {
+  if (result && /^https:\/\//i.test(result.raw)) {
     try { externalUrl = safeExternalUrl(result.raw); } catch { /* Display as untrusted text only. */ }
   }
 
