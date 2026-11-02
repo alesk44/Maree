@@ -69,3 +69,89 @@ on conflict (user_id) do nothing;
 
 -- In local CI databases this real production account is absent, so the SELECT
 -- inserts zero rows. The production migration grants admin only if the account exists.
+
+-- The separate admin grant must authorize the existing verification workflow too.
+-- Keep legacy profile.role='admin' accounts working during the transition.
+drop policy if exists "Admins can read verification requests" on public.verification_requests;
+create policy "Admins can read verification requests"
+on public.verification_requests for select to authenticated
+using (
+  (select private.is_current_user_admin())
+  or exists (
+    select 1 from public.profiles p
+    where p.id = (select auth.uid()) and p.role = 'admin'::public.app_role
+  )
+);
+
+drop policy if exists "Admins can review verification requests" on public.verification_requests;
+create policy "Admins can review verification requests"
+on public.verification_requests for update to authenticated
+using (
+  (select private.is_current_user_admin())
+  or exists (
+    select 1 from public.profiles p
+    where p.id = (select auth.uid()) and p.role = 'admin'::public.app_role
+  )
+)
+with check (
+  (select private.is_current_user_admin())
+  or exists (
+    select 1 from public.profiles p
+    where p.id = (select auth.uid()) and p.role = 'admin'::public.app_role
+  )
+);
+
+-- Use the same separate admin grant in the transactional review RPC.
+create or replace function public.review_verification_request(
+  p_request_id uuid,
+  p_status public.verification_status,
+  p_reviewer_note text default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  v_admin uuid := (select auth.uid());
+  v_req public.verification_requests%rowtype;
+begin
+  if v_admin is null or not (
+    private.is_current_user_admin()
+    or exists (
+      select 1 from public.profiles p
+      where p.id = v_admin and p.role = 'admin'::public.app_role
+    )
+  ) then
+    raise exception 'Admin access required';
+  end if;
+  if p_status not in ('approved'::public.verification_status, 'rejected'::public.verification_status) then
+    raise exception 'Invalid review status';
+  end if;
+  if p_reviewer_note is not null and length(p_reviewer_note) > 2000 then
+    raise exception 'Reviewer note is too long';
+  end if;
+  select * into v_req
+  from public.verification_requests
+  where id = p_request_id
+  for update;
+  if not found then raise exception 'Verification request not found'; end if;
+  if v_req.status <> 'pending' then raise exception 'Request has already been reviewed'; end if;
+
+  update public.verification_requests
+  set status = p_status,
+      reviewer_note = nullif(trim(p_reviewer_note), ''),
+      reviewed_by = v_admin,
+      reviewed_at = now()
+  where id = p_request_id;
+
+  if p_status = 'approved' then
+    update public.profiles
+    set role = v_req.requested_role
+    where id = v_req.user_id;
+  end if;
+end;
+$function$;
+
+revoke all on function public.review_verification_request(uuid, public.verification_status, text) from public, anon;
+grant execute on function public.review_verification_request(uuid, public.verification_status, text) to authenticated;
