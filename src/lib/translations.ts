@@ -783,3 +783,7 @@ Object.assign(translations, {
 Object.assign(translations, {
   "4. GST — Jersey": ["4. GST in Jersey", "4. GST în Jersey"],
 });
+
+Object.assign(translations, {
+  "Statut : {status}": ["Status: {status}", "Stare: {status}"],
+});
