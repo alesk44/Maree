@@ -72,6 +72,7 @@ export type SharedOrderRow = {
   requested_slot:string; fulfilment:"delivery"|"collection"; note:string|null;
   status:"submitted"|"confirmed"|"ready"|"delivered"|"cancelled"; created_at:string;
   fisher_id_snapshot:string|null; unit_price_snapshot:number|string|null; product_subtotal:number|string|null;
+  maree_fee_rate:number|string; maree_fee:number|string;
   delivery_fee_rate:number|string; delivery_fee:number|string; total_amount:number|string|null;
   billing_mode:"immediate"|"monthly"; delivered_at:string|null;
 };
@@ -81,10 +82,34 @@ export async function fetchMyOrders():Promise<SharedOrderRow[]> {
   if(authError) throw authError;
   if(!user) return [];
   const {data,error}=await supabase.from("orders")
-    .select("id,catch_id,restaurant_id,quantity_kg,requested_slot,fulfilment,note,status,created_at,fisher_id_snapshot,unit_price_snapshot,product_subtotal,delivery_fee_rate,delivery_fee,total_amount,billing_mode,delivered_at")
+    .select("id,catch_id,restaurant_id,quantity_kg,requested_slot,fulfilment,note,status,created_at,fisher_id_snapshot,unit_price_snapshot,product_subtotal,maree_fee_rate,maree_fee,delivery_fee_rate,delivery_fee,total_amount,billing_mode,delivered_at")
     .order("created_at",{ascending:false});
   if(error) throw error;
   return (data??[]) as SharedOrderRow[];
+}
+
+export type SharedMonthlyInvoiceRow = {
+  id:string; restaurant_id:string; fisher_id:string; period_start:string; period_end:string;
+  due_date:string; subtotal:number|string; status:"open"|"paid"|"void";
+  paid_at:string|null; payment_method:string|null; payment_reference:string|null;
+};
+
+export async function fetchMyMonthlyInvoices():Promise<SharedMonthlyInvoiceRow[]> {
+  const {data:{user},error:authError}=await supabase.auth.getUser();
+  if(authError) throw authError;
+  if(!user) return [];
+  const {data,error}=await supabase.from("fisher_monthly_invoices")
+    .select("id,restaurant_id,fisher_id,period_start,period_end,due_date,subtotal,status,paid_at,payment_method,payment_reference")
+    .order("period_start",{ascending:false});
+  if(error) throw error;
+  return (data??[]) as SharedMonthlyInvoiceRow[];
+}
+
+export async function confirmFisherInvoicePaid(invoiceId:string,paymentMethod:string|null,paymentReference:string|null):Promise<void> {
+  const {error}=await supabase.rpc("mark_fisher_invoice_paid",{
+    p_invoice_id:invoiceId,p_payment_method:paymentMethod,p_payment_reference:paymentReference
+  });
+  if(error) throw error;
 }
 
 export async function setRestaurantFisherBillingMode(fisherId:string,mode:"immediate"|"monthly"):Promise<void>{
