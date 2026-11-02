@@ -90,7 +90,7 @@ declare
   v_order public.orders%rowtype;
 begin
   if v_user_id is null then raise exception 'Authentication required'; end if;
-  if p_penalty is null or p_penalty < 0 then raise exception 'Invalid cancellation penalty'; end if;
+  if p_penalty is null or p_penalty < 0 or p_penalty::text in ('NaN','Infinity','-Infinity') then raise exception 'Invalid cancellation penalty'; end if;
   select p.role into v_role from public.profiles p where p.id = v_user_id;
   if v_role is distinct from 'fisher'::public.app_role then
     raise exception 'Only fisher accounts can decide late cancellations';
