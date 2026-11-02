@@ -146,7 +146,7 @@ export const translations: Record<string, readonly [string, string]> = {
   "Guide de mise en route": ["Getting started guide", "Ghid de început"],
   "Ce prototype fonctionne sans compte, sans clé API et sans service payant.": ["This prototype works without an account, API key or paid service.", "Acest prototip funcționează fără cont, cheie API sau serviciu plătit."],
   "Ouvrez": ["Open", "Deschideți"],
-  ": [": filter, search and sort by freshness.", ": filtrați, căutați și sortați după prospețime."],
+  ": filtrez, recherchez, triez par fraîcheur.": [": filter, search and sort by freshness.", ": filtrați, căutați și sortați după prospețime."],
   "Dans": ["In", "În"],
   ", choisissez un profil de démo et publiez une prise ; modifiez quantité, prix ou statut.": [", choose a demo profile and post a catch; edit quantity, price or status.", ", alegeți un profil demo și publicați o captură; modificați cantitatea, prețul sau starea."],
   ", envoyez une demande de réservation.": [", submit a reservation request.", ", trimiteți o cerere de rezervare."],
