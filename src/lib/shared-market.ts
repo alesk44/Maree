@@ -89,10 +89,14 @@ export async function fetchMyOrders():Promise<SharedOrderRow[]> {
     // Keep the current production-connected preview usable until the protected
     // commercial migration is approved and applied. Legacy orders show no fee snapshot.
     const legacy=await supabase.from("orders")
-      .select("id,catch_id,restaurant_id,quantity_kg,requested_slot,fulfilment,note,status,created_at,fisher_id_snapshot,unit_price_snapshot,product_subtotal,delivery_fee_rate,delivery_fee,total_amount,billing_mode,delivered_at")
+      .select("id,catch_id,restaurant_id,quantity_kg,requested_slot,fulfilment,note,status,created_at")
       .order("created_at",{ascending:false});
     if(legacy.error) throw legacy.error;
-    return (legacy.data??[]).map(row=>({...row,maree_fee_rate:0,maree_fee:0})) as SharedOrderRow[];
+    return (legacy.data??[]).map(row=>({
+      ...row,fisher_id_snapshot:null,unit_price_snapshot:null,product_subtotal:null,
+      maree_fee_rate:0,maree_fee:0,delivery_fee_rate:0,delivery_fee:0,
+      total_amount:null,billing_mode:"immediate" as const,delivered_at:null
+    })) as SharedOrderRow[];
   }
   if(error) throw error;
   return (data??[]) as SharedOrderRow[];
