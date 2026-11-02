@@ -75,6 +75,7 @@ export type SharedOrderRow = {
   maree_fee_rate:number|string; maree_fee:number|string;
   delivery_fee_rate:number|string; delivery_fee:number|string; total_amount:number|string|null;
   billing_mode:"immediate"|"monthly"; delivered_at:string|null;
+  cancellation_request_status:"none"|"pending"|"approved"|"rejected"; cancellation_requested_at:string|null; cancellation_penalty:number|string|null;
 };
 
 export async function fetchMyOrders():Promise<SharedOrderRow[]> {
@@ -83,7 +84,7 @@ export async function fetchMyOrders():Promise<SharedOrderRow[]> {
   if(!user) return [];
   const query = supabase.from("orders");
   const {data,error}=await query
-    .select("id,catch_id,restaurant_id,quantity_kg,requested_slot,fulfilment,note,status,created_at,fisher_id_snapshot,unit_price_snapshot,product_subtotal,maree_fee_rate,maree_fee,delivery_fee_rate,delivery_fee,total_amount,billing_mode,delivered_at")
+    .select("id,catch_id,restaurant_id,quantity_kg,requested_slot,fulfilment,note,status,created_at,fisher_id_snapshot,unit_price_snapshot,product_subtotal,maree_fee_rate,maree_fee,delivery_fee_rate,delivery_fee,total_amount,billing_mode,delivered_at,cancellation_request_status,cancellation_requested_at,cancellation_penalty")
     .order("created_at",{ascending:false});
   if(error && (error.code==="42703" || error.code==="PGRST204" || error.code==="PGRST200")) {
     // Keep the current production-connected preview usable until the protected
@@ -95,7 +96,8 @@ export async function fetchMyOrders():Promise<SharedOrderRow[]> {
     return (legacy.data??[]).map(row=>({
       ...row,fisher_id_snapshot:null,unit_price_snapshot:null,product_subtotal:null,
       maree_fee_rate:0,maree_fee:0,delivery_fee_rate:0,delivery_fee:0,
-      total_amount:null,billing_mode:"immediate" as const,delivered_at:null
+      total_amount:null,billing_mode:"immediate" as const,delivered_at:null,
+      cancellation_request_status:"none" as const,cancellation_requested_at:null,cancellation_penalty:0
     })) as SharedOrderRow[];
   }
   if(error) throw error;
@@ -181,4 +183,10 @@ export async function updateMyCatch(id:string,patch:{remainingKg?:number;priceKg
 export async function updateMyOrderStatus(id:string,status:"confirmed"|"ready"|"delivered"|"cancelled"):Promise<void>{
   const {error}=await supabase.rpc("update_order_status",{p_order_id:id,p_status:status});
   if(error) throw error;
+}
+
+export async function requestMyOrderCancellation(id:string):Promise<"cancelled"|"requested">{
+  const {data,error}=await supabase.rpc("request_order_cancellation",{p_order_id:id});
+  if(error) throw error;
+  return data as "cancelled"|"requested";
 }
