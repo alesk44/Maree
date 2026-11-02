@@ -64,7 +64,7 @@ function TraceabilityScanner() {
   const [scanning, setScanning] = useState(false);
   const [accountRole, setAccountRole] = useState<"fisher" | "restaurant" | null>(null);
   const [targets, setTargets] = useState<Array<{ id: string; label: string }>>([]);
-  const [records, setRecords] = useState<Array<{ id: string; supplier_name: string; species: string; quantity_kg: number | string; received_at: string }>>([]);
+  const [records, setRecords] = useState<Array<{ id: string; supplier_name: string | null; species: string | null; quantity_kg: number | string | null; received_at: string | null }>>([]);
   const [selectedTarget, setSelectedTarget] = useState("");
   const [supplierName, setSupplierName] = useState("");
   const [species, setSpecies] = useState("");
@@ -113,7 +113,7 @@ function TraceabilityScanner() {
           const options = (data ?? []).map((order) => ({ id: order.id, label: `${order.status} · ${new Date(order.requested_slot).toLocaleDateString()} · ${order.id.slice(0, 8)}` }));
           if (active) { setTargets(options); setSelectedTarget(options[0]?.id ?? ""); }
         }
-        const { data: saved, error: recordsError } = await supabase.from("traceability_records").select("id,supplier_name,species,quantity_kg,received_at").order("created_at", { ascending: false }).limit(30);
+        const { data: saved, error: recordsError } = await supabase.from("catch_traceability_codes").select("id,supplier_name,species,quantity_kg,received_at").order("created_at", { ascending: false }).limit(30);
         if (recordsError) throw recordsError;
         if (active) setRecords(saved ?? []);
       } catch {
@@ -173,6 +173,11 @@ function TraceabilityScanner() {
       setError(fr ? "Impossible de lire cette image." : ro ? "Imaginea nu poate fi citită." : "Could not read this image.");
     }
   };
+  let externalUrl: string | null = null;
+  if (result && /^https:\/\//i.test(result.raw)) {
+    try { externalUrl = safeExternalUrl(result.raw); } catch { /* Display as untrusted text only. */ }
+  }
+
   const saveTraceability = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!result || !accountRole || !selectedTarget) return;
@@ -199,7 +204,7 @@ function TraceabilityScanner() {
       });
       if (saveError) throw saveError;
       setTraceNotice(fr ? "Référence enregistrée dans l'historique de traçabilité." : ro ? "Referința a fost salvată în istoricul trasabilității." : "Reference saved to the traceability history.");
-      const { data: saved, error: recordsError } = await supabase.from("traceability_records").select("id,supplier_name,species,quantity_kg,received_at").order("created_at", { ascending: false }).limit(30);
+      const { data: saved, error: recordsError } = await supabase.from("catch_traceability_codes").select("id,supplier_name,species,quantity_kg,received_at").order("created_at", { ascending: false }).limit(30);
       if (recordsError) throw recordsError;
       setRecords(saved ?? []);
       setNote("");
@@ -209,11 +214,6 @@ function TraceabilityScanner() {
       setSaving(false);
     }
   };
-
-  let externalUrl: string | null = null;
-  if (result && /^https:\/\//i.test(result.raw)) {
-    try { externalUrl = safeExternalUrl(result.raw); } catch { /* Display as untrusted text only. */ }
-  }
 
   return <div className="mx-auto max-w-3xl px-4 py-10">
     <PageHeader title={words.title} sub={words.subtitle} />
@@ -266,8 +266,8 @@ function TraceabilityScanner() {
         <h3 className="font-semibold">{fr ? "Historique récent" : ro ? "Istoric recent" : "Recent history"}</h3>
         <ul className="mt-3 grid gap-2 text-sm">
           {records.map((record) => <li key={record.id} className="flex flex-wrap justify-between gap-2 border-b border-border pb-2 last:border-0">
-            <span>{record.species} · {record.supplier_name} · {Number(record.quantity_kg).toFixed(2)} kg</span>
-            <span className="text-muted-foreground">{new Date(record.received_at).toLocaleString()}</span>
+            <span>{record.species ?? (fr ? "Espèce non renseignée" : ro ? "Specie nespecificată" : "Species not provided")} · {record.supplier_name ?? (fr ? "Fournisseur non renseigné" : ro ? "Furnizor nespecificat" : "Supplier not provided")} · {record.quantity_kg == null ? "—" : `${Number(record.quantity_kg).toFixed(2)} kg`}</span>
+            <span className="text-muted-foreground">{record.received_at ? new Date(record.received_at).toLocaleString() : (fr ? "Date inconnue" : ro ? "Dată necunoscută" : "Date unknown")}</span>
           </li>)}
         </ul>
       </div>}
