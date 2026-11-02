@@ -2,7 +2,7 @@ import { useLanguage } from "@/lib/i18n";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { fetchMyOrders, fetchMyMonthlyInvoices, reserveSharedCatch, setRestaurantFisherBillingMode, useSharedMarket, type SharedOrderRow, type SharedMonthlyInvoiceRow } from "@/lib/shared-market";
+import { fetchMyOrders, fetchMyMonthlyInvoices, fetchMyMareeCommissionInvoices, declareMareeCommissionInvoicePaid, reserveSharedCatch, setRestaurantFisherBillingMode, useSharedMarket, type SharedOrderRow, type SharedMonthlyInvoiceRow, type SharedMareeCommissionInvoiceRow } from "@/lib/shared-market";
 import { supabase } from "@/lib/supabase";
 import { Empty, OrderSteps, PageHeader } from "@/components/ui-bits";
 
@@ -25,6 +25,7 @@ function Restaurant() {
   const { catches, fishers, loading, error, refresh } = useSharedMarket();
   const [orders, setOrders] = useState<SharedOrderRow[]>([]);
   const [monthlyInvoices, setMonthlyInvoices] = useState<SharedMonthlyInvoiceRow[]>([]);
+  const [mareeInvoices, setMareeInvoices] = useState<SharedMareeCommissionInvoiceRow[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [catchId, setCatchId] = useState(produit ?? "");
   const [qty, setQty] = useState(2);
@@ -45,9 +46,10 @@ function Restaurant() {
         const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", auth.user.id).maybeSingle();
         setProfileName(profile?.display_name ?? "");
       }
-      const [nextOrders,nextInvoices] = await Promise.all([fetchMyOrders(),fetchMyMonthlyInvoices()]);
+      const [nextOrders,nextInvoices,nextMareeInvoices] = await Promise.all([fetchMyOrders(),fetchMyMonthlyInvoices(),fetchMyMareeCommissionInvoices()]);
       setOrders(nextOrders);
       setMonthlyInvoices(nextInvoices);
+      setMareeInvoices(nextMareeInvoices);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t("Impossible de charger les commandes."));
     } finally { setOrdersLoading(false); }
@@ -104,6 +106,26 @@ function Restaurant() {
         <Metric label={t("Produits dus aux pêcheurs")} value={gbp(orders.filter(o=>o.status==="delivered").reduce((sum,o)=>sum+Number(o.product_subtotal??0),0))} detail={t("Sous-total produits")}/>
         <Metric label={t("Commission Marée (6,5 %)")} value={gbp(orders.filter(o=>o.status==="delivered").reduce((sum,o)=>sum+Number(o.maree_fee??0),0))} detail={t("Sur chaque achat, livraison ou retrait")}/>
         <Metric label={t("Livraison Marée (20 %)")} value={gbp(orders.filter(o=>o.status==="delivered").reduce((sum,o)=>sum+Number(o.delivery_fee??0),0))} detail={t("Uniquement si livraison")}/>
+      </div>
+      <div className="grid gap-2">
+        <h3 className="font-semibold">{t("Relevés mensuels de commission Marée")}</h3>
+        <p className="text-xs text-muted-foreground">{t("Ces relevés concernent uniquement la commission de 6,5 % due à Marée par le restaurant. Ils sont distincts des factures produits dues aux pêcheurs. Une déclaration de paiement reste à vérifier par l’administration.")}</p>
+        {mareeInvoices.length===0 ? <Empty>{t("Aucun relevé mensuel de commission pour le moment.")}</Empty> :
+          <ul className="grid gap-2">{mareeInvoices.map(i=><li key={i.id} className="rounded-xl border border-border p-4">
+            <div className="flex flex-wrap justify-between gap-2"><strong>{t("Période")} {i.period_start} — {i.period_end}</strong><strong>{gbp(Number(i.commission_total))}</strong></div>
+            <p className="text-sm text-muted-foreground">{t("Échéance")} : {i.due_date} · {i.status==="paid"?t("Paiement vérifié par Marée"):i.status==="declared_paid"?t("Paiement déclaré — vérification Marée en attente"):i.status==="void"?t("Annulé"):t("À régler à Marée")}</p>
+            {i.payment_method&&<p className="text-xs text-muted-foreground">{t("Mode")} : {i.payment_method} {i.payment_reference?("· "+t("Référence")+" : "+i.payment_reference):""}</p>}
+            {i.status==="open"&&<button type="button" className="btn btn-accent mt-3" onClick={async()=>{
+              const method=window.prompt(t("Mode de paiement effectué (ex. virement bancaire)"));
+              if(method===null)return;
+              const reference=window.prompt(t("Référence du paiement (facultatif)"));
+              try {
+                await declareMareeCommissionInvoicePaid(i.id,method,reference);
+                toast.success(t("Paiement déclaré. Il sera vérifié par l’administration Marée."));
+                await loadOrders();
+              } catch(e) { toast.error(e instanceof Error?e.message:t("Impossible de déclarer le paiement.")); }
+            }}>{t("Déclarer le paiement effectué")}</button>}
+          </li>)}</ul>}
       </div>
       <div className="grid gap-2">
         <h3 className="font-semibold">{t("Factures mensuelles des pêcheurs")}</h3>
