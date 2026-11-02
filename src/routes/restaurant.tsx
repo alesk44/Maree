@@ -2,7 +2,7 @@ import { useLanguage } from "@/lib/i18n";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { fetchMyOrders, fetchMyMonthlyInvoices, fetchMyMareeCommissionInvoices, declareMareeCommissionInvoicePaid, reserveSharedCatch, setRestaurantFisherBillingMode, useSharedMarket, type SharedOrderRow, type SharedMonthlyInvoiceRow, type SharedMareeCommissionInvoiceRow } from "@/lib/shared-market";
+import { fetchMyOrders, fetchMyMonthlyInvoices, fetchMyMareeCommissionInvoices, declareMareeCommissionInvoicePaid, reserveSharedCatch, requestMyOrderCancellation, setRestaurantFisherBillingMode, useSharedMarket, type SharedOrderRow, type SharedMonthlyInvoiceRow, type SharedMareeCommissionInvoiceRow } from "@/lib/shared-market";
 import { supabase } from "@/lib/supabase";
 import { Empty, OrderSteps, PageHeader } from "@/components/ui-bits";
 
@@ -236,7 +236,7 @@ function Restaurant() {
             return <li key={o.id} className="card p-4">
               <div className="flex justify-between gap-2"><strong>{c?.emoji} {t(c?.species ?? "Produit")} · {Number(o.quantity_kg)} kg</strong><span className="text-sm">{c ? gbp(c.priceKg * Number(o.quantity_kg)) : ""}</span></div>
               <p className="mb-3 text-sm text-muted-foreground">{t(o.fulfilment === "delivery" ? "Livraison" : "Retrait")} · {dt(o.requested_slot)}</p>
-              {o.status==="cancelled"?<span className="inline-flex rounded-full bg-destructive/15 px-2.5 py-1 text-xs font-semibold text-destructive">{t("Annulée")}</span>:<OrderSteps s={status} />}
+              {o.status==="cancelled"?<><span className="inline-flex rounded-full bg-destructive/15 px-2.5 py-1 text-xs font-semibold text-destructive">{t("Annulée")}</span>{Number(o.cancellation_penalty??0)>0&&<p className="mt-2 text-sm">{t("Pénalité décidée par le pêcheur")} : <strong>{gbp(Number(o.cancellation_penalty))}</strong></p>}</>:<><OrderSteps s={status} />{o.cancellation_request_status==="pending"&&<p className="mt-2 rounded-lg bg-secondary p-3 text-sm">{t("Demande d’annulation tardive envoyée. En attente de la décision du pêcheur.")}</p>}{(o.status==="submitted"||o.status==="confirmed")&&o.cancellation_request_status!=="pending"&&<div className="mt-3 rounded-lg border border-border p-3"><p className="text-xs text-muted-foreground">{new Date(o.requested_slot).getTime()-Date.now()>=24*60*60*1000?t("Annulation gratuite possible jusqu’à 24 h avant le créneau."):t("Moins de 24 h avant le créneau : le pêcheur décide s’il accepte l’annulation et fixe toute pénalité éventuelle.")}</p><button type="button" className="btn mt-2 w-full text-sm" onClick={async()=>{try{const result=await requestMyOrderCancellation(o.id);toast.success(result==="cancelled"?t("Commande annulée gratuitement."):t("Demande transmise au pêcheur pour décision."));await loadOrders();await refresh();}catch(e){toast.error(e instanceof Error?t(e.message):t("Impossible de demander l’annulation."));}}}>{t("Demander l’annulation")}</button></div>}</>}
             </li>;
           })}</ul>}
       </section>
