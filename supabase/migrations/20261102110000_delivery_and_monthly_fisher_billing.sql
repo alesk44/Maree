@@ -482,7 +482,7 @@ $function$;
 revoke all on function public.verify_maree_commission_invoice_paid(uuid) from public, anon;
 grant execute on function public.verify_maree_commission_invoice_paid(uuid) to authenticated;
 
-comment on table public.maree_monthly_commission_invoices is 'Monthly 6.5% commission statements owed by restaurants to Marée; distinct from fisher product invoices. Restaurant declarations require separate admin verification.';
+comment on table public.maree_monthly_commission_invoices is 'Monthly restaurant statements itemising Marée commission and delivery charges; distinct from fisher product invoices. Restaurant declarations require separate admin verification.';
 
 -- One scheduled SQL statement invokes both independent invoice generators.
 create or replace function public.generate_monthly_billing_statements(p_month date)
