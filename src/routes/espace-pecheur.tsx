@@ -92,7 +92,7 @@ function FisherSpace() {
     if(!form.species.trim()||!form.zone.trim()||!form.caughtAt||!form.landedAt) { toast.error(t("Espèce, zone et horaires sont requis.")); return; }
     const caught=new Date(form.caughtAt), landed=new Date(form.landedAt);
     if(!Number.isFinite(caught.getTime())||!Number.isFinite(landed.getTime())||landed<caught) { toast.error(t("Les horaires de capture et de débarquement sont invalides.")); return; }
-    if(landed>Date.now()) { toast.error(t("L’heure de débarquement ne peut pas être dans le futur. Vérifiez l’heure locale et réessayez.")); return; }
+    if(landed.getTime()>Date.now()) { toast.error(t("L’heure de débarquement ne peut pas être dans le futur. Vérifiez l’heure locale et réessayez.")); return; }
     if(!me.method.trim()) { toast.error(t("Renseignez d’abord votre méthode de pêche dans Mon profil professionnel.")); setAccountTab("profile"); return; }
     if(!Number.isFinite(form.qtyKg)||form.qtyKg<0.5||!Number.isFinite(form.priceKg)||form.priceKg<0) { toast.error(t("Quantité ou prix invalide.")); return; }
     try {
