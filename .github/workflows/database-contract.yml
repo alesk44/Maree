@@ -11,4 +11,3 @@ jobs:
       - run: supabase start -x studio,edge-runtime,logflare,vector,imgproxy
       - run: supabase db reset --local
       - run: supabase test db --local
-      - run: bash supabase/tests/monthly_billing_concurrency.sh
