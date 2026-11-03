@@ -251,11 +251,11 @@ function Restaurant() {
           {sel && <div className="rounded-lg bg-secondary p-4 text-sm">
             <p className="font-semibold">{t("Résumé")}</p>
             <p>{qty} kg de {t(sel.species)} × {gbp(sel.priceKg)} = <strong>{gbp(estimatedSubtotal)}</strong></p>
-            <p>{t("Commission Marée Jersey (6,5 %, tous modes)")} : <strong>{gbp(estimatedMareeFee)}</strong></p>
+            <p>{t("Commission Marée Jersey ({rate} %, tous modes)",{rate:(mareeFeeRate*100).toFixed(2)})} : <strong>{gbp(estimatedMareeFee)}</strong></p>
             <p>{t("Frais de livraison")} ({(deliveryFeeRate*100).toFixed(2)} %) : <strong>{gbp(estimatedDeliveryFee)}</strong> · {t("Payeur")} : <strong>{t(deliveryFeePayer==='buyer'?'Restaurant':'Pêcheur')}</strong></p>
             <p>{t("Pourboire intégral au pêcheur")} : <strong>{gbp(tipAmount)}</strong></p>
             <p>{t("Total estimé pour le restaurant")} : <strong>{gbp(estimatedTotal)}</strong></p>
-            <p className="text-xs text-muted-foreground">{t("Le montant produits et le pourboire reviennent intégralement au pêcheur. Le pourboire n'est pas soumis à commission. La commission de 6,5 % revient à Marée pour chaque achat ; les frais de livraison de 20 % sont appliqués uniquement en livraison. GST non ajouté.")}</p>
+            <p className="text-xs text-muted-foreground">{t("Le montant produits et le pourboire reviennent intégralement au pêcheur. Le pourboire n'est pas soumis à commission. La commission de {(mareeFeeRate*100).toFixed(2)} % revient à Marée pour chaque achat ; les frais de livraison de {(deliveryFeeRate*100).toFixed(2)} % sont appliqués uniquement en livraison. GST non ajouté.")}</p>
             <p className="text-muted-foreground">{fishers.find((f) => f.id === sel.fisherId)?.boat} · {t(mode)}</p>
           </div>}
           <button className="btn" disabled={!signedIn}>{t("Envoyer la réservation")}</button>

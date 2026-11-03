@@ -686,6 +686,7 @@ Object.assign(translations, {
   "Payeur": ["Payer", "Plătitor"],
   "Commission Marée ({rate} %)": ["Marée commission ({rate}%)", "Comision Marée ({rate}%)"],
   "Frais de livraison Marée ({rate} %)": ["Marée delivery fee ({rate}%)", "Taxă de livrare Marée ({rate}%)"],
+  "Commission Marée Jersey ({rate} %, tous modes)": ["Marée commission ({rate}%, all order types)", "Comision Marée ({rate}%, toate comenzile)"],
 });
 
 // Complete translations for order management and cancellation flows.
