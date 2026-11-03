@@ -7,33 +7,48 @@ Branche : work/next-isolated-audit
 
 Les PR #3 et #5 restent non fusionnées. Leurs branches ont divergé de main (PR #3 : +233/-6 ; PR #5 : +255/-6 depuis le merge-base 805af6f498274d38045315f6e245ee7dca46a86f). Pas de merge global : les deux branches se recouvrent sur les routes, migrations, fonctions Edge, profils, traductions et politiques.
 
-La branche main possède déjà la route /admin/email-review, les RPC et migrations de jetons email, ainsi qu'un workflow CI. La route UI et les migrations email des PR ne doivent pas être recopiées.
+La branche main possède déjà la route /admin/email-review, les RPC et migrations de jetons email, le scanner /tracabilite, et un workflow CI. Ces éléments ne doivent pas être dupliqués depuis les anciennes PR.
 
-## Correctif effectué
+## Correctif CI / TypeScript
 
-- TypeScript signalait six accès à des propriétés d'un objet Record via la notation pointée dans src/lib/maree-api.ts (TS4111).
-- Ces six accès ont été remplacés par la notation indexée, sans changer les valeurs ni la logique métier.
-- Le workflow Verify a été renforcé pour exécuter TypeScript et ESLint, en plus des tests et du build.
-- Le workflow de déploiement Cloudflare n'a pas été modifié.
+- Le run CI intermédiaire a révélé six TS4111 dans src/lib/maree-api.ts : les clés d'un Record étaient lues avec la notation pointée.
+- Les six accès ont été convertis en accès indexés sans changement fonctionnel.
+- Le premier ajout du contrôle TypeScript à Verify a révélé que le routeTree généré était incomplet lorsque tsc s'exécutait avant le build.
+- Le workflow Verify est donc ordonné : install frozen, build (génère les routes), TypeScript, ESLint, tests.
+- Le run du commit précédent a échoué avant cette correction d'ordre ; le résultat du nouveau run est à confirmer.
 
-## Résultats des contrôles observés
+## État réel de la base Supabase (lecture seule, 2026-11-03)
 
-Sur le commit intermédiaire d75b5a91be704306b7dbd7d77a41d93825c0a191 :
-- Le workflow Verify a réussi : installation frozen, tests et build.
-- Le workflow Marée CI a échoué à l'étape TypeScript avec six erreurs TS4111 dans src/lib/maree-api.ts.
-- Le workflow Marée CI a été déclenché par une modification temporaire du workflow ci.yml ; cette modification a ensuite été annulée afin de ne pas créer un deuxième pipeline redondant.
-- Le correctif TS4111 est maintenant appliqué sur cette branche, mais son résultat doit être confirmé par le prochain run.
+Projet maree-jersey : ACTIVE_HEALTHY, PostgreSQL 17.11, région eu-west-2.
 
-## Risques de la traçabilité QR
+La liste des migrations live confirme que la traçabilité est déjà déployée, contrairement à ce que laissait penser le draft PR #5 :
+- add_catch_traceability (version live 20261102055937)
+- external_traceability_records
+- index_traceability_and_compliance_foreign_keys
+- consolidate_permissive_rls_policies
+- harden_traceability_role_guard (version live 20261103112321)
+- reconcile_monthly_invoice_generators (version live 20261103115826)
 
-1. Le scanner de PR #5 écrit le code puis l'événement dans deux requêtes distinctes : le code peut être enregistré sans son événement.
-2. Le scanner n'associe pas l'order_id ; l'association à une commande n'est donc pas implémentée.
-3. Le scanner affiche des messages d'erreur Supabase bruts.
-4. Le rôle et la liste des lots filtrés dans le client ne constituent pas une autorisation ; la RLS doit rester l'autorité.
-5. Le SQL doit être validé contre le schéma réel des commandes et des prises.
-6. Ajouter des tests RLS négatifs pour autre pêcheur, restaurant sans commande, anon, acteur falsifié, commande étrangère, ainsi que des tests d'interdiction UPDATE/DELETE.
-7. Le SQL existe à la fois dans drafts et dans une migration versionnée ; garder le brouillon comme seule source tant que la revue n'est pas terminée.
-8. Les codes externes doivent rester non vérifiés jusqu'à une validation humaine. Pas d'ouverture automatique d'URL scannée.
+Schéma live vérifié :
+- catch_traceability_codes possède catch_id, order_id, raw_code, code_type, source_url, verification_status, scanned_by, supplier_name, received_at, species, quantity_kg et note.
+- catch_traceability_events possède catch_id, order_id, event_type, quantity_kg, note, metadata, actor_id et timestamps.
+- Les rôles authenticated ont SELECT sur les deux tables, pas d'INSERT direct. Les insertions sont donc prévues via RPC.
+- La route src/routes/tracabilite.tsx de main utilise effectivement attach_external_traceability, pas deux insertions client séparées.
+- La RPC attach_external_traceability est SECURITY DEFINER, search_path vide, vérifie auth.uid(), le rôle fisher/restaurant, les champs, HTTPS, l'appartenance du catch au pêcheur ou de la commande au restaurant, et la cohérence catch/commande. Elle insère le code et l'événement dans la même transaction PL/pgSQL.
+- Les politiques SELECT autorisent les propriétaires du catch, le restaurant lié à la commande et l'admin. Aucune politique d'UPDATE/DELETE n'a été observée pour les tables de traçabilité.
+
+## Résultats Advisors live
+
+Sécurité :
+- 14 fonctions SECURITY DEFINER sont exécutables par authenticated. Ce n'est pas automatiquement une vulnérabilité : chaque RPC doit être revue pour son contrôle auth.uid()/rôle/ressource. attach_external_traceability a été inspectée et comporte des gardes explicites.
+- 3 tables RLS sans policy : private.admin_users, private.verification_email_action_tokens et public.maree_commercial_settings. Les deux premières sont en schéma privé ; la troisième mérite une vérification distincte des grants et de son usage service-role.
+- Protection contre les mots de passe compromis désactivée dans Supabase Auth.
+- Liens de remédiation : https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable et https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection
+
+Performance :
+- 6 clés étrangères sans index couvrant, dont fisher_monthly_invoices.fisher_id, orders.fisher_id_snapshot et restaurant_fisher_billing_settings.fisher_id.
+- 14 index signalés comme inutilisés ; ne pas les supprimer sans mesures de charge et revue.
+- Lien : https://supabase.com/docs/guides/database/database-linter?lint=0001_unindexed_foreign_keys
 
 ## Console propriétaire / email
 
@@ -44,7 +59,8 @@ Sur le commit intermédiaire d75b5a91be704306b7dbd7d77a41d93825c0a191 :
 
 ## Garde-fous
 
-- Aucun code de migration QR appliqué à Supabase.
+- Aucun changement de schéma ou de données Supabase effectué : uniquement des SELECT et Advisors.
 - Aucune branche Supabase payante créée.
 - Aucun déploiement Cloudflare déclenché.
 - Aucun merge vers main effectué.
+- Les PR #3 et #5 restent ouvertes et intactes.
