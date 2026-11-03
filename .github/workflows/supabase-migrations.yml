@@ -10,7 +10,7 @@ on:
 
 concurrency:
   # Serialize all local Supabase jobs for this branch across both database workflows.
-  group: supabase-db-${{ github.event.pull_request.head.ref || github.ref_name }}
+  group: supabase-migrations-${{ github.event.pull_request.head.ref || github.ref_name }}
   cancel-in-progress: false
 
 jobs:
