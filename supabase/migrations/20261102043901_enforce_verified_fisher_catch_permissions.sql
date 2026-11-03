@@ -1,0 +1,5 @@
+-- Historical version is recorded as applied in production.
+-- The approved-fisher INSERT/UPDATE policies are established by
+-- 20261102043827_secure_fisher_compliance_documents_and_listing_gate.sql.
+-- Live pg_policies was checked read-only; retain this no-op so a fresh reset
+-- and production migration history use the same version sequence.

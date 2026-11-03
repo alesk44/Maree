@@ -1,0 +1,4 @@
+-- Duplicate historical ledger entry retained for version continuity.
+-- The compliance document table, private bucket and approved-fisher policies
+-- are established by 20261102043827_secure_fisher_compliance_documents_and_listing_gate.sql.
+-- Do not apply the same DDL twice.
