@@ -126,8 +126,9 @@ select is(
   'Marée invoice uniqueness holds after repeated generation'
 );
 
--- A due date equal to today is not overdue. Two genuinely overdue invoices
--- must still allow an order; the third overdue invoice must block it.
+-- The business rule is based on unpaid open notes, not only overdue notes:
+-- two open invoices still allow ordering; the third open invoice blocks it
+-- even when its due date is in the future.
 update public.fisher_monthly_invoices
 set due_date=current_date-1
 where restaurant_id='00000000-0000-4000-8000-000000000021'
@@ -138,9 +139,7 @@ insert into public.fisher_monthly_invoices
   (restaurant_id,fisher_id,period_start,period_end,due_date,subtotal,status)
 values
   ('00000000-0000-4000-8000-000000000021','00000000-0000-4000-8000-000000000023',
-   '2026-08-01','2026-08-31',current_date,10,'open'),
-  ('00000000-0000-4000-8000-000000000021','00000000-0000-4000-8000-000000000024',
-   '2026-07-01','2026-07-31',current_date-1,10,'open');
+   '2026-08-01','2026-08-31',current_date,10,'open');
 
 set local role authenticated;
 set local "request.jwt.claim.sub"='00000000-0000-4000-8000-000000000021';
@@ -153,11 +152,11 @@ select lives_ok(
 );
 reset role;
 
-update public.fisher_monthly_invoices
-set due_date=current_date-1
-where restaurant_id='00000000-0000-4000-8000-000000000021'
-  and fisher_id='00000000-0000-4000-8000-000000000023'
-  and period_start='2026-08-01';
+insert into public.fisher_monthly_invoices
+  (restaurant_id,fisher_id,period_start,period_end,due_date,subtotal,status)
+values
+  ('00000000-0000-4000-8000-000000000021','00000000-0000-4000-8000-000000000024',
+   '2026-07-01','2026-07-31',current_date+7,10,'open');
 
 set local role authenticated;
 set local "request.jwt.claim.sub"='00000000-0000-4000-8000-000000000021';
