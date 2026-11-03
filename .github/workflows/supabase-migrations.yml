@@ -9,8 +9,9 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: supabase-db-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  # Serialize all local Supabase jobs for this branch across both database workflows.
+  group: supabase-db-${{ github.event.pull_request.head.ref || github.ref_name }}
+  cancel-in-progress: false
 
 jobs:
   database-tests:
