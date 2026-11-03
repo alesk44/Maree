@@ -70,8 +70,11 @@ begin
     if not found then raise exception 'Catch lot not found'; end if;
     update public.catches
       set remaining_kg=remaining_kg+v_order.quantity_kg,
-          status=case when remaining_kg+v_order.quantity_kg>0
-            then 'available'::public.catch_status else 'sold_out'::public.catch_status end
+          status=case
+            when remaining_kg+v_order.quantity_kg<=0 then 'sold_out'::public.catch_status
+            when status='sold_out'::public.catch_status then 'available'::public.catch_status
+            else status
+          end
       where id=v_order.catch_id;
 
     update public.orders
