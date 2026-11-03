@@ -78,7 +78,7 @@ begin
   v_tip := round(p_tip_amount, 2);
 
   if (select count(*) from public.fisher_monthly_invoices i
-      where i.restaurant_id = v_user_id and i.status = 'open' and i.due_date < current_date) >= 3 then
+      where i.restaurant_id = v_user_id and i.status = 'open') >= 3 then
     raise exception 'Ordering is blocked: at least three monthly invoices are overdue and unpaid';
   end if;
 
