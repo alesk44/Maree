@@ -15,8 +15,8 @@ La branche main possède déjà la route /admin/email-review, les RPC et migrati
 - Les six accès ont été convertis en accès indexés sans changement fonctionnel.
 - Le premier ajout du contrôle TypeScript à Verify a révélé que le routeTree généré était incomplet lorsque tsc s'exécutait avant le build.
 - Le workflow Verify est ordonné : install frozen, contrôle Deno des deux fonctions Edge de vérification, build (génère les routes), TypeScript, ESLint, tests.
-- Dernier run complet sur le commit 447c38644d8d7c679448f98d5e8263d746e9eb96 : SUCCESS. Deno check des deux fonctions Edge, build, TypeScript, ESLint et tests Vitest sont tous verts.
-- Détails du run : https://github.com/alesk44/Maree/actions/runs/41640206066
+- Dernier run complet sur le commit `39566cc791a29d88ffe7ef80080c4c20f43cc22a` : SUCCESS. Deno check des deux fonctions Edge, build, TypeScript, ESLint et tests Vitest sont tous verts.
+- Détails du run : https://github.com/alesk44/Maree/actions/runs/41652386510
 
 ## État réel de la base Supabase (lecture seule, 2026-11-03)
 
@@ -48,7 +48,7 @@ Schéma live vérifié :
 - Point de durcissement initial : reserve_catch vérifiait le rôle restaurant et le lot disponible, mais ne revérifiait pas directement l'éligibilité du pêcheur à l'instant de la réservation. Le propriétaire pouvait être rétrogradé après publication et conserver un lot réservable.
 - Correctif isolé préparé dans supabase/migrations/20261103160000_recheck_fisher_eligibility_on_reservation.sql : la RPC verrouille la demande approuvée puis le profil du pêcheur (même ordre de verrouillage que review_verification_request), et refuse si la demande fisher approuvée ou le rôle fisher manque.
 - Contrat de régression ajouté dans supabase/tests/reserve_catch_fisher_eligibility_contract.test.sql : cas pêcheur rétrogradé, vérification encore pending, et pêcheur approuvé valide avec contrôle du stock. Le contrat vérifie aussi SECURITY DEFINER, search_path vide, EXECUTE pour authenticated/service_role et absence d'EXECUTE pour anon.
-- Important : cette migration et ce test sont uniquement sur la branche isolée. Ils n'ont pas été appliqués à Supabase production. Le workflow GitHub Verify ne lance pas actuellement les scripts pgTAP ; leur exécution SQL reste à faire dans une base locale/test isolée avant toute proposition de fusion. Le run Verify vert ne valide donc que build, TypeScript, ESLint et Vitest, pas les tests SQL.
+- Important : cette migration et ce test sont uniquement sur la branche isolée. Ils n'ont pas été appliqués à Supabase production. Le workflow `Database Contract` exécute désormais `supabase start`, `supabase db reset --local` et `supabase test db --local` ; les trois étapes ont réussi sur le commit `39566cc791a29d88ffe7ef80080c4c20f43cc22a`. Les tests pgTAP complets retournent `All tests successful`.
 - L'état live audité avant le patch comptait 1 lot disponible, 0 lot lié à un profil non-fisher et 0 lot disponible sans demande approuvée. Aucun cas anormal n'était présent.
 - La règle de blocage des commandes est à partir de 3 factures mensuelles ouvertes, échues et impayées ; le délai de 7 jours après la clôture mensuelle est appliqué dans la génération des factures. Le comportement observé correspond à la règle métier validée.
 
@@ -57,7 +57,7 @@ Schéma live vérifié :
 - `20261103160000_recheck_fisher_eligibility_on_reservation.sql` : contrôle rôle + demande fisher approuvée à la réservation.
 - `20261103170000_bind_email_review_action_to_token.sql` : lie l'action confirmée à l'action stockée dans le jeton, avant consommation ; l'ancien RPC à un argument est retiré et le nouveau reste service_role uniquement.
 - `20261103180000_add_missing_foreign_key_indexes.sql` : six index B-tree couvrant les clés étrangères signalées par l'Advisor.
-- Tests pgTAP ajoutés : `reserve_catch_fisher_eligibility_contract.test.sql`, `verification_email_action_contract.test.sql`, `foreign_key_index_contract.test.sql`. Ils ne sont pas encore exécutés dans une base locale/isolée ; le CI Verify ne les exécute pas.
+- Tests pgTAP ajoutés : `reserve_catch_fisher_eligibility_contract.test.sql`, `verification_email_action_contract.test.sql`, `foreign_key_index_contract.test.sql`. Ils ont été exécutés avec l'ensemble de la suite SQL dans Supabase local via GitHub Actions ; résultat : SUCCESS.
 
 ## Résultats Advisors live
 
@@ -85,8 +85,18 @@ Performance :
 
 ## Garde-fous
 
-- Aucun changement de schéma ou de données Supabase effectué : uniquement des SELECT et Advisors.
+- Aucun changement de schéma ou de données Supabase production effectué : uniquement des SELECT et Advisors.
 - Aucune branche Supabase payante créée.
 - Aucun déploiement Cloudflare déclenché.
 - Aucun merge vers main effectué.
-- Les PR #3 et #5 restent ouvertes et intactes.
+- Les PR #3 et #5 restent ouvertes et intactes ; leurs branches historiques ne doivent pas être fusionnées en bloc.
+
+## Validation finale de la branche isolée — 2026-11-03
+
+- HEAD : `39566cc791a29d88ffe7ef80080c4c20f43cc22a`.
+- `Verify` : SUCCESS — https://github.com/alesk44/Maree/actions/runs/41652386510.
+- `Database Contract` : SUCCESS — https://github.com/alesk44/Maree/actions/runs/41652386933. Démarrage Supabase local, reset complet et pgTAP réussis (`All tests successful`).
+- Le test historique `security_contract.test.sql` a été corrigé avec un fixture de pêcheur réellement approuvé ; le contrôle métier de réservation n'a pas été affaibli.
+- Le setup Supabase CLI est épinglé à `3.0.0` afin d'éviter la résolution `latest` qui avait échoué sur une limite de taux GitHub.
+- `main` est à `9bf3dd216e9f905f13be7a3f1cefcc88266ba772`, qui est l'ancêtre commun / base de la branche isolée dans l'historique récupéré ; la branche contient 22 commits propres au-dessus et aucun commit de `main` manquant.
+- Décision : la branche isolée est techniquement prête pour une revue de fusion ciblée. Cela n'autorise pas une fusion automatique des PR #3/#5, ni l'application des migrations à Supabase production. Une PR dédiée depuis `work/next-isolated-audit` vers `main` est le chemin recommandé.
