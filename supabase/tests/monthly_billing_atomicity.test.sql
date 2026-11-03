@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(5);
+select plan(6);
 
 insert into auth.users (id,email) values
   ('00000000-0000-4000-8000-000000000061','billing-atomic-restaurant@test.local'),
@@ -78,6 +78,10 @@ select is((select count(*) from public.fisher_monthly_invoices
     and fisher_id='00000000-0000-4000-8000-000000000062'
     and period_start='2026-07-01'),1::bigint,
   'retry produces one fisher invoice after rollback');
+select is((select count(*) from public.maree_monthly_commission_invoices
+  where restaurant_id='00000000-0000-4000-8000-000000000061'
+    and period_start='2026-07-01'),1::bigint,
+  'retry produces one Marée invoice after rollback');
 
 select * from finish();
 rollback;
