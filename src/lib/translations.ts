@@ -664,6 +664,28 @@ Object.assign(translations, {
   "L’heure de débarquement ne peut pas être dans le futur. Vérifiez l’heure locale et réessayez.": ["Landing time cannot be in the future. Check your local time and try again.", "Ora debarcării nu poate fi în viitor. Verificați ora locală și încercați din nou."],
   "Renseignez d’abord votre méthode de pêche dans Mon profil professionnel.": ["First add your fishing method in My professional profile.", "Adăugați mai întâi metoda de pescuit în Profilul meu profesional."],
   "À renseigner dans Mon profil professionnel": ["Set this in My professional profile", "Completați în Profilul meu profesional"]
+
+  "Paramètres commerciaux": ["Commercial settings", "Setări comerciale"],
+  "Ces réglages s’appliquent uniquement aux nouvelles réservations. Les commandes existantes conservent leurs taux et leur payeur d’origine.": ["These settings apply only to new reservations. Existing orders keep their original rates and payer.", "Aceste setări se aplică doar rezervărilor noi. Comenzile existente păstrează ratele și plătitorul inițial."],
+  "Commission Marée (%)": ["Marée commission (%)", "Comision Marée (%)"],
+  "Frais de livraison (%)": ["Delivery fee (%)", "Taxă de livrare (%)"],
+  "Qui paie les frais de livraison ?": ["Who pays the delivery fee?", "Cine plătește taxa de livrare?"],
+  "Acheteur / restaurant": ["Buyer / restaurant", "Cumpărător / restaurant"],
+  "Pêcheur — déduit de son règlement": ["Fisher — deducted from their payout", "Pescar — dedus din plata sa"],
+  "Si le pêcheur paie, les frais sont retenus sur son montant à recevoir et ne sont pas ajoutés au relevé Marée du restaurant. Le choix est figé sur chaque commande.": ["If the fisher pays, the fee is deducted from their payout and is not added to the restaurant's Marée statement. The choice is snapshotted on each order.", "Dacă pescarul plătește, taxa se deduce din suma sa de primit și nu se adaugă la extrasul Marée al restaurantului. Alegerea este salvată pe fiecare comandă."],
+  "Enregistrer les paramètres": ["Save settings", "Salvează setările"],
+  "Paramètres commerciaux enregistrés. Les nouvelles commandes utiliseront ces valeurs.": ["Commercial settings saved. New orders will use these values.", "Setările comerciale au fost salvate. Comenzile noi vor folosi aceste valori."],
+  "Paramètres commerciaux indisponibles.": ["Commercial settings unavailable.", "Setările comerciale nu sunt disponibile."],
+  "Impossible d’enregistrer les paramètres commerciaux.": ["Unable to save commercial settings.", "Nu s-au putut salva setările comerciale."],
+  "Les taux doivent être compris entre 0 et 100 %.": ["Rates must be between 0 and 100%.", "Ratele trebuie să fie între 0 și 100%."],
+  "Livraison déduite": ["Delivery deducted", "Livrare dedusă"],
+  "Livraison déduite du pêcheur": ["Delivery deducted from fisher", "Livrare dedusă pescarului"],
+  "Livraison payée par": ["Delivery paid by", "Livrare plătită de"],
+  "Vous (déduite de votre règlement)": ["You (deducted from your payout)", "Dvs. (dedusă din plata dvs.)"],
+  "le restaurant": ["the restaurant", "restaurantul"],
+  "Payeur": ["Payer", "Plătitor"],
+  "Commission Marée ({rate} %)": ["Marée commission ({rate}%)", "Comision Marée ({rate}%)"],
+  "Frais de livraison Marée ({rate} %)": ["Marée delivery fee ({rate}%)", "Taxă de livrare Marée ({rate}%)"],
 });
 
 // Complete translations for order management and cancellation flows.

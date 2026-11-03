@@ -73,7 +73,7 @@ export type SharedOrderRow = {
   status:"submitted"|"confirmed"|"ready"|"delivered"|"cancelled"; created_at:string;
   fisher_id_snapshot:string|null; unit_price_snapshot:number|string|null; product_subtotal:number|string|null;
   maree_fee_rate:number|string; maree_fee:number|string;
-  delivery_fee_rate:number|string; delivery_fee:number|string; total_amount:number|string|null;
+  delivery_fee_rate:number|string; delivery_fee:number|string; delivery_fee_payer_snapshot:'buyer'|'fisher'; total_amount:number|string|null;
   billing_mode:"immediate"|"monthly"; delivered_at:string|null; tip_amount:number|string;
   fisher_payment_status:"unpaid"|"paid"|"waived"; fisher_paid_at:string|null;
   fisher_payment_method:string|null; fisher_payment_reference:string|null;
@@ -85,16 +85,16 @@ export async function fetchMyOrders():Promise<SharedOrderRow[]> {
   if(authError) throw authError;
   if(!user) return [];
   const {data,error}=await supabase.from("orders")
-    .select("id,catch_id,restaurant_id,quantity_kg,requested_slot,fulfilment,note,status,created_at,fisher_id_snapshot,unit_price_snapshot,product_subtotal,maree_fee_rate,maree_fee,delivery_fee_rate,delivery_fee,total_amount,billing_mode,delivered_at,tip_amount,fisher_payment_status,fisher_paid_at,fisher_payment_method,fisher_payment_reference,cancellation_request_status,cancellation_requested_at,cancellation_penalty")
+    .select("id,catch_id,restaurant_id,quantity_kg,requested_slot,fulfilment,note,status,created_at,fisher_id_snapshot,unit_price_snapshot,product_subtotal,maree_fee_rate,maree_fee,delivery_fee_rate,delivery_fee,delivery_fee_payer_snapshot,total_amount,billing_mode,delivered_at,tip_amount,fisher_payment_status,fisher_paid_at,fisher_payment_method,fisher_payment_reference,cancellation_request_status,cancellation_requested_at,cancellation_penalty")
     .order("created_at",{ascending:false});
   if(error) throw new Error("Impossible de charger les comptes financiers : schéma Supabase incomplet ou non synchronisé. "+error.message);
   return (data??[]) as SharedOrderRow[];
 }
 
-export type SharedMonthlyInvoiceItemRow = { order_id:string; product_subtotal:number|string; quantity_kg:number|string; unit_price:number|string; tip_amount:number|string };
+export type SharedMonthlyInvoiceItemRow = { order_id:string; product_subtotal:number|string; quantity_kg:number|string; unit_price:number|string; tip_amount:number|string; delivery_deduction:number|string };
 export type SharedMonthlyInvoiceRow = {
   id:string; restaurant_id:string; fisher_id:string; period_start:string; period_end:string;
-  due_date:string; subtotal:number|string; tip_total:number|string; status:"open"|"paid"|"void";
+  due_date:string; subtotal:number|string; tip_total:number|string; delivery_deduction_total:number|string; status:"open"|"paid"|"void";
   paid_at:string|null; payment_method:string|null; payment_reference:string|null;
   items?:SharedMonthlyInvoiceItemRow[];
 };
@@ -104,7 +104,7 @@ export async function fetchMyMonthlyInvoices():Promise<SharedMonthlyInvoiceRow[]
   if(authError) throw authError;
   if(!user) return [];
   const {data,error}=await supabase.from("fisher_monthly_invoices")
-    .select("id,restaurant_id,fisher_id,period_start,period_end,due_date,subtotal,tip_total,status,paid_at,payment_method,payment_reference,items:fisher_monthly_invoice_items(order_id,product_subtotal,quantity_kg,unit_price,tip_amount)")
+    .select("id,restaurant_id,fisher_id,period_start,period_end,due_date,subtotal,tip_total,delivery_deduction_total,status,paid_at,payment_method,payment_reference,items:fisher_monthly_invoice_items(order_id,product_subtotal,quantity_kg,unit_price,tip_amount,delivery_deduction)")
     .order("period_start",{ascending:false});
   if(error) throw new Error("Impossible de charger les relevés pêcheurs : schéma Supabase incomplet ou non synchronisé. "+error.message);
   return (data??[]) as SharedMonthlyInvoiceRow[];
@@ -124,7 +124,7 @@ export async function confirmFisherInvoicePaid(invoiceId:string,paymentMethod:st
   if(error) throw error;
 }
 
-export type SharedMareeCommissionInvoiceItemRow = { order_id:string; commission_amount:number|string; delivery_amount:number|string; product_subtotal:number|string; fulfilment:"delivery"|"collection"; delivered_at:string };
+export type SharedMareeCommissionInvoiceItemRow = { order_id:string; commission_amount:number|string; delivery_amount:number|string; delivery_fee_payer_snapshot:'buyer'|'fisher'; product_subtotal:number|string; fulfilment:"delivery"|"collection"; delivered_at:string };
 export type SharedMareeCommissionInvoiceRow = {
   id:string; restaurant_id:string; period_start:string; period_end:string; due_date:string;
   commission_total:number|string; delivery_total:number|string; status:"open"|"declared_paid"|"paid"|"void";
@@ -137,7 +137,7 @@ export async function fetchMyMareeCommissionInvoices():Promise<SharedMareeCommis
   if(authError) throw authError;
   if(!user) return [];
   const {data,error}=await supabase.from("maree_monthly_commission_invoices")
-    .select("id,restaurant_id,period_start,period_end,due_date,commission_total,delivery_total,status,declared_at,verified_at,payment_method,payment_reference,items:maree_monthly_commission_invoice_items(order_id,commission_amount,delivery_amount,product_subtotal,fulfilment,delivered_at)")
+    .select("id,restaurant_id,period_start,period_end,due_date,commission_total,delivery_total,status,declared_at,verified_at,payment_method,payment_reference,items:maree_monthly_commission_invoice_items(order_id,commission_amount,delivery_amount,delivery_fee_payer_snapshot,product_subtotal,fulfilment,delivered_at)")
     .order("period_start",{ascending:false});
   if(error) throw new Error("Impossible de charger les relevés Marée : schéma Supabase incomplet ou non synchronisé. "+error.message);
   return (data??[]) as SharedMareeCommissionInvoiceRow[];
