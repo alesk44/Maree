@@ -14,7 +14,7 @@ La branche main possède déjà la route /admin/email-review, les RPC et migrati
 - Le run CI intermédiaire a révélé six TS4111 dans src/lib/maree-api.ts : les clés d'un Record étaient lues avec la notation pointée.
 - Les six accès ont été convertis en accès indexés sans changement fonctionnel.
 - Le premier ajout du contrôle TypeScript à Verify a révélé que le routeTree généré était incomplet lorsque tsc s'exécutait avant le build.
-- Le workflow Verify est ordonné : install frozen, build (génère les routes), TypeScript, ESLint, tests.
+- Le workflow Verify est ordonné : install frozen, contrôle Deno des deux fonctions Edge de vérification, build (génère les routes), TypeScript, ESLint, tests.
 - Run final sur le commit 10b130fc4ea3d206645b4a839415f42bd2c71854 : SUCCESS. Build, TypeScript, ESLint et tests Vitest sont tous verts.
 - Détails du run : https://github.com/alesk44/Maree/actions/runs/41638176112
 
@@ -71,6 +71,7 @@ Performance :
 - Les RPC vérifient la demande pending et l'expiration ; la RPC de décision verrouille le jeton et la demande, consomme le jeton et change le rôle dans une transaction.
 - La fonction Edge de notification vérifie l'utilisateur authentifié et l'appartenance de la demande.
 - Durcissements isolés ajoutés aux deux fonctions Edge : CORS limité à MAREE_APP_URL et aux origines HTTPS explicitement listées dans MAREE_ALLOWED_ORIGINS (localhost HTTP accepté uniquement s'il est explicitement listé), validation stricte du JSON et de l'identifiant UUID/jeton, réponses d'erreur génériques sans détail du fournisseur ni de la RPC.
+- La page de confirmation e-mail est également marquée noindex/nofollow et no-referrer pour limiter l'indexation et la transmission du jeton dans les en-têtes Referer.
 - Un défaut de liaison action/jeton a aussi été identifié : auparavant, l'action URL pouvait être modifiée et la RPC consommait le jeton avant que l'Edge function ne compare le résultat. La migration 20261103170000 remplace la RPC par une version qui vérifie p_expected_action après verrouillage du jeton et avant toute consommation ou décision. Le test pgTAP confirme qu'une action discordante ne consomme pas le jeton et que le bon choix reste utilisable.
 - Ces changements Edge et SQL sont isolés. Le CORS doit être configuré avec l'origine exacte de l'application dans MAREE_APP_URL et, si nécessaire, les origines additionnelles dans MAREE_ALLOWED_ORIGINS avant déploiement.
 
