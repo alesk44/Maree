@@ -73,3 +73,16 @@ After the clean local reset and the read-only ledger comparison, only the three 
 - `20261103180000_add_missing_foreign_key_indexes.sql`
 
 This expected delta is not a deployment authorization. Do not run `supabase db push`, `supabase migration repair`, SQL DDL, Edge Function deploy, Cloudflare deploy, or merge without separate explicit approval. Before any production operation, re-run `migration list`, inspect its exact output, and obtain a reviewed backup/rollback plan.
+
+
+## Admin-managed commercial settings (2026-11-03)
+
+An additional isolated migration, `20261103190000_admin_managed_delivery_payer.sql`, adds admin-managed commission and delivery rates and a global delivery payer choice (`buyer` or `fisher`). The reservation RPC snapshots the payer. Existing orders keep the historical buyer-paid allocation.
+
+- Buyer-paid delivery is included in the restaurant total and Marée monthly delivery statement.
+- Fisher-paid delivery is excluded from the restaurant total and Marée delivery receivable, and deducted from fisher immediate/monthly proceeds.
+- Fisher statements retain gross products and tips, show delivery deductions separately, and calculate net payout as products + tips - deductions.
+- Marée commission remains restaurant-paid in either mode.
+- New contract test: `delivery_fee_payer_contract.test.sql`.
+
+This additional migration and related UI changes remain isolated and have not been applied to production.
