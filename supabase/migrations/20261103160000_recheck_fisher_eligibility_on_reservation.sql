@@ -25,6 +25,7 @@ declare
   v_subtotal numeric(10,2);
   v_maree_fee numeric(10,2);
   v_delivery numeric(10,2);
+  v_delivery_payer text := 'buyer';
   v_tip numeric(10,2);
 begin
   if v_user_id is null then raise exception 'Authentication required'; end if;
@@ -44,8 +45,8 @@ begin
   v_tip := round(p_tip_amount, 2);
 
   if (select count(*) from public.fisher_monthly_invoices i
-      where i.restaurant_id = v_user_id and i.status = 'open' and i.due_date < current_date) >= 3 then
-    raise exception 'Ordering is blocked: at least three monthly invoices are overdue and unpaid';
+      where i.restaurant_id = v_user_id and i.status = 'open') >= 3 then
+    raise exception 'Ordering is blocked: at least three monthly invoices are open and unpaid';
   end if;
 
   select c.* into v_catch from public.catches c where c.id = p_catch_id for update;
@@ -79,8 +80,8 @@ begin
   select s.billing_mode into v_mode from public.restaurant_fisher_billing_settings s
   where s.restaurant_id = v_user_id and s.fisher_id = v_catch.fisher_id;
   v_mode := coalesce(v_mode, 'immediate');
-  select coalesce(s.maree_fee_rate, 0.065), coalesce(s.delivery_fee_rate, 0.20)
-    into v_maree_rate, v_rate from public.maree_commercial_settings s where s.id = true;
+  select coalesce(s.maree_fee_rate, 0.065), coalesce(s.delivery_fee_rate, 0.20), coalesce(s.delivery_fee_payer, 'buyer')
+    into v_maree_rate, v_rate, v_delivery_payer from public.maree_commercial_settings s where s.id = true;
   v_subtotal := round(p_quantity_kg * v_catch.price_per_kg, 2);
   v_maree_fee := round(v_subtotal * v_maree_rate, 2);
   v_delivery := case when p_fulfilment = 'delivery' then round(v_subtotal * v_rate, 2) else 0 end;
@@ -88,11 +89,12 @@ begin
   insert into public.orders (
     catch_id, restaurant_id, quantity_kg, requested_slot, fulfilment, note,
     fisher_id_snapshot, unit_price_snapshot, product_subtotal, maree_fee_rate, maree_fee,
-    delivery_fee_rate, delivery_fee, total_amount, billing_mode, tip_amount
+    delivery_fee_rate, delivery_fee, delivery_fee_payer_snapshot, total_amount, billing_mode, tip_amount
   ) values (
     p_catch_id, v_user_id, p_quantity_kg, p_requested_slot, p_fulfilment, nullif(trim(p_note), ''),
     v_catch.fisher_id, v_catch.price_per_kg, v_subtotal, v_maree_rate, v_maree_fee,
-    v_rate, v_delivery, v_subtotal + v_maree_fee + v_delivery + v_tip, v_mode, v_tip
+    v_rate, v_delivery, v_delivery_payer,
+    v_subtotal + v_maree_fee + case when v_delivery_payer = 'buyer' then v_delivery else 0 end + v_tip, v_mode, v_tip
   ) returning id into v_order_id;
 
   update public.catches set remaining_kg = remaining_kg - p_quantity_kg,
