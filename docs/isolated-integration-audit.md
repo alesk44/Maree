@@ -1,76 +1,50 @@
 # Audit d'intégration isolée — PR #3 et PR #5
 
 Date : 2026-11-03
-Branche cible : work/next-isolated-audit
-Base de départ : 9bf3dd216e9f905f13be7a3f1cefcc88266ba772
+Branche : work/next-isolated-audit
 
-## Décision
+## Décision d'intégration
 
-Aucune fusion globale des PR #3 ou #5. Les deux branches ont divergé de main : PR #3 est en avance de 233 commits et en retard de 6 ; PR #5 est en avance de 255 commits et en retard de 6. Leur merge-base commun est 805af6f498274d38045315f6e245ee7dca46a86f. Une intégration globale risquerait de réintroduire ou d'écraser des changements déjà livrés sur main.
+Les PR #3 et #5 restent non fusionnées. Leurs branches ont divergé de main (PR #3 : +233/-6 ; PR #5 : +255/-6 depuis le merge-base 805af6f498274d38045315f6e245ee7dca46a86f). Pas de merge global : les deux branches se recouvrent sur les routes, migrations, fonctions Edge, profils, traductions et politiques.
 
-## Éléments repérés
+La branche main possède déjà la route /admin/email-review, les RPC et migrations de jetons email, ainsi qu'un workflow CI. La route UI et les migrations email des PR ne doivent pas être recopiées.
 
-- PR #3 ajoute un workflow CI, un écran d'approbation par email, un PWA d'administration, des fonctions marines et de nombreux changements applicatifs, migrations et politiques.
-- PR #5 reprend l'essentiel de ces changements et ajoute l'écran src/routes/tracabilite.tsx, un dossier SQL de brouillon et une migration exécutable de traçabilité.
-- Les PR se recouvrent sur les routes d'administration, profils, restaurant, pêcheur, traductions, fonctions Supabase, migrations et tests. Elles ne sont pas des lots indépendants.
-- La branche main possède déjà le workflow Verify qui se déclenche sur chaque push et pull request, avec installation Bun en mode frozen lockfile, tests et build. Elle possède également un workflow Marée CI plus complet (build, TypeScript, lint, tests) qui ne couvre pas la branche work/**. La modification temporaire visant à l'étendre a été annulée pour éviter de lancer deux workflows redondants ; le workflow Verify existant couvre déjà cette branche.
-- La branche main possède déjà les migrations de jetons email et les deux RPC correspondantes. Le code des PR ne doit donc pas être recopié sans comparaison avec ces implémentations déjà fusionnées.
+## Correctif effectué
 
-## Contrôles de la console propriétaire / approbation email
+- TypeScript signalait six accès à des propriétés d'un objet Record via la notation pointée dans src/lib/maree-api.ts (TS4111).
+- Ces six accès ont été remplacés par la notation indexée, sans changer les valeurs ni la logique métier.
+- Le workflow Verify a été renforcé pour exécuter TypeScript et ESLint, en plus des tests et du build.
+- Le workflow de déploiement Cloudflare n'a pas été modifié.
 
-- La migration actuelle conserve les empreintes SHA-256 des jetons dans un schéma privé et révoque les accès API directs.
-- La RPC de création vérifie la longueur des empreintes, leur différence, la date d'expiration et l'existence d'une demande pending.
-- La RPC de décision verrouille le jeton et la demande, refuse les jetons expirés/consommés et applique la décision ainsi que le changement de rôle dans une transaction SQL.
-- La fonction Edge de notification exige un utilisateur authentifié et vérifie que la demande appartient à cet utilisateur avant d'envoyer le mail.
-- La route admin/email-review existe déjà sur main et n'exécute la décision qu'après clic explicite. Elle ne doit pas être recopiée.
-- Points de durcissement encore requis : limiter CORS à l'origine attendue, valider strictement le corps JSON et les types, ne jamais exposer les erreurs internes RPC, éviter les URL de preview codées en dur, tester la consommation concurrente du même jeton et vérifier les logs sans token brut.
-- Le flux d'approbation ne doit jamais exécuter la décision au chargement du lien ; la confirmation doit rester un clic explicite.
+## Résultats des contrôles observés
 
-## Risques bloquants de traçabilité QR
+Sur le commit intermédiaire d75b5a91be704306b7dbd7d77a41d93825c0a191 :
+- Le workflow Verify a réussi : installation frozen, tests et build.
+- Le workflow Marée CI a échoué à l'étape TypeScript avec six erreurs TS4111 dans src/lib/maree-api.ts.
+- Le workflow Marée CI a été déclenché par une modification temporaire du workflow ci.yml ; cette modification a ensuite été annulée afin de ne pas créer un deuxième pipeline redondant.
+- Le correctif TS4111 est maintenant appliqué sur cette branche, mais son résultat doit être confirmé par le prochain run.
 
-1. Le scanner de PR #5 insère dans catch_traceability_codes puis catch_traceability_events. Si le second insert échoue, le premier reste enregistré : la sauvegarde n'est pas atomique.
-2. Le scanner associe un code à un catch_id, mais ne renseigne pas order_id. Le parcours annoncé commande n'est donc pas réalisé.
-3. Le scanner expose directement le message d'erreur Supabase à l'utilisateur ; prévoir une traduction contrôlée et une journalisation non sensible.
-4. Le rôle est lu dans profiles côté client et la liste des lots est filtrée dans le navigateur. Cela ne constitue pas une autorisation : les politiques RLS doivent être la barrière réelle.
-5. Le SQL autorise un restaurant ayant une commande sur le lot, mais il faut confirmer le schéma et les politiques existants, la cardinalité des commandes et l'appartenance réelle des lots.
-6. Le journal d'événements est décrit comme append-only, mais les tables ont besoin de tests explicites qui prouvent qu'aucun rôle API ne peut UPDATE/DELETE et que les acteurs ne peuvent falsifier actor_id/scanned_by.
-7. La migration versionnée 20261102060100_add_catch_traceability.sql est pratiquement identique au fichier supabase/drafts/traceability.sql. Le dossier draft explique pourtant que le SQL n'est pas une migration. Il faut choisir une source canonique et conserver le SQL en draft jusqu'à validation.
-8. Les contraintes de payload, HTTPS, event_type et metadata sont utiles mais ne prouvent pas que les données externes sont authentiques. Tous les codes doivent rester non vérifiés jusqu'à revue explicite.
-9. Le scanner accepte les codes GS1 et URL, mais la classification d'URL seule ne vérifie ni la destination ni la véracité du contenu. Aucune ouverture automatique ne doit être ajoutée.
+## Risques de la traçabilité QR
 
-## Intégration effectuée dans cette branche
+1. Le scanner de PR #5 écrit le code puis l'événement dans deux requêtes distinctes : le code peut être enregistré sans son événement.
+2. Le scanner n'associe pas l'order_id ; l'association à une commande n'est donc pas implémentée.
+3. Le scanner affiche des messages d'erreur Supabase bruts.
+4. Le rôle et la liste des lots filtrés dans le client ne constituent pas une autorisation ; la RLS doit rester l'autorité.
+5. Le SQL doit être validé contre le schéma réel des commandes et des prises.
+6. Ajouter des tests RLS négatifs pour autre pêcheur, restaurant sans commande, anon, acteur falsifié, commande étrangère, ainsi que des tests d'interdiction UPDATE/DELETE.
+7. Le SQL existe à la fois dans drafts et dans une migration versionnée ; garder le brouillon comme seule source tant que la revue n'est pas terminée.
+8. Les codes externes doivent rester non vérifiés jusqu'à une validation humaine. Pas d'ouverture automatique d'URL scannée.
 
-- Ajout du rapport d'audit dans docs/isolated-integration-audit.md.
-- Aucun changement fonctionnel repris des PR #3/#5.
-- Aucun changement durable de workflow CI : le workflow Verify existant déclenche déjà des contrôles sur les pushes de la branche work/**.
-- Aucun workflow de déploiement n'a été modifié ni déclenché.
+## Console propriétaire / email
 
-## Intégration recommandée
+- Les empreintes SHA-256 des jetons sont stockées dans un schéma privé.
+- Les RPC vérifient la demande pending et l'expiration ; la RPC de décision verrouille le jeton et la demande, consomme le jeton et change le rôle dans une transaction.
+- La fonction Edge de notification vérifie l'utilisateur authentifié et l'appartenance de la demande.
+- Durcissements à prévoir : CORS restreint, validation stricte du JSON, réponses génériques sans erreur RPC interne, configuration HTTPS obligatoire, tests de rejeu/concurrence, absence de jetons bruts dans les logs.
 
-### Lot A — Console propriétaire
-- La route de confirmation par email est déjà présente dans main ; vérifier ses tests et durcir les fonctions Edge plutôt que dupliquer l'écran.
-- Vérifier les autorisations serveur et les RPC ; ne pas se fier au masquage UI.
-- Contrôler les liens email à usage unique, expiration, consommation atomique, anti-rejeu et absence de fuite de token dans les logs.
-- Générer les routes depuis le code, ne pas copier aveuglément routeTree.gen.ts.
+## Garde-fous
 
-### Lot B — Traçabilité
-- Garder le SQL dans supabase/drafts jusqu'à validation locale.
-- Ajouter des tests RLS négatifs : autre pêcheur, restaurant sans commande, anon, actor falsifié, order_id d'une autre prise.
-- Tester les tentatives UPDATE/DELETE, payloads trop longs, URL non HTTPS, event_type inconnu, metadata surdimensionnée.
-- Rendre l'enregistrement code + événement atomique via RPC transactionnelle ou un seul point d'entrée serveur.
-- Associer explicitement la commande lorsque c'est le cas et vérifier que la commande appartient au catch et à l'acteur.
-- Prévoir une vue publique distincte, opaque et allow-listée ; ne jamais exposer raw_code, URL privée, coordonnées exactes, téléphone, licence ou document.
-
-## État de validation
-
-- Comparaisons GitHub et listes de fichiers des PR consultées.
-- Patches consultés : scanner de traçabilité, README SQL draft, SQL draft, migration de traçabilité, workflow CI, écran d'approbation email, fonction Edge de notification et fonction Edge de décision.
-- Les sources actuelles main confirment l'existence des tables et RPC email, de la route de confirmation et des workflows CI.
-- Les workflows lancés sur le commit intermédiaire étaient encore en cours au dernier contrôle ; aucun résultat final n'est revendiqué ici.
-- Aucun test local n'a été exécuté.
-- Aucune migration n'a été appliquée à Supabase.
-- Aucun déploiement Cloudflare n'a été lancé.
-
-## Prochaine étape
-
-Vérifier le résultat du workflow Verify, puis comparer précisément les fonctions Edge email et les politiques d'accès existantes avant de décider d'un correctif. Pour la traçabilité, concevoir d'abord une RPC transactionnelle et ses tests RLS négatifs, sans appliquer de migration à un projet Supabase.
+- Aucun code de migration QR appliqué à Supabase.
+- Aucune branche Supabase payante créée.
+- Aucun déploiement Cloudflare déclenché.
+- Aucun merge vers main effectué.
