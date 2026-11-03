@@ -86,3 +86,18 @@ An additional isolated migration, `20261103220545_admin_managed_delivery_payer.s
 - New contract test: `delivery_fee_payer_contract.test.sql`.
 
 The migration was applied to production and recorded by Supabase as version `20261103220545` after explicit authorization. The branch filename is aligned to that exact ledger version; related UI and application code remain isolated in this draft PR and are not deployed.
+
+
+## Live production re-check — 2026-11-03 22:20 UTC
+
+This section supersedes any earlier statement in this document that the commercial-settings migration was still pending or that no production migration had been applied. The earlier sections are retained as a dated historical snapshot.
+
+Read-only verification against the connected production project confirms:
+
+- The migration ledger now contains version `20261103220545`, name `admin_managed_delivery_payer`.
+- The corresponding production columns exist: `maree_commercial_settings.delivery_fee_payer`, `orders.delivery_fee_payer_snapshot`, `fisher_monthly_invoices.delivery_deduction_total`, `fisher_monthly_invoice_items.delivery_deduction`, and `maree_monthly_commission_invoice_items.delivery_fee_payer_snapshot`.
+- The remaining three isolated hardening migrations are still absent from the production ledger: `20261103160000_recheck_fisher_eligibility_on_reservation`, `20261103170000_bind_email_review_action_to_token`, and `20261103180000_add_missing_foreign_key_indexes`.
+- The six foreign-key indexes in the last migration are still missing in production; the performance advisor continues to report those six exact foreign keys.
+- The delivery-payer application/UI changes remain on the draft PR branch and are not thereby deployed to the live frontend.
+
+No production DDL, migration repair, Edge Function deployment, frontend deployment, or merge was performed during this re-check. Before any rollout, reconcile the exact migration list again and prepare a verified backup and rollback plan.
