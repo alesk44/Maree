@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(210);
+select plan(211);
 
 -- Isolated auth users; the auth trigger creates their initial restaurant profiles.
 insert into auth.users (id, email) values
@@ -622,6 +622,9 @@ insert into public.orders (
   '00000000-0000-4000-8000-000000000001',5,0.33,0,5.33
 );
 
+-- A reserved listing state is intentional and must survive stock restoration.
+update public.catches set status='reserved'
+where id='10000000-0000-4000-8000-000000000003';
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000003';
 select is(
@@ -633,6 +636,9 @@ reset role;
 select is((select status from public.orders where id='20000000-0000-4000-8000-000000000003'),'cancelled'::public.order_status,'free cancellation marks the order cancelled');
 select is((select cancellation_penalty from public.orders where id='20000000-0000-4000-8000-000000000003'),0::numeric,'free cancellation has no penalty');
 select is((select remaining_kg from public.catches where id='10000000-0000-4000-8000-000000000003'),1::numeric,'free cancellation restores reserved stock');
+select is((select status from public.catches where id='10000000-0000-4000-8000-000000000003'),'reserved'::public.catch_status,'free cancellation preserves a fisher-reserved listing state');
+update public.catches set status='available'
+where id='10000000-0000-4000-8000-000000000003';
 
 update public.catches set remaining_kg=0.5,status='available'
 where id='10000000-0000-4000-8000-000000000003';
