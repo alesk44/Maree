@@ -13,7 +13,8 @@ Aucune fusion globale des PR #3 ou #5. Les deux branches ont divergé de main : 
 - PR #3 ajoute un workflow CI, un écran d'approbation par email, un PWA d'administration, des fonctions marines et de nombreux changements applicatifs, migrations et politiques.
 - PR #5 reprend l'essentiel de ces changements et ajoute l'écran src/routes/tracabilite.tsx, un dossier SQL de brouillon et une migration exécutable de traçabilité.
 - Les PR se recouvrent sur les routes d'administration, profils, restaurant, pêcheur, traductions, fonctions Supabase, migrations et tests. Elles ne sont pas des lots indépendants.
-- La branche main possède déjà un workflow CI avec installation Bun en mode frozen lockfile, build, TypeScript, lint et tests. Elle possède également les migrations de jetons email et les deux RPC correspondantes. Le code des PR ne doit donc pas être recopié sans comparaison avec ces implémentations déjà fusionnées.
+- La branche main possède déjà le workflow Verify qui se déclenche sur chaque push et pull request, avec installation Bun en mode frozen lockfile, tests et build. Elle possède également un workflow Marée CI plus complet (build, TypeScript, lint, tests) qui ne couvre pas la branche work/**. La modification temporaire visant à l'étendre a été annulée pour éviter de lancer deux workflows redondants ; le workflow Verify existant couvre déjà cette branche.
+- La branche main possède déjà les migrations de jetons email et les deux RPC correspondantes. Le code des PR ne doit donc pas être recopié sans comparaison avec ces implémentations déjà fusionnées.
 
 ## Contrôles de la console propriétaire / approbation email
 
@@ -21,8 +22,9 @@ Aucune fusion globale des PR #3 ou #5. Les deux branches ont divergé de main : 
 - La RPC de création vérifie la longueur des empreintes, leur différence, la date d'expiration et l'existence d'une demande pending.
 - La RPC de décision verrouille le jeton et la demande, refuse les jetons expirés/consommés et applique la décision ainsi que le changement de rôle dans une transaction SQL.
 - La fonction Edge de notification exige un utilisateur authentifié et vérifie que la demande appartient à cet utilisateur avant d'envoyer le mail.
-- Points de durcissement encore requis avant reprise de la route UI : limiter CORS à l'origine attendue, valider strictement le corps JSON et les types, ne jamais exposer les erreurs internes RPC, éviter les URL de preview codées en dur, tester la consommation concurrente du même jeton et vérifier les logs sans token brut.
-- La route d'approbation ne doit jamais exécuter la décision au chargement du lien ; la confirmation doit rester un clic explicite.
+- La route admin/email-review existe déjà sur main et n'exécute la décision qu'après clic explicite. Elle ne doit pas être recopiée.
+- Points de durcissement encore requis : limiter CORS à l'origine attendue, valider strictement le corps JSON et les types, ne jamais exposer les erreurs internes RPC, éviter les URL de preview codées en dur, tester la consommation concurrente du même jeton et vérifier les logs sans token brut.
+- Le flux d'approbation ne doit jamais exécuter la décision au chargement du lien ; la confirmation doit rester un clic explicite.
 
 ## Risques bloquants de traçabilité QR
 
@@ -38,16 +40,15 @@ Aucune fusion globale des PR #3 ou #5. Les deux branches ont divergé de main : 
 
 ## Intégration effectuée dans cette branche
 
-- Le workflow CI a été étendu à work/** afin que cette branche isolée puisse recevoir des vérifications sur ses pushes.
-- L'installation reste verrouillée avec bun install --frozen-lockfile.
-- Les étapes build, TypeScript, lint et tests sont conservées.
+- Ajout du rapport d'audit dans docs/isolated-integration-audit.md.
+- Aucun changement fonctionnel repris des PR #3/#5.
+- Aucun changement durable de workflow CI : le workflow Verify existant déclenche déjà des contrôles sur les pushes de la branche work/**.
 - Aucun workflow de déploiement n'a été modifié ni déclenché.
-- Aucun code métier des PR #3/#5 et aucune migration de traçabilité n'ont été copiés.
 
 ## Intégration recommandée
 
 ### Lot A — Console propriétaire
-- Reprendre uniquement les composants UI qui manquent réellement sur main, après vérification des routes déjà présentes.
+- La route de confirmation par email est déjà présente dans main ; vérifier ses tests et durcir les fonctions Edge plutôt que dupliquer l'écran.
 - Vérifier les autorisations serveur et les RPC ; ne pas se fier au masquage UI.
 - Contrôler les liens email à usage unique, expiration, consommation atomique, anti-rejeu et absence de fuite de token dans les logs.
 - Générer les routes depuis le code, ne pas copier aveuglément routeTree.gen.ts.
@@ -64,11 +65,12 @@ Aucune fusion globale des PR #3 ou #5. Les deux branches ont divergé de main : 
 
 - Comparaisons GitHub et listes de fichiers des PR consultées.
 - Patches consultés : scanner de traçabilité, README SQL draft, SQL draft, migration de traçabilité, workflow CI, écran d'approbation email, fonction Edge de notification et fonction Edge de décision.
-- Les sources actuelles main confirment l'existence des tables et RPC email, ainsi que le workflow CI verrouillé.
-- Aucun test local ou CI n'a été exécuté dans cette opération.
+- Les sources actuelles main confirment l'existence des tables et RPC email, de la route de confirmation et des workflows CI.
+- Les workflows lancés sur le commit intermédiaire étaient encore en cours au dernier contrôle ; aucun résultat final n'est revendiqué ici.
+- Aucun test local n'a été exécuté.
 - Aucune migration n'a été appliquée à Supabase.
 - Aucun déploiement Cloudflare n'a été lancé.
 
 ## Prochaine étape
 
-Vérifier quelles routes et fonctions email sont déjà présentes dans main, puis intégrer uniquement les composants UI manquants. Pour la traçabilité, concevoir d'abord une RPC transactionnelle et ses tests RLS négatifs, sans appliquer de migration à un projet Supabase.
+Vérifier le résultat du workflow Verify, puis comparer précisément les fonctions Edge email et les politiques d'accès existantes avant de décider d'un correctif. Pour la traçabilité, concevoir d'abord une RPC transactionnelle et ses tests RLS négatifs, sans appliquer de migration à un projet Supabase.
