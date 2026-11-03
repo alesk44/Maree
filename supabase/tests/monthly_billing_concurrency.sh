@@ -43,7 +43,7 @@ insert into public.orders (
   delivery_fee_rate,delivery_fee,total_amount,billing_mode,delivered_at,tip_amount
 ) values (
   '$ORDER_ID','$CATCH_ID','$RESTAURANT_ID',5,
-  '2026-08-15 12:00:00+00','delivery','delivered',
+  now()+interval '1 day','delivery','delivered',
   '$FISHER_ID',10,50,0.065,3.25,0.20,10,63.25,'monthly',
   '2026-08-15 12:30:00+00',0
 );
