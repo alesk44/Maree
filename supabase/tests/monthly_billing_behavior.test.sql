@@ -148,7 +148,7 @@ select lives_ok(
     '10000000-0000-4000-8000-000000000021'::uuid,0.5,
     now()+interval '2 days','collection'
   )$$,
-  'two overdue invoices plus one due today do not block ordering'
+  'two open invoices, one overdue and one due today, still allow ordering'
 );
 reset role;
 
@@ -167,12 +167,12 @@ select throws_ok(
   )$$,
   'P0001',
   'Ordering is blocked: at least three monthly invoices are open and unpaid',
-  'third overdue invoice blocks new orders'
+  'third open unpaid invoice blocks new orders even before its due date'
 );
 reset role;
 
 -- The fisher confirms receipt. This must settle the invoice and every linked
--- order atomically; the restaurant then has only two overdue invoices and can
+-- order atomically; the restaurant then has only two open invoices and can
 -- place a new order again.
 set local role authenticated;
 set local "request.jwt.claim.sub"='00000000-0000-4000-8000-000000000022';
@@ -210,7 +210,7 @@ select lives_ok(
     '10000000-0000-4000-8000-000000000021'::uuid,0.5,
     now()+interval '4 days','collection'
   )$$,
-  'settling one invoice reduces overdue count to two and restores ordering'
+  'settling one invoice reduces the open unpaid count to two and restores ordering'
 );
 reset role;
 
