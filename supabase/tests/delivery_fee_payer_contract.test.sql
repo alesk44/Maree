@@ -26,13 +26,13 @@ select is((select delivery_fee_payer_snapshot from public.orders where catch_id=
 select is((select total_amount from public.orders where catch_id='10000000-0000-4000-8000-000000000091'),65.75::numeric,'buyer pays delivery in restaurant total');
 set local role authenticated;
 set local "request.jwt.claim.sub"='00000000-0000-4000-8000-000000000094';
-select lives_ok($select public.update_maree_commercial_settings(6.5,20,'fisher')$,'administrator can update commercial settings');
+select lives_ok($q$select public.update_maree_commercial_settings(6.5,20,'fisher')$q$,'administrator can update commercial settings');
 reset role;
 select is((select delivery_fee_payer from public.maree_commercial_settings where id=true),'fisher','administrator change is persisted');
 select is((select delivery_fee_payer_snapshot from public.orders where catch_id='10000000-0000-4000-8000-000000000091'),'buyer','commercial changes do not rewrite existing order snapshots');
 set local role authenticated;
 set local "request.jwt.claim.sub"='00000000-0000-4000-8000-000000000091';
-select throws_ok($select public.update_maree_commercial_settings(6.5,20,'fisher')$,'P0001','Admin access required','restaurant cannot change global commercial settings');
+select throws_ok($q$select public.update_maree_commercial_settings(6.5,20,'fisher')$q$,'P0001','Admin access required','restaurant cannot change global commercial settings');
 reset role;
 set local role authenticated;
 set local "request.jwt.claim.sub"='00000000-0000-4000-8000-000000000091';
