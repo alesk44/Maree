@@ -687,6 +687,10 @@ Object.assign(translations, {
   "Commission Marée ({rate} %)": ["Marée commission ({rate}%)", "Comision Marée ({rate}%)"],
   "Frais de livraison Marée ({rate} %)": ["Marée delivery fee ({rate}%)", "Taxă de livrare Marée ({rate}%)"],
   "Commission Marée Jersey ({rate} %, tous modes)": ["Marée commission ({rate}%, all order types)", "Comision Marée ({rate}%, toate comenzile)"],
+  "Commission Marée": ["Marée commission", "Comision Marée"],
+  "Livraison facturée au restaurant": ["Delivery charged to restaurant", "Livrare facturată restaurantului"],
+  "Payée par le restaurant": ["Paid by restaurant", "Plătită de restaurant"],
+  "Déduite du pêcheur": ["Deducted from fisher", "Dedusă pescarului"],
 });
 
 // Complete translations for order management and cancellation flows.
