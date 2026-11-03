@@ -1,0 +1,13 @@
+name: Database Contract
+on: [push, pull_request]
+jobs:
+  database-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: supabase start -x studio,edge-runtime,logflare,vector,imgproxy
+      - run: supabase db reset --local
+      - run: supabase test db --local
