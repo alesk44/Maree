@@ -79,8 +79,18 @@ insert into public.verification_requests (
   ('30000000-0000-4000-8000-000000000004',
    '00000000-0000-4000-8000-000000000004',
    'restaurant', 'West Pier Kitchen', 'Test Contact D', '+441534000004',
-   'Test evidence for a second restaurant account.')
+   'Test evidence for a second restaurant account.'),
+  ('30000000-0000-4000-8000-000000000005',
+   '00000000-0000-4000-8000-000000000001',
+   'fisher', 'North Coast Fishing', 'Test Contact E', '+441534000005',
+   'Approved fixture for reservation and commercial contract tests.')
 on conflict (id) do nothing;
+
+update public.verification_requests
+set status='approved',
+    reviewed_by='00000000-0000-4000-8000-000000000005',
+    reviewed_at=now()
+where id='30000000-0000-4000-8000-000000000005';
 
 insert into public.verification_documents (
   id, request_id, user_id, document_type, file_path, original_filename, mime_type, size_bytes
@@ -281,7 +291,7 @@ set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000007';
 select is(public.is_current_user_admin(), true, 'separate admin grant is recognized without changing restaurant role');
 select is((select role::text from public.profiles where id = '00000000-0000-4000-8000-000000000007'), 'restaurant', 'separate admin grant preserves the restaurant business role');
-select is((select count(*) from public.verification_requests), 4::bigint, 'separate admin can read all verification requests');
+select is((select count(*) from public.verification_requests), 5::bigint, 'separate admin can read all verification requests');
 select is((select count(*) from public.catches), 2::bigint, 'separate admin grant can read all catch lots');
 select is((select count(*) from public.orders), 2::bigint, 'separate admin grant can read all orders');
 select is((select count(*) from public.profiles), 7::bigint, 'separate admin grant can read all profiles');
@@ -864,7 +874,7 @@ reset role;
 
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000005';
-select is((select count(*) from public.notifications where event_type='verification_request_received'),4::bigint,'trusted admin receives each verification request notification');
+select is((select count(*) from public.notifications where event_type='verification_request_received'),5::bigint,'trusted admin receives each verification request notification');
 reset role;
 
 -- Notification follow-up contract: verification outcomes and invoice lifecycle.
