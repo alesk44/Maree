@@ -1,14 +1,45 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const cors = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
+const allowedOrigins = () => {
+  const configured = [
+    Deno.env.get("MAREE_APP_URL") ?? "",
+    ...(Deno.env.get("MAREE_ALLOWED_ORIGINS") ?? "").split(","),
+  ];
+  const origins = new Set<string>();
+  for (const value of configured.map((entry) => entry.trim()).filter(Boolean)) {
+    try {
+      const parsed = new URL(value);
+      const localHttp = parsed.protocol === "http:" &&
+        (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1");
+      if ((parsed.protocol === "https:" || localHttp) && !parsed.username && !parsed.password) {
+        origins.add(parsed.origin);
+      }
+    } catch {
+      // Ignore malformed optional origins; MAREE_APP_URL is validated below.
+    }
+  }
+  return origins;
 };
-const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
-  status, headers: { ...cors, "Content-Type": "application/json" },
-});
+const corsHeaders = (req: Request) => {
+  const origin = req.headers.get("Origin");
+  const headers = new Headers({
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Vary": "Origin",
+  });
+  const allowed = !origin || allowedOrigins().has(origin);
+  if (origin && allowed) headers.set("Access-Control-Allow-Origin", origin);
+  return { allowed, headers };
+};
+const json = (req: Request, body: unknown, status = 200) => {
+  const { allowed, headers } = corsHeaders(req);
+  headers.set("Content-Type", "application/json");
+  if (!allowed) {
+    return new Response(JSON.stringify({ error: "Origin not allowed" }), { status: 403, headers });
+  }
+  return new Response(JSON.stringify(body), { status, headers });
+};
 const hex = (bytes: Uint8Array) => Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
 const randomToken = () => {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
@@ -19,8 +50,10 @@ const hashToken = async (token: string) =>
 const escape = (value: string) => value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
 
 Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
-  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  const { allowed, headers } = corsHeaders(req);
+  if (!allowed) return json(req, { error: "Origin not allowed" }, 403);
+  if (req.method === "OPTIONS") return new Response("ok", { status: 204, headers });
+  if (req.method !== "POST") return json(req, { error: "Method not allowed" }, 405);
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -30,7 +63,7 @@ Deno.serve(async (req: Request) => {
   const adminEmail = Deno.env.get("MAREE_ADMIN_EMAIL");
   const configuredAppUrl = Deno.env.get("MAREE_APP_URL");
   if (!resendKey || !from || !adminEmail || !configuredAppUrl) {
-    return json({ error: "Verification email is not configured. Add RESEND_API_KEY, MAREE_FROM_EMAIL, MAREE_ADMIN_EMAIL and MAREE_APP_URL secrets." }, 503);
+    return json(req, { error: "Verification email service is unavailable." }, 503);
   }
   let appUrl: string;
   try {
@@ -38,24 +71,41 @@ Deno.serve(async (req: Request) => {
     if (parsed.protocol !== "https:" || parsed.username || parsed.password) throw new Error("Invalid app origin");
     appUrl = parsed.origin;
   } catch {
-    return json({ error: "MAREE_APP_URL must be a valid HTTPS application origin." }, 503);
+    return json(req, { error: "Verification email service is unavailable." }, 503);
   }
 
   const authHeader = req.headers.get("Authorization");
-  if (!authHeader) return json({ error: "Unauthorized" }, 401);
+  if (!authHeader) return json(req, { error: "Unauthorized" }, 401);
   const userClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
   const { data: userData, error: userError } = await userClient.auth.getUser();
-  if (userError || !userData.user) return json({ error: "Unauthorized" }, 401);
+  if (userError || !userData.user) return json(req, { error: "Unauthorized" }, 401);
 
-  let body: { request_id?: string };
-  try { body = await req.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
-  if (!body.request_id) return json({ error: "request_id is required" }, 400);
+  if (req.headers.get("Content-Type")?.split(";")[0].trim().toLowerCase() !== "application/json") {
+    return json(req, { error: "Content-Type must be application/json" }, 415);
+  }
+  let body: unknown;
+  try {
+    const raw = await req.text();
+    if (new TextEncoder().encode(raw).byteLength > 8192) return json(req, { error: "Request body is too large" }, 413);
+    body = JSON.parse(raw);
+  } catch {
+    return json(req, { error: "Invalid JSON" }, 400);
+  }
+  if (
+    typeof body !== "object" || body === null || Array.isArray(body) ||
+    Object.keys(body).length !== 1 ||
+    typeof (body as Record<string, unknown>).request_id !== "string" ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test((body as Record<string, string>).request_id)
+  ) {
+    return json(req, { error: "Invalid request payload" }, 400);
+  }
+  const requestId = (body as { request_id: string }).request_id;
 
   const admin = createClient(supabaseUrl, serviceKey);
   const { data: row, error: rowError } = await admin.from("verification_requests")
     .select("id,user_id,requested_role,business_name,contact_name,phone,registration_number,evidence_note,created_at")
-    .eq("id", body.request_id).eq("user_id", userData.user.id).maybeSingle();
-  if (rowError || !row) return json({ error: "Request not found" }, 404);
+    .eq("id", requestId).eq("user_id", userData.user.id).maybeSingle();
+  if (rowError || !row) return json(req, { error: "Request not found" }, 404);
 
   const [approveToken, rejectToken] = [randomToken(), randomToken()];
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
@@ -65,7 +115,7 @@ Deno.serve(async (req: Request) => {
     p_rejected_hash: await hashToken(rejectToken),
     p_expires_at: expiresAt,
   });
-  if (tokenError) return json({ error: "Could not prepare secure email actions" }, 500);
+  if (tokenError) return json(req, { error: "Could not prepare secure email actions" }, 500);
 
   const actionUrl = (token: string, action: string) =>
     `${appUrl}/admin/email-review?token=${encodeURIComponent(token)}&action=${action}`;
@@ -91,6 +141,6 @@ Deno.serve(async (req: Request) => {
     }),
   });
   const result = await response.json().catch(() => ({}));
-  if (!response.ok) return json({ error: "Email provider rejected the message", details: result }, 502);
-  return json({ ok: true, email_id: result.id });
+  if (!response.ok) return json(req, { error: "Email provider rejected the message" }, 502);
+  return json(req, { ok: true, email_id: result.id });
 });
