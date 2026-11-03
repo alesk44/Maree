@@ -103,4 +103,4 @@ end;
 $function$;
 
 revoke all on function public.reserve_catch(uuid,numeric,timestamptz,text,text,numeric) from public, anon;
-grant execute on function public.reserve_catch(uuid,numeric,timestamptz,text,text,numeric) to authenticated;
+grant execute on function public.reserve_catch(uuid,numeric,timestamptz,text,text,numeric) to authenticated, service_role;
