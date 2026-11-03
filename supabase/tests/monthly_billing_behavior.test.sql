@@ -144,10 +144,10 @@ values
 set local role authenticated;
 set local "request.jwt.claim.sub"='00000000-0000-4000-8000-000000000021';
 select lives_ok(
-  $select public.reserve_catch(
+  $$select public.reserve_catch(
     '10000000-0000-4000-8000-000000000021'::uuid,0.5,
     now()+interval '2 days','collection'
-  )$,
+  )$$,
   'two open invoices, one overdue and one due today, still allow ordering'
 );
 reset role;
@@ -161,10 +161,10 @@ values
 set local role authenticated;
 set local "request.jwt.claim.sub"='00000000-0000-4000-8000-000000000021';
 select throws_ok(
-  $select public.reserve_catch(
+  $$select public.reserve_catch(
     '10000000-0000-4000-8000-000000000021'::uuid,0.5,
     now()+interval '3 days','collection'
-  )$,
+  )$$,
   'P0001',
   'Ordering is blocked: at least three monthly invoices are open and unpaid',
   'third open unpaid invoice blocks new orders even before its due date'
@@ -177,13 +177,13 @@ reset role;
 set local role authenticated;
 set local "request.jwt.claim.sub"='00000000-0000-4000-8000-000000000022';
 select lives_ok(
-  $select public.mark_fisher_invoice_paid(
+  $$select public.mark_fisher_invoice_paid(
     (select id from public.fisher_monthly_invoices
      where restaurant_id='00000000-0000-4000-8000-000000000021'
        and fisher_id='00000000-0000-4000-8000-000000000022'
        and period_start='2026-10-01'),
     'bank_transfer','TEST-SETTLEMENT-001'
-  )$,
+  )$$,
   'fisher can confirm receipt of their open monthly invoice'
 );
 reset role;
@@ -206,10 +206,10 @@ select is(
 set local role authenticated;
 set local "request.jwt.claim.sub"='00000000-0000-4000-8000-000000000021';
 select lives_ok(
-  $select public.reserve_catch(
+  $$select public.reserve_catch(
     '10000000-0000-4000-8000-000000000021'::uuid,0.5,
     now()+interval '4 days','collection'
-  )$,
+  )$$,
   'settling one invoice reduces the open unpaid count to two and restores ordering'
 );
 reset role;
@@ -329,9 +329,9 @@ insert into public.orders (
 set local role authenticated;
 set local "request.jwt.claim.sub"='00000000-0000-4000-8000-000000000021';
 select lives_ok(
-  $select public.respond_order_cancellation(
+  $$select public.respond_order_cancellation(
     '20000000-0000-4000-8000-000000000023'::uuid,false
-  )$,
+  )$$,
   'restaurant declining an offer completes without creating a debt'
 );
 reset role;
