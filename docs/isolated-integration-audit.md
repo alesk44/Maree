@@ -116,3 +116,20 @@ Performance :
 - Les Advisors live signalent toujours la protection contre les mots de passe compromis désactivée dans Supabase Auth. Cela nécessite une activation dans le Dashboard avant ouverture publique ; aucune modification Auth n'a été faite.
 - Les six index FK restent dans la migration isolée, non appliquée à la production. Les 14 index signalés inutilisés ne sont pas supprimés.
 - Aucun changement de schéma ou de données Supabase production, aucun déploiement Edge/Cloudflare et aucune fusion n'ont été effectués pendant ces contrôles.
+
+
+## Blocage critique — dérive de l'historique de migrations — 2026-11-03
+
+Comparaison en lecture seule entre `supabase/migrations` de la branche et `supabase_migrations.schema_migrations` de la production :
+
+- Branche isolée : 45 fichiers SQL de migration.
+- Production : 44 entrées dans l'historique Supabase.
+- 42 entrées de production ont un nom fonctionnel correspondant à un fichier local, mais 28 de ces correspondances ont un timestamp/version différent.
+- Deux entrées de production n'ont pas de fichier local de même nom : `20261102043901_enforce_verified_fisher_catch_permissions` et `20261102043926_add_fisher_compliance_intake_fields`.
+- Deux fichiers locaux n'ont pas de nom fonctionnel correspondant dans l'historique distant : `20261101010000_public_fisher_directory_and_order_status` et `20261101210000_rpc_entrypoints`.
+- L'historique distant contient également des entrées dont le nom embarque l'ancien timestamp de fichier (par ex. `20261102182759 / 20261102060000_profile_avatars`), ce qui crée des doublons apparents avec les entrées précédentes portant le même nom fonctionnel.
+- Les trois migrations réellement nouvelles de la branche sont `20261103160000_recheck_fisher_eligibility_on_reservation`, `20261103170000_bind_email_review_action_to_token` et `20261103180000_add_missing_foreign_key_indexes`.
+
+Le dossier `supabase/migrations` de `main` contient les mêmes 42 fichiers que la base de la branche isolée ; cette dérive est donc préexistante et n'a pas été créée par la PR #11. Supabase documente que `migration list` compare les timestamps, pas les noms de fichiers : ces écarts sont donc bloquants pour tout `db push` tant qu'ils ne sont pas réconciliés.
+
+**Décision : aucun push de migration ni réparation de l'historique distant.** Ne pas lancer `supabase db push`, `migration repair` ou une migration manuelle. La suite doit d'abord établir un mapping vérifié fichier par fichier, retrouver/reconstituer les deux migrations distantes absentes, déterminer le statut des deux migrations locales sans correspondance, puis préparer un plan de réparation d'historique avec dry-run/revue. Toute modification de `supabase_migrations.schema_migrations` en production exigera une autorisation distincte et un plan de retour arrière.
