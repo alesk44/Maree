@@ -55,7 +55,7 @@ function FisherSpace() {
   const openMonthlyOrderIds=new Set(openMonthlyInvoices.flatMap(i=>i.items?.map(item=>item.order_id)??[]));
   const monthlyUnbilled=deliveredOrders.filter(o=>o.billing_mode==="monthly"&&o.fisher_payment_status==="unpaid"&&!openMonthlyOrderIds.has(o.id));
   const receivableTotal=immediateReceivables.reduce((sum,o)=>sum+Number(o.product_subtotal??0)+Number(o.tip_amount??0)-(o.delivery_fee_payer_snapshot==='fisher'?Number(o.delivery_fee??0):0),0)
-    +openMonthlyInvoices.reduce((sum,i)=>sum+Number(i.subtotal)+Number(i.tip_total??0)-Number(i.delivery_deduction_total??0),0)
+    +openMonthlyInvoices.reduce((sum,i)=>sum+Number(i.subtotal)+Number(i.tip_total??0)-Number(i.delivery_deduction_total??0)+Number(i.cancellation_indemnity_total??0),0)
     +monthlyUnbilled.reduce((sum,o)=>sum+Number(o.product_subtotal??0)+Number(o.tip_amount??0)-(o.delivery_fee_payer_snapshot==='fisher'?Number(o.delivery_fee??0):0),0);
   const tipsEarned=deliveredOrders.reduce((sum,o)=>sum+Number(o.tip_amount??0),0);
   // Paid monthly invoices also mark their underlying orders as paid in mark_fisher_invoice_paid.
@@ -263,10 +263,11 @@ function FisherSpace() {
         <h3 className="font-semibold">{t("Mes factures mensuelles et règlements")}</h3>
         {monthlyInvoices.length===0?<Empty>{t("Aucun relevé mensuel généré pour le moment.")}</Empty>:
           <ul className="grid gap-2">{monthlyInvoices.map(i=><li key={i.id} className="rounded-xl border border-border p-4">
-            <div className="flex flex-wrap justify-between gap-2"><strong>{t("Période")} {i.period_start} — {i.period_end}</strong><strong>{gbp(Number(i.subtotal)+Number(i.tip_total??0)-Number(i.delivery_deduction_total??0))}</strong></div>
-            <p className="text-xs text-muted-foreground">{t("Produits")} : {gbp(Number(i.subtotal))} · {t("Pourboires")} : {gbp(Number(i.tip_total??0))} · {t("Livraison déduite")} : {gbp(Number(i.delivery_deduction_total??0))}</p>
+            <div className="flex flex-wrap justify-between gap-2"><strong>{t("Période")} {i.period_start} — {i.period_end}</strong><strong>{gbp(Number(i.subtotal)+Number(i.tip_total??0)-Number(i.delivery_deduction_total??0)+Number(i.cancellation_indemnity_total??0))}</strong></div>
+            <p className="text-xs text-muted-foreground">{t("Produits")} : {gbp(Number(i.subtotal))} · {t("Pourboires")} : {gbp(Number(i.tip_total??0))} · {t("Livraison déduite")} : {gbp(Number(i.delivery_deduction_total??0))} · {t("Indemnités d’annulation")} : {gbp(Number(i.cancellation_indemnity_total??0))}</p>
             <p className="text-sm text-muted-foreground">{t("Échéance")} : {i.due_date} · {i.status==="paid"?t("Réglée"):i.status==="void"?t("Annulée"):t("En attente de règlement")}</p>
             {i.items?.length ? <ul className="mt-2 grid gap-1 border-t border-border pt-2 text-xs">{i.items.map(item=><li key={item.order_id} className="flex flex-wrap justify-between gap-2"><span>Commande {item.order_id.slice(0,8).toUpperCase()} · {Number(item.quantity_kg)} kg × {gbp(Number(item.unit_price))}/kg · {t("Pourboire")} {gbp(Number(item.tip_amount??0))} · {t("Livraison déduite")} {gbp(Number(item.delivery_deduction??0))}</span><strong>{gbp(Number(item.product_subtotal)+Number(item.tip_amount??0)-Number(item.delivery_deduction??0))}</strong></li>)}</ul> : null}
+            {i.cancellation_indemnities?.length ? <ul className="mt-2 grid gap-1 border-t border-border pt-2 text-xs">{i.cancellation_indemnities.map(item=><li key={item.id} className="flex justify-between gap-2"><span>{t("Indemnité d’annulation")} · {item.order_id.slice(0,8).toUpperCase()} · {item.status==="paid"?t("Réglée"):t("À régler")}</span><strong>{gbp(Number(item.amount))}</strong></li>)}</ul> : null}
             {i.paid_at&&<p className="text-xs text-muted-foreground">{t("Règlement reçu")} : {dt(i.paid_at)} {i.payment_method||""} {i.payment_reference||""}</p>}
             {i.status==="open"&&<button type="button" className="btn btn-accent mt-3" onClick={()=>void confirmInvoicePayment(i.id)}>{t("Confirmer que le restaurant a réglé")}</button>}
           </li>)}</ul>}
