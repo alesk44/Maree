@@ -663,7 +663,7 @@ Object.assign(translations, {
   "Connectez-vous pour gérer votre profil et votre photo.": ["Sign in to manage your profile and photo.", "Conectați-vă pentru a vă gestiona profilul și fotografia."],
   "L’heure de débarquement ne peut pas être dans le futur. Vérifiez l’heure locale et réessayez.": ["Landing time cannot be in the future. Check your local time and try again.", "Ora debarcării nu poate fi în viitor. Verificați ora locală și încercați din nou."],
   "Renseignez d’abord votre méthode de pêche dans Mon profil professionnel.": ["First add your fishing method in My professional profile.", "Adăugați mai întâi metoda de pescuit în Profilul meu profesional."],
-  "À renseigner dans Mon profil professionnel": ["Set this in My professional profile", "Completați în Profilul meu profesional"]
+  "À renseigner dans Mon profil professionnel": ["Set this in My professional profile", "Completați în Profilul meu profesional"],
 
   "Paramètres commerciaux": ["Commercial settings", "Setări comerciale"],
   "Ces réglages s’appliquent uniquement aux nouvelles réservations. Les commandes existantes conservent leurs taux et leur payeur d’origine.": ["These settings apply only to new reservations. Existing orders keep their original rates and payer.", "Aceste setări se aplică doar rezervărilor noi. Comenzile existente păstrează ratele și plătitorul inițial."],
