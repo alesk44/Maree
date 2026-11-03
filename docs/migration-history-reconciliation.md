@@ -77,7 +77,7 @@ This expected delta is not a deployment authorization. Do not run `supabase db p
 
 ## Admin-managed commercial settings (2026-11-03)
 
-An additional isolated migration, `20261103190000_admin_managed_delivery_payer.sql`, adds admin-managed commission and delivery rates and a global delivery payer choice (`buyer` or `fisher`). The reservation RPC snapshots the payer. Existing orders keep the historical buyer-paid allocation.
+An additional isolated migration, `20261103220545_admin_managed_delivery_payer.sql`, adds admin-managed commission and delivery rates and a global delivery payer choice (`buyer` or `fisher`). The reservation RPC snapshots the payer. Existing orders keep the historical buyer-paid allocation.
 
 - Buyer-paid delivery is included in the restaurant total and Marée monthly delivery statement.
 - Fisher-paid delivery is excluded from the restaurant total and Marée delivery receivable, and deducted from fisher immediate/monthly proceeds.
@@ -85,4 +85,4 @@ An additional isolated migration, `20261103190000_admin_managed_delivery_payer.s
 - Marée commission remains restaurant-paid in either mode.
 - New contract test: `delivery_fee_payer_contract.test.sql`.
 
-This additional migration and related UI changes remain isolated and have not been applied to production.
+The migration was applied to production and recorded by Supabase as version `20261103220545` after explicit authorization. The branch filename is aligned to that exact ledger version; related UI and application code remain isolated in this draft PR and are not deployed.
