@@ -1,7 +1,16 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(4);
+select plan(7);
+
+select ok((select prosecdef and proconfig @> array['search_path=""']
+  from pg_proc where oid='public.reserve_catch(uuid,numeric,timestamptz,text,text,numeric)'::regprocedure),
+  'reservation RPC remains SECURITY DEFINER with an empty search_path');
+select ok(has_function_privilege('authenticated','public.reserve_catch(uuid,numeric,timestamptz,text,text,numeric)','EXECUTE')
+  and has_function_privilege('service_role','public.reserve_catch(uuid,numeric,timestamptz,text,text,numeric)','EXECUTE'),
+  'authenticated and service_role retain reservation RPC execution');
+select ok(not has_function_privilege('anon','public.reserve_catch(uuid,numeric,timestamptz,text,text,numeric)','EXECUTE'),
+  'anonymous users cannot execute the reservation RPC');
 
 insert into auth.users (id, email) values
   ('00000000-0000-4000-8000-000000000011', 'reserve-demoted-fisher@test.local'),
