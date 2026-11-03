@@ -9,8 +9,8 @@ on conflict(id) do nothing;
 update public.profiles set role='restaurant' where id='00000000-0000-4000-8000-000000000091';
 update public.profiles set role='fisher' where id in ('00000000-0000-4000-8000-000000000092','00000000-0000-4000-8000-000000000093');
 insert into public.verification_requests(id,user_id,requested_role,business_name,contact_name,phone,evidence_note,status,reviewed_at) values
- ('30000000-0000-4000-8000-000000000091','00000000-0000-4000-8000-000000000092','fisher','Buyer-paid test','Test','+441534000091','Approved','approved',now()),
- ('30000000-0000-4000-8000-000000000092','00000000-0000-4000-8000-000000000093','fisher','Fisher-paid test','Test','+441534000092','Approved','approved',now());
+ ('30000000-0000-4000-8000-000000000091','00000000-0000-4000-8000-000000000092','fisher','Buyer-paid test','Test','+441534000091','Approved fisher business registration for isolated delivery-payer test.','approved',now()),
+ ('30000000-0000-4000-8000-000000000092','00000000-0000-4000-8000-000000000093','fisher','Fisher-paid test','Test','+441534000092','Approved fisher business registration for isolated delivery-payer test.','approved',now());
 insert into public.catches(id,fisher_id,species,zone,caught_at,landed_at,quantity_kg,remaining_kg,price_per_kg,method,storage_instructions,status) values
  ('10000000-0000-4000-8000-000000000091','00000000-0000-4000-8000-000000000092','Pollock','North',now()-interval '2 hours',now()-interval '1 hour',10,10,10,'Line','Chilled','available'),
  ('10000000-0000-4000-8000-000000000092','00000000-0000-4000-8000-000000000093','Pollock','North',now()-interval '2 hours',now()-interval '1 hour',10,10,10,'Line','Chilled','available');

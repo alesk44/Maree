@@ -67,7 +67,7 @@ Two local files had no corresponding production ledger version and would otherwi
 
 ## Expected deployment delta after validation
 
-After the clean local reset and the read-only ledger comparison, only the three isolated PR #11 migrations remain pending against the current production ledger:
+After the clean local reset and the read-only ledger comparison, only the four isolated migrations remain pending against the current production ledger:
 - `20261103160000_recheck_fisher_eligibility_on_reservation.sql`
 - `20261103170000_bind_email_review_action_to_token.sql`
 - `20261103180000_add_missing_foreign_key_indexes.sql`
