@@ -79,7 +79,7 @@ begin
 
   if (select count(*) from public.fisher_monthly_invoices i
       where i.restaurant_id = v_user_id and i.status = 'open') >= 3 then
-    raise exception 'Ordering is blocked: at least three monthly invoices are overdue and unpaid';
+    raise exception 'Ordering is blocked: at least three monthly invoices are open and unpaid';
   end if;
 
   select c.* into v_catch from public.catches c where c.id = p_catch_id for update;
