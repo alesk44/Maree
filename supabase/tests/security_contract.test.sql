@@ -105,7 +105,7 @@ select ok((select relrowsecurity from pg_class where oid = 'public.verification_
 select ok((select relrowsecurity from pg_class where oid = 'private.verification_email_action_tokens'::regclass), 'email action tokens have RLS enabled');
 select ok(not has_table_privilege('authenticated', 'private.verification_email_action_tokens', 'SELECT'), 'authenticated users cannot read email action tokens');
 select ok(not has_function_privilege('anon', 'public.create_verification_email_action_tokens(uuid,text,text,timestamptz)', 'EXECUTE'), 'anonymous users cannot create email decision tokens');
-select ok(not has_function_privilege('authenticated', 'public.review_verification_request_by_email_token(text)', 'EXECUTE'), 'authenticated users cannot execute email decision RPC');
+select ok(not has_function_privilege('authenticated', 'public.review_verification_request_by_email_token(text,text)', 'EXECUTE'), 'authenticated users cannot execute email decision RPC');
 
 select ok(not has_column_privilege('anon', 'public.profiles', 'phone', 'SELECT'), 'anonymous users cannot read profile phone numbers');
 select ok(not has_column_privilege('authenticated', 'public.profiles', 'phone', 'SELECT'), 'authenticated users cannot directly read private profile phone numbers');
