@@ -22,7 +22,7 @@ La branche main possède déjà la route /admin/email-review, les RPC et migrati
 
 Projet maree-jersey : ACTIVE_HEALTHY, PostgreSQL 17.11, région eu-west-2.
 
-La liste des migrations live confirme que la traçabilité est déjà déployée, contrairement à ce que laissait penser le draft PR #5 :
+La liste des migrations live confirme que la traçabilité est déjà déployée :
 - add_catch_traceability (version live 20261102055937)
 - external_traceability_records
 - index_traceability_and_compliance_foreign_keys
@@ -37,12 +37,21 @@ Schéma live vérifié :
 - La route src/routes/tracabilite.tsx de main utilise effectivement attach_external_traceability.
 - La RPC attach_external_traceability est SECURITY DEFINER, search_path vide, vérifie auth.uid(), le rôle fisher/restaurant, les champs, HTTPS, l'appartenance du catch au pêcheur ou de la commande au restaurant, et la cohérence catch/commande. Elle insère le code et l'événement dans la même transaction PL/pgSQL.
 - Les politiques SELECT autorisent les propriétaires du catch, le restaurant lié à la commande et l'admin. Aucune politique d'UPDATE/DELETE n'a été observée pour les tables de traçabilité.
-- La RPC a EXECUTE pour authenticated et service_role, pas pour anon/PUBLIC ; le corps contient les contrôles d'identité et de propriété.
+- La RPC a EXECUTE pour authenticated et service_role, pas pour anon ; le corps contient les contrôles d'identité et de propriété.
+- La table orders ne donne pas INSERT à authenticated : la création passe par reserve_catch. La table catches autorise INSERT à authenticated, mais sa politique vérifie que le pêcheur a le rôle fisher et une demande de vérification approuvée.
+
+## Revue des fonctions privilégiées
+
+- Les 14 fonctions public SECURITY DEFINER signalées par l'Advisor ont été listées et inspectées.
+- Les 14 ont search_path vide ; aucune n'est exécutable par anon.
+- Les définitions examinées comportent des contrôles auth.uid(), de rôle ou de propriété de la ressource. L'alerte Advisor reste un signal de revue continue, pas une preuve de vulnérabilité.
+- Point de durcissement : reserve_catch vérifie que l'utilisateur est un restaurant et que le lot existe, est disponible et a assez de stock, mais ne revérifie pas directement que le propriétaire du lot a encore role='fisher' et une demande fisher approuvée. Si un pêcheur est rétrogradé après publication, un lot déjà disponible pourrait encore être réservé. Aucun lot disponible non approuvé n'a été trouvé dans l'état actuel (1 lot disponible, 0 anomalie constatée). Ajouter un contrôle serveur dans reserve_catch et un test négatif avant la prochaine mise en production.
+- La règle de blocage des commandes est actuellement à partir de 3 factures mensuelles ouvertes, échues et impayées ; le délai de 7 jours après la clôture mensuelle est appliqué dans la génération des factures. Le comportement observé correspond à la règle métier validée.
 
 ## Résultats Advisors live
 
 Sécurité :
-- 14 fonctions SECURITY DEFINER sont exécutables par authenticated. Ce n'est pas automatiquement une vulnérabilité : chaque RPC doit être revue pour son contrôle auth.uid()/rôle/ressource. attach_external_traceability a été inspectée et comporte des gardes explicites.
+- 14 fonctions SECURITY DEFINER exécutables par authenticated. Voir la revue ci-dessus.
 - 3 tables RLS sans policy : private.admin_users, private.verification_email_action_tokens et public.maree_commercial_settings. Vérification complémentaire : maree_commercial_settings n'accorde aucun privilège à anon/authenticated, uniquement à postgres/service_role ; l'absence de policy API est donc intentionnelle à ce stade. Les deux autres tables sont dans le schéma privé.
 - Protection contre les mots de passe compromis désactivée dans Supabase Auth.
 - Liens de remédiation : https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable et https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection
