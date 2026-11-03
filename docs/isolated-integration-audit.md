@@ -15,8 +15,8 @@ La branche main possède déjà la route /admin/email-review, les RPC et migrati
 - Les six accès ont été convertis en accès indexés sans changement fonctionnel.
 - Le premier ajout du contrôle TypeScript à Verify a révélé que le routeTree généré était incomplet lorsque tsc s'exécutait avant le build.
 - Le workflow Verify est ordonné : install frozen, contrôle Deno des deux fonctions Edge de vérification, build (génère les routes), TypeScript, ESLint, tests.
-- Run final sur le commit 10b130fc4ea3d206645b4a839415f42bd2c71854 : SUCCESS. Build, TypeScript, ESLint et tests Vitest sont tous verts.
-- Détails du run : https://github.com/alesk44/Maree/actions/runs/41638176112
+- Dernier run complet sur le commit 447c38644d8d7c679448f98d5e8263d746e9eb96 : SUCCESS. Deno check des deux fonctions Edge, build, TypeScript, ESLint et tests Vitest sont tous verts.
+- Détails du run : https://github.com/alesk44/Maree/actions/runs/41640206066
 
 ## État réel de la base Supabase (lecture seule, 2026-11-03)
 
@@ -51,6 +51,13 @@ Schéma live vérifié :
 - Important : cette migration et ce test sont uniquement sur la branche isolée. Ils n'ont pas été appliqués à Supabase production. Le workflow GitHub Verify ne lance pas actuellement les scripts pgTAP ; leur exécution SQL reste à faire dans une base locale/test isolée avant toute proposition de fusion. Le run Verify vert ne valide donc que build, TypeScript, ESLint et Vitest, pas les tests SQL.
 - L'état live audité avant le patch comptait 1 lot disponible, 0 lot lié à un profil non-fisher et 0 lot disponible sans demande approuvée. Aucun cas anormal n'était présent.
 - La règle de blocage des commandes est à partir de 3 factures mensuelles ouvertes, échues et impayées ; le délai de 7 jours après la clôture mensuelle est appliqué dans la génération des factures. Le comportement observé correspond à la règle métier validée.
+
+## Correctifs SQL supplémentaires en attente de test isolé
+
+- `20261103160000_recheck_fisher_eligibility_on_reservation.sql` : contrôle rôle + demande fisher approuvée à la réservation.
+- `20261103170000_bind_email_review_action_to_token.sql` : lie l'action confirmée à l'action stockée dans le jeton, avant consommation ; l'ancien RPC à un argument est retiré et le nouveau reste service_role uniquement.
+- `20261103180000_add_missing_foreign_key_indexes.sql` : six index B-tree couvrant les clés étrangères signalées par l'Advisor.
+- Tests pgTAP ajoutés : `reserve_catch_fisher_eligibility_contract.test.sql`, `verification_email_action_contract.test.sql`, `foreign_key_index_contract.test.sql`. Ils ne sont pas encore exécutés dans une base locale/isolée ; le CI Verify ne les exécute pas.
 
 ## Résultats Advisors live
 
