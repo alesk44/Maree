@@ -1,6 +1,0 @@
--- Retired historical migration retained as a no-op for version continuity.
--- Do not recreate the legacy five-argument reserve_catch overload.
--- The current six-argument, tip-aware and billing-aware reservation RPC is
--- defined by 20261102182915_delivery_and_monthly_fisher_billing.sql.
--- The hardened update_order_status RPC is defined by
--- 20261102010343_harden_update_order_status.sql.

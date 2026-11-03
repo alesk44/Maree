@@ -1,6 +1,0 @@
--- Retired historical migration retained as a no-op for version continuity.
--- Its former broad profile-directory policy and profile grants are intentionally
--- not replayed. The current directory is provided by the verified-fisher RLS
--- policies and public_fisher_directory view in the subsequent migrations.
--- The hardened update_order_status RPC is defined by
--- 20261102010343_harden_update_order_status.sql.
