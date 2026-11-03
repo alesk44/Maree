@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(27);
+select plan(29);
 
 -- Isolated accounting fixtures. All timestamps are pinned to October 2026 so
 -- the tests remain deterministic regardless of the date on which CI runs.
@@ -255,6 +255,19 @@ select is(
   12.50::numeric,
   'cancellation indemnity is added to the fisher statement'
 );
+
+select is(
+  public.generate_fisher_monthly_invoices(date_trunc('month',now() at time zone 'Europe/Jersey')::date),
+  0,
+  'monthly reconciliation reuses the statement created at cancellation acceptance'
+);
+select is(
+  (select count(*) from public.fisher_cancellation_indemnities
+   where order_id='20000000-0000-4000-8000-000000000022'),
+  1::bigint,
+  'repeated monthly generation never duplicates the indemnity'
+);
+
 select is(
   (select status from public.orders where id='20000000-0000-4000-8000-000000000022'),
   'cancelled',
