@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(25);
+select plan(27);
 
 -- Isolated accounting fixtures. All timestamps are pinned to October 2026 so
 -- the tests remain deterministic regardless of the date on which CI runs.
@@ -296,6 +296,37 @@ select is(
    where order_id='20000000-0000-4000-8000-000000000022'),
   'paid',
   'invoice payment settles the cancellation receivable'
+);
+
+
+-- Declined offers must never create a receivable.
+insert into public.orders (
+  id,catch_id,restaurant_id,quantity_kg,requested_slot,fulfilment,status,
+  fisher_id_snapshot,unit_price_snapshot,product_subtotal,maree_fee_rate,maree_fee,
+  delivery_fee_rate,delivery_fee,total_amount,billing_mode,
+  cancellation_request_status,cancellation_penalty
+) values (
+  '20000000-0000-4000-8000-000000000023',
+  '10000000-0000-4000-8000-000000000021',
+  '00000000-0000-4000-8000-000000000021',
+  1,now()+interval '1 day','collection','confirmed',
+  '00000000-0000-4000-8000-000000000022',
+  10,10,0.065,0.65,0.20,0,10.65,'immediate','offered',15.00
+);
+set local role authenticated;
+set local "request.jwt.claim.sub"='00000000-0000-4000-8000-000000000021';
+select lives_ok(
+  $select public.respond_order_cancellation(
+    '20000000-0000-4000-8000-000000000023'::uuid,false
+  )$,
+  'restaurant declining an offer completes without creating a debt'
+);
+reset role;
+select is(
+  (select count(*) from public.fisher_cancellation_indemnities
+   where order_id='20000000-0000-4000-8000-000000000023'),
+  0::bigint,
+  'declined cancellation offer creates no indemnity receivable'
 );
 
 select * from finish();
