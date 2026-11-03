@@ -1,6 +1,6 @@
 begin;
 
-select plan(14);
+select plan(15);
 
 select has_function('public','generate_fisher_monthly_invoices',array['date'],
   'Fisher monthly generator exists.');
@@ -34,6 +34,12 @@ select ok(position('i.status=''open''' in lower(pg_get_functiondef('public.gener
   'Fisher item reconciliation is restricted to open invoices.');
 select ok(position('i.status=''open''' in lower(pg_get_functiondef('public.generate_maree_monthly_commission_invoices(date)'::regprocedure))) > 0,
   'Marée item reconciliation is restricted to open invoices.');
+select ok(exists (
+  select 1 from cron.job
+  where jobname='maree-monthly-fisher-invoices'
+    and schedule='0 3 1 * *'
+    and command ilike '%generate_monthly_billing_statements%'
+), 'monthly scheduler invokes the orchestrator for both fisher and Marée invoices.');
 
 select * from finish();
 rollback;
