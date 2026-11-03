@@ -178,13 +178,13 @@ reset role;
 set local role authenticated;
 set local "request.jwt.claim.sub"='00000000-0000-4000-8000-000000000022';
 select lives_ok(
-  $select public.mark_fisher_invoice_paid(
+  $$select public.mark_fisher_invoice_paid(
     (select id from public.fisher_monthly_invoices
      where restaurant_id='00000000-0000-4000-8000-000000000021'
        and fisher_id='00000000-0000-4000-8000-000000000022'
        and period_start='2026-10-01'),
     'bank_transfer','TEST-SETTLEMENT-001'
-  )$,
+  )$$,
   'fisher can confirm receipt of their open monthly invoice'
 );
 reset role;
@@ -207,10 +207,10 @@ select is(
 set local role authenticated;
 set local "request.jwt.claim.sub"='00000000-0000-4000-8000-000000000021';
 select lives_ok(
-  $select public.reserve_catch(
+  $$select public.reserve_catch(
     '10000000-0000-4000-8000-000000000021'::uuid,0.5,
     now()+interval '4 days','collection'
-  )$,
+  )$$,
   'settling one invoice reduces overdue count to two and restores ordering'
 );
 reset role;
