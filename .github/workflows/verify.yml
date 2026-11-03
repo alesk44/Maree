@@ -6,7 +6,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
+      - uses: denoland/setup-deno@v2
       - run: bun install --frozen-lockfile
+      - run: deno check supabase/functions/notify-verification-request/index.ts supabase/functions/review-verification-email-action/index.ts
       - run: bun run build
       - run: bunx tsc --noEmit
       - run: bun run lint
