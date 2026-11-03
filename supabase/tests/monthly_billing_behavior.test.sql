@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(17);
+select plan(23);
 
 -- Isolated accounting fixtures. All timestamps are pinned to October 2026 so
 -- the tests remain deterministic regardless of the date on which CI runs.
@@ -213,6 +213,90 @@ select lives_ok(
   'settling one invoice reduces the open unpaid count to two and restores ordering'
 );
 reset role;
+
+
+-- An immediate-billing order accepted for late cancellation creates a separate
+-- fisher receivable. It is never rewritten as a delivered order.
+insert into public.orders (
+  id,catch_id,restaurant_id,quantity_kg,requested_slot,fulfilment,status,
+  fisher_id_snapshot,unit_price_snapshot,product_subtotal,maree_fee_rate,maree_fee,
+  delivery_fee_rate,delivery_fee,total_amount,billing_mode,
+  cancellation_request_status,cancellation_penalty
+) values (
+  '20000000-0000-4000-8000-000000000022',
+  '10000000-0000-4000-8000-000000000021',
+  '00000000-0000-4000-8000-000000000021',
+  1,now()+interval '1 day','delivery','confirmed',
+  '00000000-0000-4000-8000-000000000022',
+  10,10,0.065,0.65,0.20,2,12.65,'immediate','offered',12.50
+);
+
+set local role authenticated;
+set local "request.jwt.claim.sub"='00000000-0000-4000-8000-000000000021';
+select lives_ok(
+  $select public.respond_order_cancellation(
+    '20000000-0000-4000-8000-000000000022'::uuid,true
+  )$,
+  'restaurant acceptance creates a cancellation indemnity receivable'
+);
+reset role;
+
+select is(
+  (select count(*) from public.fisher_cancellation_indemnities
+   where order_id='20000000-0000-4000-8000-000000000022'),
+  1::bigint,
+  'accepted cancellation creates exactly one indemnity'
+);
+select is(
+  (select cancellation_indemnity_total from public.fisher_monthly_invoices
+   where restaurant_id='00000000-0000-4000-8000-000000000021'
+     and fisher_id='00000000-0000-4000-8000-000000000022'
+     and period_start=date_trunc('month',now() at time zone 'Europe/Jersey')::date),
+  12.50::numeric,
+  'cancellation indemnity is added to the fisher statement'
+);
+select is(
+  (select status from public.orders where id='20000000-0000-4000-8000-000000000022'),
+  'cancelled',
+  'accepted cancellation remains cancelled and is not recorded as delivered'
+);
+select is(
+  (select count(*) from public.maree_monthly_commission_invoice_items
+   where order_id='20000000-0000-4000-8000-000000000022'),
+  0::bigint,
+  'cancellation indemnity is excluded from Marée commission'
+);
+
+set local role authenticated;
+set local "request.jwt.claim.sub"='00000000-0000-4000-8000-000000000021';
+select throws_ok(
+  $select public.reserve_catch(
+    '10000000-0000-4000-8000-000000000021'::uuid,0.5,
+    now()+interval '5 days','collection'
+  )$,
+  'P0001',
+  'Ordering is blocked: at least three monthly invoices are open and unpaid',
+  'accepted cancellation indemnity counts as a third open amount and blocks ordering'
+);
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub"='00000000-0000-4000-8000-000000000022';
+select lives_ok(
+  $select public.mark_fisher_invoice_paid(
+    (select invoice_id from public.fisher_cancellation_indemnities
+     where order_id='20000000-0000-4000-8000-000000000022'),
+    'bank_transfer','CANCEL-SETTLEMENT-001'
+  )$,
+  'fisher can settle a statement containing a cancellation indemnity'
+);
+reset role;
+select is(
+  (select status from public.fisher_cancellation_indemnities
+   where order_id='20000000-0000-4000-8000-000000000022'),
+  'paid',
+  'invoice payment settles the cancellation receivable'
+);
 
 select * from finish();
 rollback;
