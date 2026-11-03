@@ -168,11 +168,17 @@ function Admin() {
     const commission=Number(mareeFeePercent),delivery=Number(deliveryFeePercent);
     if(!Number.isFinite(commission)||commission<0||commission>100||!Number.isFinite(delivery)||delivery<0||delivery>100){toast.error(t('Les taux doivent être compris entre 0 et 100 %.'));return;}
     setSavingCommercial(true);
-    const {error:saveError}=await supabase.rpc('update_maree_commercial_settings',{p_maree_fee_percent:commission,p_delivery_fee_percent:delivery,p_delivery_fee_payer:deliveryFeePayer});
-    setSavingCommercial(false);
-    if(saveError){toast.error(t('Impossible d’enregistrer les paramètres commerciaux.'));console.warn('Commercial settings update failed',saveError);return;}
-    toast.success(t('Paramètres commerciaux enregistrés. Les nouvelles commandes utiliseront ces valeurs.'));
-    setCommercialError(null);
+    try {
+      const {error:saveError}=await supabase.rpc('update_maree_commercial_settings',{p_maree_fee_percent:commission,p_delivery_fee_percent:delivery,p_delivery_fee_payer:deliveryFeePayer});
+      if(saveError) throw saveError;
+      toast.success(t('Paramètres commerciaux enregistrés. Les nouvelles commandes utiliseront ces valeurs.'));
+      setCommercialError(null);
+    } catch (saveError) {
+      toast.error(t('Impossible d’enregistrer les paramètres commerciaux.'));
+      console.warn('Commercial settings update failed',saveError);
+    } finally {
+      setSavingCommercial(false);
+    }
   };
 
   const verifyCommissionPayment = async (invoiceId: string) => {
@@ -220,7 +226,7 @@ function Admin() {
           <label className="grid gap-1 text-sm font-medium sm:col-span-2">{t('Qui paie les frais de livraison ?')}<select className="field" value={deliveryFeePayer} onChange={e=>setDeliveryFeePayer(e.target.value as 'buyer'|'fisher')}><option value="buyer">{t('Acheteur / restaurant')}</option><option value="fisher">{t('Pêcheur — déduit de son règlement')}</option></select></label>
         </div>
         <p className="text-xs text-muted-foreground">{t('Si le pêcheur paie, les frais sont retenus sur son montant à recevoir et ne sont pas ajoutés au relevé Marée du restaurant. Le choix est figé sur chaque commande.')}</p>
-        <button type="button" className="btn btn-accent w-fit" disabled={savingCommercial} onClick={()=>void saveCommercialSettings()}>{savingCommercial?t('Enregistrement…'):t('Enregistrer les paramètres')}</button>
+        <button type="button" className="btn btn-accent w-fit" disabled={savingCommercial||Boolean(commercialError)} onClick={()=>void saveCommercialSettings()}>{savingCommercial?t('Enregistrement…'):t('Enregistrer les paramètres')}</button>
       </section>}
       {isAdmin && !loading && (() => {
         const deliveredOrders = allOrders.filter((order) => order.status === "delivered");
