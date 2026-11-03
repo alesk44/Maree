@@ -61,7 +61,8 @@ Sécurité :
 - Liens de remédiation : https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable et https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection
 
 Performance :
-- 6 clés étrangères sans index couvrant, dont fisher_monthly_invoices.fisher_id, orders.fisher_id_snapshot et restaurant_fisher_billing_settings.fisher_id.
+- L'Advisor avait signalé 6 clés étrangères sans index couvrant. Les tailles live au moment de l'audit étaient faibles (factures 24 kB chacune, commandes 72 kB / 3 lignes, paramètres de facturation 16 kB) : ajout isolé de 6 index B-tree simples, sans migration de production, pour fisher_monthly_invoices.fisher_id/paid_by, maree_monthly_commission_invoices.declared_by/verified_by, orders.fisher_id_snapshot et restaurant_fisher_billing_settings.fisher_id.
+- Contrat pgTAP ajouté pour vérifier la présence des six index. Les index ne sont pas encore créés sur la base live ; l'Advisor ne sera recontrôlé qu'après application en environnement de test.
 - 14 index signalés comme inutilisés ; ne pas les supprimer sans mesures de charge et revue.
 - Lien : https://supabase.com/docs/guides/database/database-linter?lint=0001_unindexed_foreign_keys
 
