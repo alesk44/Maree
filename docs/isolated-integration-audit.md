@@ -15,8 +15,8 @@ La branche main possède déjà la route /admin/email-review, les RPC et migrati
 - Les six accès ont été convertis en accès indexés sans changement fonctionnel.
 - Le premier ajout du contrôle TypeScript à Verify a révélé que le routeTree généré était incomplet lorsque tsc s'exécutait avant le build.
 - Le workflow Verify est ordonné : install frozen, build (génère les routes), TypeScript, ESLint, tests.
-- Run final sur le commit 1dde9f8be6030383f74ffb74c9798df73391eb8f : SUCCESS. Build, TypeScript, ESLint et tests Vitest sont tous verts.
-- Détails du run : https://github.com/alesk44/Maree/actions/runs/41637825827
+- Run final sur le commit 10b130fc4ea3d206645b4a839415f42bd2c71854 : SUCCESS. Build, TypeScript, ESLint et tests Vitest sont tous verts.
+- Détails du run : https://github.com/alesk44/Maree/actions/runs/41638176112
 
 ## État réel de la base Supabase (lecture seule, 2026-11-03)
 
@@ -45,8 +45,12 @@ Schéma live vérifié :
 - Les 14 fonctions public SECURITY DEFINER signalées par l'Advisor ont été listées et inspectées.
 - Les 14 ont search_path vide ; aucune n'est exécutable par anon.
 - Les définitions examinées comportent des contrôles auth.uid(), de rôle ou de propriété de la ressource. L'alerte Advisor reste un signal de revue continue, pas une preuve de vulnérabilité.
-- Point de durcissement : reserve_catch vérifie que l'utilisateur est un restaurant et que le lot existe, est disponible et a assez de stock, mais ne revérifie pas directement que le propriétaire du lot a encore role='fisher' et une demande fisher approuvée. Si un pêcheur est rétrogradé après publication, un lot déjà disponible pourrait encore être réservé. Aucun lot disponible non approuvé n'a été trouvé dans l'état actuel (1 lot disponible, 0 anomalie constatée). Ajouter un contrôle serveur dans reserve_catch et un test négatif avant la prochaine mise en production.
-- La règle de blocage des commandes est actuellement à partir de 3 factures mensuelles ouvertes, échues et impayées ; le délai de 7 jours après la clôture mensuelle est appliqué dans la génération des factures. Le comportement observé correspond à la règle métier validée.
+- Point de durcissement initial : reserve_catch vérifiait le rôle restaurant et le lot disponible, mais ne revérifiait pas directement l'éligibilité du pêcheur à l'instant de la réservation. Le propriétaire pouvait être rétrogradé après publication et conserver un lot réservable.
+- Correctif isolé préparé dans supabase/migrations/20261103160000_recheck_fisher_eligibility_on_reservation.sql : la RPC verrouille la demande approuvée puis le profil du pêcheur (même ordre de verrouillage que review_verification_request), et refuse si la demande fisher approuvée ou le rôle fisher manque.
+- Contrat de régression ajouté dans supabase/tests/reserve_catch_fisher_eligibility_contract.test.sql : cas pêcheur rétrogradé, vérification encore pending, et pêcheur approuvé valide avec contrôle du stock.
+- Important : cette migration et ce test sont uniquement sur la branche isolée. Ils n'ont pas été appliqués à Supabase production. Le workflow GitHub Verify ne lance pas actuellement les scripts pgTAP ; leur exécution SQL reste à faire dans une base locale/test isolée avant toute proposition de fusion.
+- L'état live audité avant le patch comptait 1 lot disponible, 0 lot lié à un profil non-fisher et 0 lot disponible sans demande approuvée. Aucun cas anormal n'était présent.
+- La règle de blocage des commandes est à partir de 3 factures mensuelles ouvertes, échues et impayées ; le délai de 7 jours après la clôture mensuelle est appliqué dans la génération des factures. Le comportement observé correspond à la règle métier validée.
 
 ## Résultats Advisors live
 
