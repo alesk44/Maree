@@ -79,6 +79,7 @@ Deno.serve(async (req: Request) => {
   const admin = createClient(supabaseUrl, serviceKey);
   const { data, error } = await admin.rpc("review_verification_request_by_email_token", {
     p_token_hash: await hashToken(payload.token),
+    p_expected_action: payload.action,
   });
   if (error || (data !== "approved" && data !== "rejected")) {
     return json(req, { error: "Invalid, expired, or already used confirmation link" }, 400);
