@@ -166,7 +166,7 @@ select throws_ok(
     now()+interval '3 days','collection'
   )$$,
   'P0001',
-  'Ordering is blocked: at least three monthly invoices are overdue and unpaid',
+  'Ordering is blocked: at least three monthly invoices are open and unpaid',
   'third overdue invoice blocks new orders'
 );
 reset role;
