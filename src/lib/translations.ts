@@ -691,6 +691,9 @@ Object.assign(translations, {
   "Livraison facturée au restaurant": ["Delivery charged to restaurant", "Livrare facturată restaurantului"],
   "Payée par le restaurant": ["Paid by restaurant", "Plătită de restaurant"],
   "Déduite du pêcheur": ["Deducted from fisher", "Dedusă pescarului"],
+  "Frais de livraison Marée": ["Marée delivery fees", "Taxe de livrare Marée"],
+  "Dont retenus sur les pêcheurs": ["Including deducted from fishers", "Inclusiv reținute de la pescari"],
+  "Les montants proviennent des prix et frais figés à la réservation : la livraison est soit facturée au restaurant, soit retenue sur le règlement du pêcheur. La commission Marée reste due par le restaurant. Aucun paiement en ligne n’est activé.": ["Amounts use the prices and fees snapshotted at reservation: delivery is either charged to the restaurant or deducted from the fisher's payout. Marée commission remains payable by the restaurant. No online payments are enabled.", "Sumele folosesc prețurile și taxele înregistrate la rezervare: livrarea este fie facturată restaurantului, fie dedusă din plata pescarului. Comisionul Marée rămâne datorat de restaurant. Plățile online nu sunt activate."],
 });
 
 // Complete translations for order management and cancellation flows.

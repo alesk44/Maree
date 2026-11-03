@@ -229,9 +229,11 @@ function Admin() {
         const fisherDue = deliveredOrders.filter(order=>order.fisher_payment_status==="unpaid").reduce((sum,order)=>sum+Number(order.product_subtotal??0)+Number(order.tip_amount??0)-(order.delivery_fee_payer_snapshot==='fisher'?Number(order.delivery_fee??0):0),0);
         const fisherPaid = deliveredOrders.filter(order=>order.fisher_payment_status==="paid").reduce((sum,order)=>sum+Number(order.product_subtotal??0)+Number(order.tip_amount??0)-(order.delivery_fee_payer_snapshot==='fisher'?Number(order.delivery_fee??0):0),0);
         const mareeCommission = deliveredOrders.reduce((sum, order) => sum + Number(order.maree_fee ?? 0), 0);
-        const mareeDelivery = deliveredOrders.reduce((sum, order) => sum + (order.delivery_fee_payer_snapshot==='buyer'?Number(order.delivery_fee ?? 0):0), 0);
+        const mareeDeliveryBuyer = deliveredOrders.reduce((sum, order) => sum + (order.delivery_fee_payer_snapshot==='buyer'?Number(order.delivery_fee ?? 0):0), 0);
+        const mareeDeliveryFisher = deliveredOrders.reduce((sum, order) => sum + (order.delivery_fee_payer_snapshot==='fisher'?Number(order.delivery_fee ?? 0):0), 0);
+        const mareeDelivery = mareeDeliveryBuyer + mareeDeliveryFisher;
         const mareePaid = commissionInvoices.filter(invoice=>invoice.status==="paid").reduce((sum,invoice)=>sum+Number(invoice.commission_total)+Number(invoice.delivery_total),0);
-        const mareeOutstanding = Math.max(0,mareeCommission+mareeDelivery-mareePaid);
+        const mareeOutstanding = Math.max(0,mareeCommission+mareeDeliveryBuyer-mareePaid);
         const fmt = (value: number) => new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(value);
         return <section className="grid gap-4">
           <div><h2 className="font-display text-2xl font-semibold">{t("Vue d’ensemble de la plateforme")}</h2><p className="text-sm text-muted-foreground">{t("Montants calculés à partir des snapshots de commande ; aucun encaissement réel n’est activé.")}</p></div>
@@ -245,12 +247,12 @@ function Admin() {
             <div className="card p-4"><p className="text-xs text-muted-foreground">{t("Commission Marée ({rate} %)",{rate:(Number(mareeFeePercent)||0).toString()})}</p><p className="mt-1 text-2xl font-semibold">{fmt(mareeCommission)}</p></div>
           </div>
           <div className="card grid gap-3 p-5 sm:grid-cols-2">
-            <div><p className="text-sm text-muted-foreground">{t("Frais de livraison Marée ({rate} %)",{rate:(Number(deliveryFeePercent)||0).toString()})}</p><p className="font-display text-3xl font-semibold text-accent">{fmt(mareeDelivery)}</p></div>
+            <div><p className="text-sm text-muted-foreground">{t("Frais de livraison Marée")}</p><p className="font-display text-3xl font-semibold text-accent">{fmt(mareeDelivery)}</p><p className="text-xs text-muted-foreground">{t("Dont retenus sur les pêcheurs")}: {fmt(mareeDeliveryFisher)}</p></div>
             <div><p className="text-sm text-muted-foreground">{t("Dette Marée à régler")}</p><p className="font-display text-3xl font-semibold">{fmt(mareeOutstanding)}</p></div>
             <div><p className="text-sm text-muted-foreground">{t("Paiements Marée vérifiés")}</p><p className="font-display text-3xl font-semibold">{fmt(mareePaid)}</p></div>
             <div className="text-sm text-muted-foreground">{t("En attente")}: <strong>{allOrders.filter((order) => !["delivered", "cancelled"].includes(order.status)).length}</strong></div>
           </div>
-          <p className="text-xs text-muted-foreground">{t("Les montants proviennent des prix et frais figés à la réservation : le pêcheur reçoit le sous-total produits et les pourboires ; Marée facture 6,5 % au restaurant sur chaque achat et les frais de livraison de 20 % ne s’appliquent qu’en livraison. Aucun paiement en ligne n’est activé.")}</p>
+          <p className="text-xs text-muted-foreground">{t("Les montants proviennent des prix et frais figés à la réservation : la livraison est soit facturée au restaurant, soit retenue sur le règlement du pêcheur. La commission Marée reste due par le restaurant. Aucun paiement en ligne n’est activé.")}</p>
         </section>;
       })()}
       {isAdmin && !loading && <section className="card grid gap-3 p-5">
@@ -258,7 +260,7 @@ function Admin() {
         {commissionInvoices.length===0 ? <p className="text-sm text-muted-foreground">{t("Aucun relevé mensuel de commission généré.")}</p> :
           <ul className="grid gap-2">{commissionInvoices.map((invoice)=><li key={invoice.id} className="rounded-xl border border-border p-4">
             <div className="flex flex-wrap justify-between gap-2"><strong>{t("Restaurant")} · {invoice.restaurant_id.slice(0,8).toUpperCase()} · {invoice.period_start} — {invoice.period_end}</strong><strong>{new Intl.NumberFormat("en-GB",{style:"currency",currency:"GBP"}).format(Number(invoice.commission_total)+Number(invoice.delivery_total))}</strong></div>
-            <p className="text-xs text-muted-foreground">{t("Commission Marée ({rate} %)",{rate:(Number(mareeFeePercent)||0).toString()})} : {new Intl.NumberFormat("en-GB",{style:"currency",currency:"GBP"}).format(Number(invoice.commission_total))} · {t("Livraison Marée (20 %)")} : {new Intl.NumberFormat("en-GB",{style:"currency",currency:"GBP"}).format(Number(invoice.delivery_total))}</p>
+            <p className="text-xs text-muted-foreground">{t("Commission Marée")} : {new Intl.NumberFormat("en-GB",{style:"currency",currency:"GBP"}).format(Number(invoice.commission_total))} · {t("Livraison facturée au restaurant")} : {new Intl.NumberFormat("en-GB",{style:"currency",currency:"GBP"}).format(Number(invoice.delivery_total))}</p>
             <p className="text-sm text-muted-foreground">{t("Échéance")} : {invoice.due_date} · {invoice.status==="paid"?t("Vérifié / payé"):invoice.status==="declared_paid"?t("Déclaré — à vérifier"):invoice.status==="void"?t("Annulé"):t("Ouvert — non déclaré")}</p>
             {invoice.payment_method&&<p className="text-xs text-muted-foreground">{invoice.payment_method} {invoice.payment_reference?("· "+invoice.payment_reference):""}</p>}
             {invoice.status==="declared_paid"&&<button type="button" className="btn btn-accent mt-3" disabled={busyId!==null} onClick={()=>void verifyCommissionPayment(invoice.id)}>{t("Vérifier le paiement reçu")}</button>}

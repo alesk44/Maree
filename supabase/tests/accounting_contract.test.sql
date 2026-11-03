@@ -38,7 +38,7 @@ select ok(
   'Marée commission is calculated only on the product subtotal, not the tip.'
 );
 select ok(
-  position('v_tip' in pg_get_functiondef('public.reserve_catch(uuid,numeric,timestamptz,text,text,numeric)'::regprocedure)) > 0
+  position(' + v_tip' in pg_get_functiondef('public.reserve_catch(uuid,numeric,timestamptz,text,text,numeric)'::regprocedure)) > 0
   and position('v_delivery_payer = ''buyer''' in pg_get_functiondef('public.reserve_catch(uuid,numeric,timestamptz,text,text,numeric)'::regprocedure)) > 0,
   'Restaurant total includes the full fisher tip.'
 );
