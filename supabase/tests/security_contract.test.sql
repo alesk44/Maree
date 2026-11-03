@@ -263,10 +263,12 @@ select is(
 );
 select is(
   (select status from public.catches where id='10000000-0000-4000-8000-000000000001'),
-  'available'::public.catch_status,
-  'restored catch becomes available again'
+  'reserved'::public.catch_status,
+  'fisher refusal preserves the reserved listing state'
 );
 reset role;
+update public.catches set status='available'
+where id='10000000-0000-4000-8000-000000000001';
 
 -- Admin approval must update the request and grant the requested role atomically.
 set local role authenticated;
