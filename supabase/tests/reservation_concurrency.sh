@@ -14,6 +14,7 @@ FISHER_ID="00000000-0000-4000-8000-000000000011"
 RESTAURANT_A="00000000-0000-4000-8000-000000000012"
 RESTAURANT_B="00000000-0000-4000-8000-000000000013"
 CATCH_ID="10000000-0000-4000-8000-000000000011"
+VERIFICATION_ID="30000000-0000-4000-8000-000000000011"
 LOG_A="$(mktemp)"
 LOG_B="$(mktemp)"
 trap 'rm -f "$LOG_A" "$LOG_B"' EXIT
@@ -31,6 +32,17 @@ update public.profiles set role = 'restaurant', display_name = 'Concurrency Rest
 where id = '$RESTAURANT_A';
 update public.profiles set role = 'restaurant', display_name = 'Concurrency Restaurant B'
 where id = '$RESTAURANT_B';
+
+-- reserve_catch now re-checks professional eligibility, so the concurrency
+-- fixture must represent a fisher whose verification has actually been approved.
+insert into public.verification_requests
+  (id, user_id, requested_role, business_name, contact_name, phone, evidence_note, status, reviewed_at)
+values
+  ('$VERIFICATION_ID', '$FISHER_ID', 'fisher', 'Concurrency Fishing Ltd',
+   'Concurrency Test', '+441534000011', 'Approved fixture for stock reservation concurrency.',
+   'approved', now())
+on conflict (id) do update
+set status = 'approved', reviewed_at = now();
 
 insert into public.catches (
   id, fisher_id, species, zone, caught_at, landed_at, quantity_kg,
