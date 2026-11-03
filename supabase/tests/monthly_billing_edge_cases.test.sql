@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(16);
+select plan(15);
 
 -- These fixtures exercise the Jersey-local calendar boundary in October 2026
 -- (BST, UTC+1): 23:30 UTC on Sep 30 is Oct 1 locally; 23:30 UTC on Oct 31
