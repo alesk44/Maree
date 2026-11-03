@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(13);
+select plan(17);
 
 -- Isolated accounting fixtures. All timestamps are pinned to October 2026 so
 -- the tests remain deterministic regardless of the date on which CI runs.
@@ -169,6 +169,49 @@ select throws_ok(
   'P0001',
   'Ordering is blocked: at least three monthly invoices are overdue and unpaid',
   'third overdue invoice blocks new orders'
+);
+reset role;
+
+-- The fisher confirms receipt. This must settle the invoice and every linked
+-- order atomically; the restaurant then has only two overdue invoices and can
+-- place a new order again.
+set local role authenticated;
+set local "request.jwt.claim.sub"='00000000-0000-4000-8000-000000000022';
+select lives_ok(
+  $select public.mark_fisher_invoice_paid(
+    (select id from public.fisher_monthly_invoices
+     where restaurant_id='00000000-0000-4000-8000-000000000021'
+       and fisher_id='00000000-0000-4000-8000-000000000022'
+       and period_start='2026-10-01'),
+    'bank_transfer','TEST-SETTLEMENT-001'
+  )$,
+  'fisher can confirm receipt of their open monthly invoice'
+);
+reset role;
+
+select is(
+  (select status from public.fisher_monthly_invoices
+   where restaurant_id='00000000-0000-4000-8000-000000000021'
+     and fisher_id='00000000-0000-4000-8000-000000000022'
+     and period_start='2026-10-01'),
+  'paid',
+  'payment confirmation settles the fisher invoice'
+);
+select is(
+  (select fisher_payment_status from public.orders
+   where id='20000000-0000-4000-8000-000000000021'),
+  'paid',
+  'payment confirmation marks all linked orders as paid'
+);
+
+set local role authenticated;
+set local "request.jwt.claim.sub"='00000000-0000-4000-8000-000000000021';
+select lives_ok(
+  $select public.reserve_catch(
+    '10000000-0000-4000-8000-000000000021'::uuid,0.5,
+    now()+interval '4 days','collection'
+  )$,
+  'settling one invoice reduces overdue count to two and restores ordering'
 );
 reset role;
 
