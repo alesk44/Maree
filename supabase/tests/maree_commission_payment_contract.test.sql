@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(9);
+select plan(11);
 
 insert into auth.users (id,email) values
   ('00000000-0000-4000-8000-000000000051','maree-payment-owner@test.local'),
@@ -80,6 +80,12 @@ select lives_ok(
   'Marée admin can verify the declared payment'
 );
 reset role;
+select is((select status from public.maree_monthly_commission_invoices
+  where id='40000000-0000-4000-8000-000000000051'),
+  'paid','admin verification is the only step that marks the commission invoice paid');
+select is((select verified_by from public.maree_monthly_commission_invoices
+  where id='40000000-0000-4000-8000-000000000051'),
+  '00000000-0000-4000-8000-000000000053'::uuid,'admin identity is recorded as verifier');
 
 select * from finish();
 rollback;
