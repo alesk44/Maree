@@ -133,3 +133,19 @@ Comparaison en lecture seule entre `supabase/migrations` de la branche et `supab
 Le dossier `supabase/migrations` de `main` contient les mêmes 42 fichiers que la base de la branche isolée ; cette dérive est donc préexistante et n'a pas été créée par la PR #11. Supabase documente que `migration list` compare les timestamps, pas les noms de fichiers : ces écarts sont donc bloquants pour tout `db push` tant qu'ils ne sont pas réconciliés.
 
 **Décision : aucun push de migration ni réparation de l'historique distant.** Ne pas lancer `supabase db push`, `migration repair` ou une migration manuelle. La suite doit d'abord établir un mapping vérifié fichier par fichier, retrouver/reconstituer les deux migrations distantes absentes, déterminer le statut des deux migrations locales sans correspondance, puis préparer un plan de réparation d'historique avec dry-run/revue. Toute modification de `supabase_migrations.schema_migrations` en production exigera une autorisation distincte et un plan de retour arrière.
+
+
+## Rectification du rapprochement de migrations — vérification approfondie 2026-11-03
+
+Le rapprochement précédent a été précisé par comparaison stricte des versions Supabase, des noms de migration et du dossier `main`.
+
+- `main` : 42 fichiers SQL ; branche isolée : 45 fichiers SQL. Les 3 fichiers supplémentaires sont exactement les trois migrations PR #11 (révalidation de l'éligibilité pêcheur, liaison action/token email, six index FK). Les deux anciens fichiers locaux `20261101010000_public_fisher_directory_and_order_status` et `20261101210000_rpc_entrypoints` sont déjà présents sur `main`, donc ne sont pas des ajouts PR #11.
+- Historique distant : 44 versions.
+- Deux versions distantes n'ont pas de fichier local homonyme : `20261102043901_enforce_verified_fisher_catch_permissions` et `20261102043926_add_fisher_compliance_intake_fields`.
+- Deux migrations locales historiques n'ont pas de version distante correspondante : `20261101010000_public_fisher_directory_and_order_status` et `20261101210000_rpc_entrypoints`.
+- Plusieurs versions distantes ont un nom fonctionnel correspondant à un fichier local, mais un timestamp différent. Les 28 différences de timestamp recensées comprennent aussi des enregistrements distants dont le champ name contient un ancien timestamp dans son texte (par exemple `20261102182759 / 20261102060000_profile_avatars`). Le rapprochement par nom seul n'est pas une preuve d'identité du contenu SQL.
+- Contrôle read-only des objets live : `reserve_catch(uuid,numeric,timestamptz,text,text,numeric)` existe en SECURITY DEFINER avec search_path vide ; `review_verification_request_by_email_token(text)` existe encore en une seule signature ; `update_order_status(uuid,order_status)` existe. Les politiques RLS actuelles de `profiles` portent les noms et prédicats de migrations plus récentes que le premier fichier historique local.
+- Le fichier historique `20261101010000_public_fisher_directory_and_order_status` ne doit surtout pas être rejoué sans analyse : il crée une politique SELECT supplémentaire `Public fisher directory` et des grants de colonnes, alors que les politiques live actuelles ont déjà une configuration différente et plus récente.
+- Le fichier historique `20261101210000_rpc_entrypoints` contient une ancienne version à 5 arguments de `reserve_catch`, alors que la production expose la version actuelle à 6 arguments. Il ne doit pas être rejoué.
+
+**Conclusion opérationnelle inchangée :** aucune migration ne doit être lancée maintenant. Les tests locaux passent, mais ils ne réparent pas la dérive d'historique. Avant tout déploiement, il faut reconstituer les deux anciennes migrations distantes manquantes du dépôt, comprendre l'origine et le contenu exact des entrées distantes timestampées, comparer les migrations SQL historiques aux objets live, puis préparer un plan de réconciliation version par version. Aucune commande de réparation ou de push n'a été exécutée.
