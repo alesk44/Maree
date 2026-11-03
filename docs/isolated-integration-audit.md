@@ -100,3 +100,18 @@ Performance :
 - Le setup Supabase CLI est épinglé à `3.0.0` afin d'éviter la résolution `latest` qui avait échoué sur une limite de taux GitHub.
 - `main` est à `9bf3dd216e9f905f13be7a3f1cefcc88266ba772`, qui est l'ancêtre commun / base de la branche isolée dans l'historique récupéré ; la branche contient 22 commits propres au-dessus et aucun commit de `main` manquant.
 - Décision : la branche isolée est techniquement prête pour une revue de fusion ciblée. Cela n'autorise pas une fusion automatique des PR #3/#5, ni l'application des migrations à Supabase production. Une PR dédiée depuis `work/next-isolated-audit` vers `main` est le chemin recommandé.
+
+
+## Compléments de validation — facturation concurrente et cycle Marée — 2026-11-03
+
+- Vérification read-only de `cron.job` sur la base de production : job actif `maree-monthly-fisher-invoices`, schedule `0 3 1 * *`, commande `generate_monthly_billing_statements(...)`. La production appelle donc bien l'orchestrateur des deux facturations.
+- Un écart a été détecté dans la reconstruction locale : la chaîne de migrations locale laissait le cron sur l'ancien appel du seul générateur pêcheur. La migration isolée `20261103150000_reconcile_monthly_invoice_generators.sql` réconcilie désormais le job vers l'orchestrateur, et le contrat pgTAP vérifie le nom, la planification et l'appel de l'orchestrateur.
+- Nouveau test pgTAP `maree_commission_payment_contract.test.sql` : contrôle des droits et du `search_path`, refus d'une déclaration par un autre restaurant, déclaration du restaurant propriétaire, séparation entre déclaration et paiement confirmé, refus de l'auto-validation et validation par un admin avec identité du vérificateur conservée.
+- Nouveau test d'intégration `monthly_billing_concurrency.sh` : deux sessions PostgreSQL exécutent simultanément l'orchestrateur pour le même mois. Résultat vérifié : une seule facture pêcheur, une seule facture Marée, une ligne par registre et montants exacts (£50.00, £3.25 de commission, £10.00 de livraison).
+- Le workflow Supabase migration a été épinglé à Supabase CLI `3.0.0` pour éviter les échecs de résolution `latest` dus aux limites de requêtes GitHub. Le test de génération concurrente est inclus dans ce workflow.
+- Validation sur le commit `7dc3af52660f76b347c42a51c932a3fb2df4c907` : Verify SUCCESS et Database Contract SUCCESS. Le journal du job Database Contract confirme `Files=9, Tests=299`, `All tests successful`, `Result: PASS`.
+- Sur le commit parent `7c03cb1d0c52825dca6afb7bf65a24af98c0a475`, le même ensemble de 299 tests pgTAP et le test de génération concurrente ont tous deux réussi ; journal : https://github.com/alesk44/Maree/actions/runs/41695059458.
+- La suite Marée CI et Build verification a également réussi sur `7c03cb1`; le dernier changement ensuite a uniquement retiré l'exécution en double du test concurrent dans le workflow Database Contract.
+- Les Advisors live signalent toujours la protection contre les mots de passe compromis désactivée dans Supabase Auth. Cela nécessite une activation dans le Dashboard avant ouverture publique ; aucune modification Auth n'a été faite.
+- Les six index FK restent dans la migration isolée, non appliquée à la production. Les 14 index signalés inutilisés ne sont pas supprimés.
+- Aucun changement de schéma ou de données Supabase production, aucun déploiement Edge/Cloudflare et aucune fusion n'ont été effectués pendant ces contrôles.
