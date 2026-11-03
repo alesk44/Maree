@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(211);
+select plan(213);
 
 -- Isolated auth users; the auth trigger creates their initial restaurant profiles.
 insert into auth.users (id, email) values
@@ -230,6 +230,21 @@ reset role;
 -- catch is no longer publicly available, but cannot inspect another restaurant's lot.
 update public.catches set status='reserved'
 where id='10000000-0000-4000-8000-000000000001';
+
+-- Editing price on a manually reserved listing must not silently republish it.
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
+select lives_ok(
+  $select public.update_catch_inventory('10000000-0000-4000-8000-000000000001'::uuid, null, 8.75)$,
+  'fisher can update price on their reserved listing'
+);
+select is(
+  (select status from public.catches where id='10000000-0000-4000-8000-000000000001'),
+  'reserved'::public.catch_status,
+  'manual inventory edits preserve the reserved listing state'
+);
+reset role;
+
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000003';
 select is(
