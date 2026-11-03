@@ -14,8 +14,9 @@ La branche main possède déjà la route /admin/email-review, les RPC et migrati
 - Le run CI intermédiaire a révélé six TS4111 dans src/lib/maree-api.ts : les clés d'un Record étaient lues avec la notation pointée.
 - Les six accès ont été convertis en accès indexés sans changement fonctionnel.
 - Le premier ajout du contrôle TypeScript à Verify a révélé que le routeTree généré était incomplet lorsque tsc s'exécutait avant le build.
-- Le workflow Verify est donc ordonné : install frozen, build (génère les routes), TypeScript, ESLint, tests.
-- Le run du commit précédent a échoué avant cette correction d'ordre ; le résultat du nouveau run est à confirmer.
+- Le workflow Verify est ordonné : install frozen, build (génère les routes), TypeScript, ESLint, tests.
+- Run final sur le commit 1dde9f8be6030383f74ffb74c9798df73391eb8f : SUCCESS. Build, TypeScript, ESLint et tests Vitest sont tous verts.
+- Détails du run : https://github.com/alesk44/Maree/actions/runs/41637825827
 
 ## État réel de la base Supabase (lecture seule, 2026-11-03)
 
@@ -32,16 +33,17 @@ La liste des migrations live confirme que la traçabilité est déjà déployée
 Schéma live vérifié :
 - catch_traceability_codes possède catch_id, order_id, raw_code, code_type, source_url, verification_status, scanned_by, supplier_name, received_at, species, quantity_kg et note.
 - catch_traceability_events possède catch_id, order_id, event_type, quantity_kg, note, metadata, actor_id et timestamps.
-- Les rôles authenticated ont SELECT sur les deux tables, pas d'INSERT direct. Les insertions sont donc prévues via RPC.
-- La route src/routes/tracabilite.tsx de main utilise effectivement attach_external_traceability, pas deux insertions client séparées.
+- Les rôles authenticated ont SELECT sur les deux tables, pas d'INSERT direct. Les insertions sont prévues via RPC.
+- La route src/routes/tracabilite.tsx de main utilise effectivement attach_external_traceability.
 - La RPC attach_external_traceability est SECURITY DEFINER, search_path vide, vérifie auth.uid(), le rôle fisher/restaurant, les champs, HTTPS, l'appartenance du catch au pêcheur ou de la commande au restaurant, et la cohérence catch/commande. Elle insère le code et l'événement dans la même transaction PL/pgSQL.
 - Les politiques SELECT autorisent les propriétaires du catch, le restaurant lié à la commande et l'admin. Aucune politique d'UPDATE/DELETE n'a été observée pour les tables de traçabilité.
+- La RPC a EXECUTE pour authenticated et service_role, pas pour anon/PUBLIC ; le corps contient les contrôles d'identité et de propriété.
 
 ## Résultats Advisors live
 
 Sécurité :
 - 14 fonctions SECURITY DEFINER sont exécutables par authenticated. Ce n'est pas automatiquement une vulnérabilité : chaque RPC doit être revue pour son contrôle auth.uid()/rôle/ressource. attach_external_traceability a été inspectée et comporte des gardes explicites.
-- 3 tables RLS sans policy : private.admin_users, private.verification_email_action_tokens et public.maree_commercial_settings. Les deux premières sont en schéma privé ; la troisième mérite une vérification distincte des grants et de son usage service-role.
+- 3 tables RLS sans policy : private.admin_users, private.verification_email_action_tokens et public.maree_commercial_settings. Vérification complémentaire : maree_commercial_settings n'accorde aucun privilège à anon/authenticated, uniquement à postgres/service_role ; l'absence de policy API est donc intentionnelle à ce stade. Les deux autres tables sont dans le schéma privé.
 - Protection contre les mots de passe compromis désactivée dans Supabase Auth.
 - Liens de remédiation : https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable et https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection
 
