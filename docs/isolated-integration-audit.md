@@ -70,7 +70,9 @@ Performance :
 - Les empreintes SHA-256 des jetons sont stockées dans un schéma privé.
 - Les RPC vérifient la demande pending et l'expiration ; la RPC de décision verrouille le jeton et la demande, consomme le jeton et change le rôle dans une transaction.
 - La fonction Edge de notification vérifie l'utilisateur authentifié et l'appartenance de la demande.
-- Durcissements à prévoir : CORS restreint, validation stricte du JSON, réponses génériques sans erreur RPC interne, configuration HTTPS obligatoire, tests de rejeu/concurrence, absence de jetons bruts dans les logs.
+- Durcissements isolés ajoutés aux deux fonctions Edge : CORS limité à MAREE_APP_URL et aux origines HTTPS explicitement listées dans MAREE_ALLOWED_ORIGINS (localhost HTTP accepté uniquement s'il est explicitement listé), validation stricte du JSON et de l'identifiant UUID/jeton, réponses d'erreur génériques sans détail du fournisseur ni de la RPC.
+- Un défaut de liaison action/jeton a aussi été identifié : auparavant, l'action URL pouvait être modifiée et la RPC consommait le jeton avant que l'Edge function ne compare le résultat. La migration 20261103170000 remplace la RPC par une version qui vérifie p_expected_action après verrouillage du jeton et avant toute consommation ou décision. Le test pgTAP confirme qu'une action discordante ne consomme pas le jeton et que le bon choix reste utilisable.
+- Ces changements Edge et SQL sont isolés. Le CORS doit être configuré avec l'origine exacte de l'application dans MAREE_APP_URL et, si nécessaire, les origines additionnelles dans MAREE_ALLOWED_ORIGINS avant déploiement.
 
 ## Garde-fous
 
