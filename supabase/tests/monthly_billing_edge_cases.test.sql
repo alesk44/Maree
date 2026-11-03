@@ -3,9 +3,9 @@ begin;
 create extension if not exists pgtap with schema extensions;
 select plan(15);
 
--- These fixtures exercise the Jersey-local calendar boundary in October 2026
--- (BST, UTC+1): 23:30 UTC on Sep 30 is Oct 1 locally; 23:30 UTC on Oct 31
--- is Nov 1 locally. No production data is touched.
+-- These fixtures exercise Jersey's actual October 2026 clock rules:
+-- BST remains active at 23:30 UTC on Sep 30 (Oct 1 locally), but ends on
+-- Oct 25. Therefore 00:30 UTC on Nov 1 is also Nov 1 locally. No production data.
 insert into auth.users (id,email) values
   ('00000000-0000-4000-8000-000000000031','billing-edge-restaurant@test.local'),
   ('00000000-0000-4000-8000-000000000032','billing-edge-fisher@test.local')
@@ -44,7 +44,7 @@ insert into public.orders (
    1,now()+interval '1 day','delivery','delivered',
    '00000000-0000-4000-8000-000000000032',
    10.01,10.01,0.065,0.65,0.20,2.00,12.66,'monthly',
-   '2026-10-31 23:30:00+00',0);
+   '2026-11-01 00:30:00+00',0);
 
 select is(
   public.generate_fisher_monthly_invoices('2026-10-01'::date),
