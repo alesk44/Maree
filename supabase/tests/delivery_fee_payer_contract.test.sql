@@ -1,13 +1,16 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(12);
+select plan(16);
 insert into auth.users(id,email) values
  ('00000000-0000-4000-8000-000000000091','delivery-buyer-restaurant@test.local'),
  ('00000000-0000-4000-8000-000000000092','delivery-buyer-fisher@test.local'),
- ('00000000-0000-4000-8000-000000000093','delivery-fisher-payer@test.local')
+ ('00000000-0000-4000-8000-000000000093','delivery-fisher-payer@test.local'),
+ ('00000000-0000-4000-8000-000000000094','delivery-admin@test.local')
 on conflict(id) do nothing;
 update public.profiles set role='restaurant' where id='00000000-0000-4000-8000-000000000091';
 update public.profiles set role='fisher' where id in ('00000000-0000-4000-8000-000000000092','00000000-0000-4000-8000-000000000093');
+update public.profiles set role='admin' where id='00000000-0000-4000-8000-000000000094';
+insert into private.admin_users(user_id) values ('00000000-0000-4000-8000-000000000094') on conflict(user_id) do nothing;
 insert into public.verification_requests(id,user_id,requested_role,business_name,contact_name,phone,evidence_note,status,reviewed_at) values
  ('30000000-0000-4000-8000-000000000091','00000000-0000-4000-8000-000000000092','fisher','Buyer-paid test','Test','+441534000091','Approved fisher business registration for isolated delivery-payer test.','approved',now()),
  ('30000000-0000-4000-8000-000000000092','00000000-0000-4000-8000-000000000093','fisher','Fisher-paid test','Test','+441534000092','Approved fisher business registration for isolated delivery-payer test.','approved',now());
@@ -21,7 +24,16 @@ select lives_ok($$select public.reserve_catch('10000000-0000-4000-8000-000000000
 reset role;
 select is((select delivery_fee_payer_snapshot from public.orders where catch_id='10000000-0000-4000-8000-000000000091'),'buyer','buyer is snapshotted');
 select is((select total_amount from public.orders where catch_id='10000000-0000-4000-8000-000000000091'),65.75::numeric,'buyer pays delivery in restaurant total');
-update public.maree_commercial_settings set delivery_fee_payer='fisher' where id=true;
+set local role authenticated;
+set local "request.jwt.claim.sub"='00000000-0000-4000-8000-000000000094';
+select lives_ok($select public.update_maree_commercial_settings(6.5,20,'fisher')$,'administrator can update commercial settings');
+reset role;
+select is((select delivery_fee_payer from public.maree_commercial_settings where id=true),'fisher','administrator change is persisted');
+select is((select delivery_fee_payer_snapshot from public.orders where catch_id='10000000-0000-4000-8000-000000000091'),'buyer','commercial changes do not rewrite existing order snapshots');
+set local role authenticated;
+set local "request.jwt.claim.sub"='00000000-0000-4000-8000-000000000091';
+select throws_ok($select public.update_maree_commercial_settings(6.5,20,'fisher')$,'P0001','Admin access required','restaurant cannot change global commercial settings');
+reset role;
 set local role authenticated;
 set local "request.jwt.claim.sub"='00000000-0000-4000-8000-000000000091';
 select lives_ok($$select public.reserve_catch('10000000-0000-4000-8000-000000000092',5,now()+interval '2 days','delivery',null,2.50)$$,'fisher-payer reservation succeeds');
