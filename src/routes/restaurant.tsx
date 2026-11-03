@@ -194,7 +194,7 @@ function Restaurant() {
         <ul className="grid gap-2">{orders.filter(o=>o.status==="delivered").map(o=>{const lot=catches.find(c=>c.id===o.catch_id);const products=Number(o.product_subtotal??0);const buyerDelivery=o.delivery_fee_payer_snapshot==='buyer'?Number(o.delivery_fee??0):0;return <li key={o.id} className="rounded-xl border border-border p-4">
           <div className="flex flex-wrap justify-between gap-2"><strong>{lot?.emoji} {t(lot?.species??"Produit")} · {Number(o.quantity_kg)} kg</strong><strong>{gbp(Number(o.total_amount??(products+Number(o.maree_fee??0)+buyerDelivery+Number(o.tip_amount??0))))}</strong></div>
           <p className="text-xs text-muted-foreground">{t("Livrée")} · {dt(o.delivered_at??o.requested_slot)} · Réf. {o.id.slice(0,8).toUpperCase()}</p>
-          <p className="mt-1 text-sm">{t("Produits")} : {gbp(products)} · {t("Pourboire")} : {gbp(Number(o.tip_amount??0))} · {t("Commission Marée (6,5 %)")} : {gbp(Number(o.maree_fee??0))} · {t("Livraison (20 %)")} : {gbp(Number(o.delivery_fee??0))} · {t("Payeur")} : {t(o.delivery_fee_payer_snapshot==='buyer'?'Restaurant':'Pêcheur')}</p>
+          <p className="mt-1 text-sm">{t("Produits")} : {gbp(products)} · {t("Pourboire")} : {gbp(Number(o.tip_amount??0))} · {t("Commission Marée ({rate} %)",{rate:(Number(o.maree_fee_rate)*100).toString()})} : {gbp(Number(o.maree_fee??0))} · {t("Livraison ({rate} %)",{rate:(Number(o.delivery_fee_rate)*100).toString()})} : {gbp(Number(o.delivery_fee??0))} · {t("Payeur")} : {t(o.delivery_fee_payer_snapshot==='buyer'?'Restaurant':'Pêcheur')}</p>
           <p className="mt-1 text-xs text-muted-foreground">{t("Relevé indicatif — ne constitue pas une facture fiscale ni une preuve de paiement.")}</p>
         </li>})}</ul>}
     </section>}
