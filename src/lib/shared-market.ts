@@ -92,11 +92,13 @@ export async function fetchMyOrders():Promise<SharedOrderRow[]> {
 }
 
 export type SharedMonthlyInvoiceItemRow = { order_id:string; product_subtotal:number|string; quantity_kg:number|string; unit_price:number|string; tip_amount:number|string; delivery_deduction:number|string };
+export type SharedCancellationIndemnityRow = { id:string; order_id:string; amount:number|string; status:"unpaid"|"paid"; accepted_at:string; paid_at:string|null };
 export type SharedMonthlyInvoiceRow = {
   id:string; restaurant_id:string; fisher_id:string; period_start:string; period_end:string;
-  due_date:string; subtotal:number|string; tip_total:number|string; delivery_deduction_total:number|string; status:"open"|"paid"|"void";
+  due_date:string; subtotal:number|string; tip_total:number|string; delivery_deduction_total:number|string;
+  cancellation_indemnity_total:number|string; status:"open"|"paid"|"void";
   paid_at:string|null; payment_method:string|null; payment_reference:string|null;
-  items?:SharedMonthlyInvoiceItemRow[];
+  items?:SharedMonthlyInvoiceItemRow[]; cancellation_indemnities?:SharedCancellationIndemnityRow[];
 };
 
 export async function fetchMyMonthlyInvoices():Promise<SharedMonthlyInvoiceRow[]> {
@@ -104,7 +106,7 @@ export async function fetchMyMonthlyInvoices():Promise<SharedMonthlyInvoiceRow[]
   if(authError) throw authError;
   if(!user) return [];
   const {data,error}=await supabase.from("fisher_monthly_invoices")
-    .select("id,restaurant_id,fisher_id,period_start,period_end,due_date,subtotal,tip_total,delivery_deduction_total,status,paid_at,payment_method,payment_reference,items:fisher_monthly_invoice_items(order_id,product_subtotal,quantity_kg,unit_price,tip_amount,delivery_deduction)")
+    .select("id,restaurant_id,fisher_id,period_start,period_end,due_date,subtotal,tip_total,delivery_deduction_total,cancellation_indemnity_total,status,paid_at,payment_method,payment_reference,items:fisher_monthly_invoice_items(order_id,product_subtotal,quantity_kg,unit_price,tip_amount,delivery_deduction),cancellation_indemnities:fisher_cancellation_indemnities(id,order_id,amount,status,accepted_at,paid_at)")
     .order("period_start",{ascending:false});
   if(error) throw new Error("Impossible de charger les relevés pêcheurs : schéma Supabase incomplet ou non synchronisé. "+error.message);
   return (data??[]) as SharedMonthlyInvoiceRow[];
