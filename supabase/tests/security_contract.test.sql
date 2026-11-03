@@ -488,8 +488,8 @@ select throws_ok(
   $maree_test$select public.reserve_catch(
     '10000000-0000-4000-8000-000000000001'::uuid,0.5,now()+interval '5 days','collection',null
   )$maree_test$,
-  'P0001','Ordering is blocked: at least three monthly invoices are overdue and unpaid',
-  'restaurant with three overdue unpaid fisher invoices cannot place another order'
+  'P0001','Ordering is blocked: at least three monthly invoices are open and unpaid',
+  'restaurant with three open unpaid fisher invoices cannot place another order'
 );
 reset role;
 
