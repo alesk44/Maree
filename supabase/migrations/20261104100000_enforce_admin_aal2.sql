@@ -179,6 +179,20 @@ begin
   from public.fisher_monthly_invoice_items i
   where i.invoice_id = p_invoice_id
     and o.id = i.order_id;
+
+  -- Accepted cancellation indemnities are receivables on the same fisher statement.
+  update public.fisher_cancellation_indemnities
+  set status = 'paid',
+      paid_at = now(),
+      paid_by = v_user_id,
+      payment_method = nullif(left(trim(coalesce(p_payment_method, '')), 80), ''),
+      payment_reference = nullif(left(trim(coalesce(p_payment_reference, '')), 160), '')
+  where invoice_id = p_invoice_id
+    and status = 'unpaid';
+
+  update public.fisher_monthly_invoices
+  set cancellation_indemnity_total = 0
+  where id = p_invoice_id;
 end;
 $function$;
 
