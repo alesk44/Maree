@@ -49,3 +49,47 @@ Production safety: inspection only. No production SQL, Auth setting, deployment,
 5. Enable leaked-password protection and verify password policy in a non-production environment first; confirm plan/availability in the dashboard.
 6. Add regression tests for unauthorized role promotion, forged user metadata, non-owner RPC calls, AAL1 owner calls, expired/revoked sessions, and audit-log tampering.
 7. Run local database reset/tests, build/typecheck, and security advisors against the isolated environment. No production migration or deployment without explicit owner approval.
+
+
+## Production-vs-repository reconciliation — 2026-11-04
+
+Read-only production checks were run after the initial audit. No production writes were performed.
+
+### Migration history drift
+- Production `supabase_migrations.schema_migrations` and the Supabase migration listing end at `20261103220545_admin_managed_delivery_payer`.
+- Repository migrations newer than that live head include:
+  - `20261103160000_recheck_fisher_eligibility_on_reservation.sql`
+  - `20261103170000_bind_email_review_action_to_token.sql`
+  - `20261103180000_add_missing_foreign_key_indexes.sql`
+  - `20261103230000_fisher_cancellation_indemnity_receivables.sql`
+  - `20261103235000_preserve_catch_state_on_cancellation.sql`
+  - `20261104001000_preserve_catch_state_on_inventory_edit.sql`
+- These are pending relative to the production migration history. Do not apply them as a batch without reviewing dependencies and running isolated regression tests first.
+
+### Confirmed live email-review mismatch
+- Production Edge Function `review-verification-email-action` is ACTIVE version 5 with `verify_jwt=false`. This is a bearer-token endpoint and must be treated as a privileged approval surface.
+- Its deployed code calls `review_verification_request_by_email_token(p_token_hash)` without passing the expected action. It compares the returned action to the request body only after the RPC returns.
+- Production still has the one-argument database function `review_verification_request_by_email_token(text)`. The repository migration `20261103170000_bind_email_review_action_to_token.sql` drops that function and replaces it with a two-argument version that validates `p_expected_action` before consuming the token. That migration is not recorded as applied in production.
+- Consequence: a mismatched action can cause the stored token action to be executed and consumed before the Edge Function notices the mismatch and returns an error. The user-facing page may therefore report failure even though the decision was committed. This is an integrity/UX vulnerability when a valid token is presented with a mismatched action.
+- The deployed Edge Function also uses wildcard CORS and does not perform the stricter origin, body-size, exact-key, and token-format checks present in the repository version. CORS is not authentication, but the deployed implementation should be reconciled with the reviewed source.
+- The email-link path uses service-role database access and does not enforce an owner AAL2 session. It is therefore an alternative bearer-token authorization path that bypasses the planned owner MFA requirement. Decide whether to retire email-based approval in favour of signed-in AAL2 confirmation, or explicitly accept and separately harden this exception.
+
+### Effective grants and MFA enforcement
+- Read-only ACL inspection confirms `anon` cannot execute the inspected privileged RPCs.
+- `authenticated` can execute `review_verification_request`, `update_maree_commercial_settings`, `verify_maree_commission_invoice_paid`, `get_maree_commercial_settings`, and `mark_fisher_invoice_paid`. Their bodies must continue to enforce owner/role/row ownership; do not revoke all authenticated EXECUTE grants indiscriminately.
+- None of those inspected functions currently checks JWT AAL2. The admin RPCs that change verification status, commercial settings, or verify commission payment need server-side AAL2 enforcement before they can be considered owner-MFA protected.
+- `create_verification_email_action_tokens` is service_role-only. The one-argument email review RPC is also service_role-only; this limits direct API execution but does not remove the bearer-token path.
+
+### Edge Function deployment reconciliation
+- Production `notify-verification-request` is ACTIVE version 8 with JWT verification enabled.
+- Production `review-verification-email-action` is ACTIVE version 5 with JWT verification disabled.
+- The repository source has stricter request validation and action binding than the deployed review function. Treat this as source/deployment drift; do not deploy automatically.
+
+### Updated remediation order
+1. Reconcile migration history and inspect all six pending migrations individually; do not apply them wholesale.
+2. In a local isolated database, test the existing two-argument action-binding migration against approval, rejection, mismatched-action, expired-token, replay, and concurrent-use cases.
+3. Decide the policy for email approval. Recommended secure default: require the allowlisted owner to sign in and satisfy AAL2 before any approval; the email should notify/link to the authenticated review page, not itself authorize the role change.
+4. Add AAL2 checks inside each owner/admin database function (not just the UI), including review, commercial settings, commission verification, and the admin branch of any mixed fisher/admin operation.
+5. Add an append-only audit record for actor, action, target, result, timestamp, and request ID. Email-based actions must record a verified owner identity; do not record raw bearer tokens.
+6. Reconcile deployed Edge Function source only after local tests and explicit production approval.
+7. Keep PR #12 draft and do not merge, migrate, or deploy production without explicit approval.
