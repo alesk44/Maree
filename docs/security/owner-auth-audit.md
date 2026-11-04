@@ -103,3 +103,27 @@ Read-only production checks were run after the initial audit. No production writ
 - No function was found that inserts, updates, or deletes rows in `private.admin_users`. The allowlist remains a manually controlled database-side authority boundary.
 - The live `verification_requests.requested_role` CHECK constraint permits only `fisher` and `restaurant`; it cannot promote a user to `admin`. The `app_role` enum also contains `admin`, but that value is excluded from verification requests.
 - The live trigger inventory shows `auth.users` INSERT -> `private.handle_new_user()`, plus profile timestamp and verification-request notification/result triggers. No additional auth/profile role-changing trigger was found in that inventory.
+
+
+## AAL2 enforcement staged on the isolated GitHub branch — 2026-11-04
+
+A new migration has been added but is NOT applied anywhere:
+- `supabase/migrations/20261104100000_enforce_admin_aal2.sql`
+- Adds an internal `private.require_admin_aal2()` guard. It requires the caller to be an existing allowlisted admin or an admin-profile user AND requires the verified JWT assurance claim `aal2`.
+- Applies the guard inside the database functions that perform privileged admin actions:
+  - `review_verification_request` (professional role promotion/rejection)
+  - `update_maree_commercial_settings` (commission and delivery settings)
+  - `verify_maree_commission_invoice_paid` (Marée invoice payment verification)
+  - `mark_fisher_invoice_paid` (only the admin override; fisher self-service remains available)
+  - `mark_order_paid` (only the admin override; owning fisher self-service remains available)
+- The helper is revoked from direct `public`, `anon`, and `authenticated` execution. Existing public RPC grants are preserved for authenticated clients; authorization is enforced inside the SECURITY DEFINER functions.
+- The migration preserves each operation's existing ownership, status, and validation checks. It does not grant admin status to an AAL2 user by itself.
+
+Regression contract added:
+- `supabase/tests/admin_aal2_contract.test.sql` covers direct helper denial, AAL1 denial for role promotion, commercial-setting changes and settlement override, AAL2 success for those operations, and denial of an ordinary AAL2 user.
+- Existing `supabase/tests/security_contract.test.sql` admin fixtures now provide explicit `aal2` claims for expected successful admin actions.
+
+### Important unresolved boundary
+- The production email-link RPC `review_verification_request_by_email_token(text)` is a separate service-role bearer-token authorization path. This migration does NOT secure or disable that path. Until it is replaced with an authenticated AAL2 owner flow (or explicitly redesigned and separately hardened), the platform cannot be described as enforcing MFA on every admin approval route.
+- The migration and pgTAP tests have been authored on GitHub only. They have NOT been executed against a local Supabase/Postgres database because Supabase hosted branching is unavailable on the current plan and no isolated local DB runner has been provisioned in this session.
+- Next required validation: run `supabase db reset` and `supabase test db` in a disposable local environment using the full migration history, inspect failures, then run app tests/build. Do not apply this migration to production before that validation and explicit owner approval.
