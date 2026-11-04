@@ -23,6 +23,35 @@ $function$;
 
 revoke all on function private.require_admin_aal2() from public, anon, authenticated;
 
+
+-- Direct table updates must obey the same allowlist + AAL2 rule as the RPCs.
+-- The legacy profile.role='admin' fallback is not sufficient authorization.
+drop policy if exists "Admins can review verification requests" on public.verification_requests;
+create policy "Admins can review verification requests"
+on public.verification_requests
+for update to authenticated
+using (
+  private.is_current_user_admin()
+  and (select auth.jwt() ->> 'aal') = 'aal2'
+)
+with check (
+  private.is_current_user_admin()
+  and (select auth.jwt() ->> 'aal') = 'aal2'
+);
+
+drop policy if exists "Admins can update verification document reviews" on public.verification_documents;
+create policy "Admins can update verification document reviews"
+on public.verification_documents
+for update to authenticated
+using (
+  private.is_current_user_admin()
+  and (select auth.jwt() ->> 'aal') = 'aal2'
+)
+with check (
+  private.is_current_user_admin()
+  and (select auth.jwt() ->> 'aal') = 'aal2'
+);
+
 -- Verification approval/rejection changes a user's effective application role.
 create or replace function public.review_verification_request(
   p_request_id uuid,
