@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(11);
+select plan(12);
 
 insert into auth.users (id,email) values
   ('00000000-0000-4000-8000-000000000021','email-action-applicant@test.local'),
@@ -42,25 +42,29 @@ values
    '30000000-0000-4000-8000-000000000022','approved',
    repeat('b',64),now()-interval '1 second');
 
-select ok(has_function_privilege('service_role','public.review_verification_request_by_email_token(text,text,uuid)','EXECUTE'),
-  'service role can execute the action-bound email review RPC');
-select ok(not has_function_privilege('authenticated','public.review_verification_request_by_email_token(text,text,uuid)','EXECUTE')
-  and not has_function_privilege('anon','public.review_verification_request_by_email_token(text,text,uuid)','EXECUTE'),
-  'email review RPC is not executable by client roles');
+select ok(has_function_privilege('authenticated','public.review_verification_request_by_email_token(text,text)','EXECUTE'),
+  'authenticated users can invoke the RPC, which enforces AAL2 internally');
+select ok(not has_function_privilege('anon','public.review_verification_request_by_email_token(text,text)','EXECUTE')
+  and not has_function_privilege('service_role','public.review_verification_request_by_email_token(text,text)','EXECUTE'),
+  'email review RPC is not executable by anon or service_role');
 
-set local role service_role;
+set local role authenticated;
+set local "request.jwt.claim.sub"='00000000-0000-4000-8000-000000000022';
+set local "request.jwt.claims"='{"sub":"00000000-0000-4000-8000-000000000022","role":"authenticated","aal":"aal1"}';
 select throws_ok(
-  $select public.review_verification_request_by_email_token(repeat('a',64),'approved','00000000-0000-4000-8000-000000000023')$,
-  'P0001','Admin access required',
-  'a non-allowlisted user cannot be recorded as the email reviewer'
+  $$select public.review_verification_request_by_email_token(repeat('a',64),'approved')$$,
+  '42501','Verified MFA session required (aal2)',
+  'allowlisted administrator with aal1 cannot use the email review RPC'
 );
+
+set local "request.jwt.claims"='{"sub":"00000000-0000-4000-8000-000000000022","role":"authenticated","aal":"aal2"}';
 select throws_ok(
-  $select public.review_verification_request_by_email_token(repeat('a',64),'rejected','00000000-0000-4000-8000-000000000022')$,
+  $$select public.review_verification_request_by_email_token(repeat('a',64),'rejected')$$,
   'P0001','Action does not match this confirmation link',
   'mismatched action is rejected before token consumption'
 );
 select lives_ok(
-  $select public.review_verification_request_by_email_token(repeat('a',64),'approved','00000000-0000-4000-8000-000000000022')$,
+  $$select public.review_verification_request_by_email_token(repeat('a',64),'approved')$$,
   'the same token remains usable with its stored approved action'
 );
 reset role;
@@ -74,20 +78,36 @@ select ok((select consumed_at is not null from private.verification_email_action
 select is((select reviewed_by::text from public.verification_requests
   where id='30000000-0000-4000-8000-000000000021'),
   '00000000-0000-4000-8000-000000000022',
-  'the verified allowlisted administrator is recorded as reviewer');
+  'the authenticated allowlisted administrator is recorded as reviewer');
+
+set local role authenticated;
+set local "request.jwt.claim.sub"='00000000-0000-4000-8000-000000000022';
+set local "request.jwt.claims"='{"sub":"00000000-0000-4000-8000-000000000022","role":"authenticated","aal":"aal2"}';
 select throws_ok(
-  $select public.review_verification_request_by_email_token(repeat('a',64),'approved','00000000-0000-4000-8000-000000000022')$,
+  $$select public.review_verification_request_by_email_token(repeat('a',64),'approved')$$,
   'P0001','This approval link is invalid, expired, or already used',
   'a consumed token cannot be replayed'
 );
 select throws_ok(
-  $select public.review_verification_request_by_email_token(repeat('b',64),'approved','00000000-0000-4000-8000-000000000022')$,
+  $$select public.review_verification_request_by_email_token(repeat('b',64),'approved')$$,
   'P0001','This approval link is invalid, expired, or already used',
   'an expired token is rejected'
 );
+reset role;
+
 select ok((select consumed_at is null from private.verification_email_action_tokens
   where id='50000000-0000-4000-8000-000000000022'),
   'an expired token is not consumed');
+
+set local role authenticated;
+set local "request.jwt.claim.sub"='00000000-0000-4000-8000-000000000023';
+set local "request.jwt.claims"='{"sub":"00000000-0000-4000-8000-000000000023","role":"authenticated","aal":"aal2"}';
+select throws_ok(
+  $$select public.review_verification_request_by_email_token(repeat('b',64),'approved')$$,
+  '42501','Admin access required',
+  'aal2 without allowlist membership cannot use the email review RPC'
+);
+reset role;
 
 select * from finish();
 rollback;
