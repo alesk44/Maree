@@ -125,8 +125,9 @@ Regression contract added:
 
 ### Important unresolved boundary
 - The production email-link RPC `review_verification_request_by_email_token(text)` is a separate service-role bearer-token authorization path. This migration does NOT secure or disable that path. Until it is replaced with an authenticated AAL2 owner flow (or explicitly redesigned and separately hardened), the platform cannot be described as enforcing MFA on every admin approval route.
-- The migration and pgTAP tests have been authored on GitHub only. They have NOT been executed against a local Supabase/Postgres database because Supabase hosted branching is unavailable on the current plan and no isolated local DB runner has been provisioned in this session.
-- Next required validation: run `supabase db reset` and `supabase test db` in a disposable local environment using the full migration history, inspect failures, then run app tests/build. Do not apply this migration to production before that validation and explicit owner approval.
+- Initial validation was subsequently completed by GitHub Actions on commit `2b10eb6b0c2ce02254979b4af14a0510def97aa9`. The hosted runner rebuilt the database from repository migrations and passed the pgTAP security contract tests, concurrent last-stock reservation tests, and concurrent monthly-invoice generation tests.
+- The same commit passed Build verification, Marée CI, Verify, Supabase migration tests, and Database Contract workflows. This validates the staged branch in CI; it does not apply the migration to production or prove the live Edge Function has been deployed.
+- Keep production unchanged until explicit owner approval, dashboard MFA/password-policy checks, and a separately verified deployment/migration plan.
 
 
 ### Email approval path — AAL2 hardening now staged in source
@@ -139,9 +140,11 @@ The isolated branch now also stages the email confirmation path:
 
 Production remains unchanged: the live Edge Function was previously observed at active version 5 with `verify_jwt=false`. Do not claim email approval is MFA-protected in production until the reviewed source and config are deployed with explicit approval and a live read-back confirms the deployed version.
 
-### Validation status
-- Static source checks confirm the new SQL migration has balanced `$function$` blocks and the AAL2 pgTAP contract has 11 declared assertions matching its plan.
-- No SQL, pgTAP, Deno, TypeScript, lint, or build test has yet been executed in an isolated runtime. The source changes are staged, not proven runtime-safe.
+### Validation status — updated 2026-11-04
+- GitHub Actions passed all five workflows on the current security branch head `2b10eb6b0c2ce02254979b4af14a0510def97aa9`: Build verification, Marée CI, Verify, Supabase migration tests, and Database Contract.
+- The database workflow rebuilt the schema from repository migrations and passed pgTAP security contracts plus concurrent inventory-reservation and monthly-invoice-generation tests.
+- The migration and Edge Function remain staged on the branch only. No production migration, function deployment, or merge was performed.
+- Remaining production gates: decide/retire the email approval bearer-token exception in live deployment, confirm owner MFA enrollment and Auth password protections in the dashboard, review the final diff, and obtain explicit owner approval before any production change.
 
 
 **Least-privilege refinement:** the staged `private.require_admin_aal2()` guard now requires explicit membership in `private.admin_users` plus JWT `aal2`. A profile role of `admin` alone is deliberately insufficient for these privileged operations. This avoids broadening the existing allowlist-only authority used by commercial settings and payment-verification RPCs.
