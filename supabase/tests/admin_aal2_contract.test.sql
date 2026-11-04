@@ -1,17 +1,19 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(10);
+select plan(11);
 
 insert into auth.users (id,email) values
   ('00000000-0000-4000-8000-000000000031','aal2-admin-contract@test.local'),
-  ('00000000-0000-4000-8000-000000000032','aal2-nonadmin-contract@test.local')
+  ('00000000-0000-4000-8000-000000000032','aal2-nonadmin-contract@test.local'),
+  ('00000000-0000-4000-8000-000000000033','profile-admin-not-allowlisted@test.local')
 on conflict (id) do nothing;
 
 update public.profiles set role='restaurant'
 where id in (
   '00000000-0000-4000-8000-000000000031',
-  '00000000-0000-4000-8000-000000000032'
+  '00000000-0000-4000-8000-000000000032',
+  '00000000-0000-4000-8000-000000000033'
 );
 
 insert into private.admin_users(user_id)
@@ -128,6 +130,18 @@ select throws_ok(
   '42501',
   'Admin access required',
   'aal2 alone does not grant administrator privileges'
+);
+
+reset role;
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000033';
+set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000033","role":"authenticated","aal":"aal2"}';
+
+select throws_ok(
+  $stmt$select public.update_maree_commercial_settings(6.5,20,'buyer')$stmt$,
+  '42501',
+  'Admin access required',
+  'profile admin role without an allowlist entry cannot perform privileged actions'
 );
 
 reset role;
