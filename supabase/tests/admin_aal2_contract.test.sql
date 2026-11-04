@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(17);
+select plan(19);
 
 insert into auth.users (id,email) values
   ('00000000-0000-4000-8000-000000000031','aal2-admin-contract@test.local'),
@@ -31,6 +31,15 @@ values
    '00000000-0000-4000-8000-000000000032','fisher',
    'AAL2 Contract Fisher','Test Contact','+441534000031',
    'Fixture for server-side AAL2 contract.','pending');
+
+insert into public.verification_documents
+  (id,request_id,user_id,document_type,file_path,original_filename,mime_type,size_bytes,review_status)
+values
+  ('60000000-0000-4000-8000-000000000031',
+   '30000000-0000-4000-8000-000000000031',
+   '00000000-0000-4000-8000-000000000032',
+   'fishing_licence','aal2-contract/fishing-licence.pdf',
+   'fishing-licence.pdf','application/pdf',1024,'pending');
 
 insert into public.catches
   (id,fisher_id,species,zone,caught_at,landed_at,quantity_kg,remaining_kg,price_per_kg,method,storage_instructions,status)
@@ -121,6 +130,26 @@ select throws_ok(
   '42501',
   'Verified MFA session required (aal2)',
   'allowlisted administrator with aal1 cannot verify a Marée commission invoice'
+);
+
+update public.verification_requests
+set status='approved', reviewed_by='00000000-0000-4000-8000-000000000031'
+where id='30000000-0000-4000-8000-000000000031';
+
+select is(
+  (select status::text from public.verification_requests where id='30000000-0000-4000-8000-000000000031'),
+  'pending',
+  'direct verification-request table update is blocked at aal1'
+);
+
+update public.verification_documents
+set review_status='approved', reviewed_by='00000000-0000-4000-8000-000000000031'
+where id='60000000-0000-4000-8000-000000000031';
+
+select is(
+  (select review_status from public.verification_documents where id='60000000-0000-4000-8000-000000000031'),
+  'pending',
+  'direct verification-document review update is blocked at aal1'
 );
 
 set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000031","role":"authenticated","aal":"aal2"}';
