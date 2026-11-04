@@ -288,6 +288,7 @@ where id='10000000-0000-4000-8000-000000000001';
 -- Admin approval must update the request and grant the requested role atomically.
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000005';
+set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000005","role":"authenticated","aal":"aal2"}';
 select lives_ok(
   $$select public.review_verification_request('30000000-0000-4000-8000-000000000003'::uuid, 'approved'::public.verification_status, 'Approved by test admin')$$,
   'admin can approve a pending verification request'
@@ -306,6 +307,7 @@ reset role;
 -- A restaurant-role account with a separate admin grant can access admin functions.
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000007';
+set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000007","role":"authenticated","aal":"aal2"}';
 select is(public.is_current_user_admin(), true, 'separate admin grant is recognized without changing restaurant role');
 select is((select role::text from public.profiles where id = '00000000-0000-4000-8000-000000000007'), 'restaurant', 'separate admin grant preserves the restaurant business role');
 select is((select count(*) from public.verification_requests), 5::bigint, 'separate admin can read all verification requests');
@@ -606,6 +608,7 @@ reset role;
 
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000005';
+set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000005","role":"authenticated","aal":"aal2"}';
 select lives_ok(
   $$select public.verify_maree_commission_invoice_paid('40000000-0000-4000-8000-000000000001'::uuid)$$,
   'admin can verify a restaurant payment declaration'
@@ -902,6 +905,7 @@ reset role;
 
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000005';
+set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000005","role":"authenticated","aal":"aal2"}';
 select is((select count(*) from public.notifications where event_type='verification_request_received'),5::bigint,'trusted admin receives each verification request notification');
 reset role;
 
@@ -912,6 +916,7 @@ select ok(to_regprocedure('private.create_maree_invoice_notifications()') is not
 
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000005';
+set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000005","role":"authenticated","aal":"aal2"}';
 select lives_ok(
   $review$select public.review_verification_request('30000000-0000-4000-8000-000000000002'::uuid, 'rejected'::public.verification_status, 'Missing supporting evidence')$review$,
   'admin rejection produces a final verification decision'
@@ -945,6 +950,7 @@ reset role;
 
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000005';
+set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000005","role":"authenticated","aal":"aal2"}';
 select ok(exists(select 1 from public.notifications where event_type='maree_invoice_payment_declared'), 'admin receives a private alert when a restaurant declares payment');
 reset role;
 
