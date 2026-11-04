@@ -11,15 +11,7 @@ as $function$
 declare
   v_user_id uuid := (select auth.uid());
 begin
-  if v_user_id is null or not (
-    private.is_current_user_admin()
-    or exists (
-      select 1
-      from public.profiles p
-      where p.id = v_user_id
-        and p.role = 'admin'::public.app_role
-    )
-  ) then
+  if v_user_id is null or not private.is_current_user_admin() then
     raise exception 'Admin access required' using errcode = '42501';
   end if;
 
