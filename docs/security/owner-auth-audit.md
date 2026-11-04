@@ -93,3 +93,13 @@ Read-only production checks were run after the initial audit. No production writ
 5. Add an append-only audit record for actor, action, target, result, timestamp, and request ID. Email-based actions must record a verified owner identity; do not record raw bearer tokens.
 6. Reconcile deployed Edge Function source only after local tests and explicit production approval.
 7. Keep PR #12 draft and do not merge, migrate, or deploy production without explicit approval.
+
+
+### Completed live role-write inventory
+- The only live functions found in `public` / `private` that write `public.profiles.role` are:
+  - `public.review_verification_request(...)` — authenticated admin RPC, allowlist/profile-admin check.
+  - `public.review_verification_request_by_email_token(text)` — service-role-only bearer-token path.
+- `private.handle_new_user()` creates profiles with role hard-coded to `restaurant`; user metadata contributes only the display name.
+- No function was found that inserts, updates, or deletes rows in `private.admin_users`. The allowlist remains a manually controlled database-side authority boundary.
+- The live `verification_requests.requested_role` CHECK constraint permits only `fisher` and `restaurant`; it cannot promote a user to `admin`. The `app_role` enum also contains `admin`, but that value is excluded from verification requests.
+- The live trigger inventory shows `auth.users` INSERT -> `private.handle_new_user()`, plus profile timestamp and verification-request notification/result triggers. No additional auth/profile role-changing trigger was found in that inventory.
