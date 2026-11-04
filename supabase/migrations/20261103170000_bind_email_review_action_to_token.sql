@@ -4,8 +4,7 @@ drop function if exists public.review_verification_request_by_email_token(text);
 
 create function public.review_verification_request_by_email_token(
   p_token_hash text,
-  p_expected_action text,
-  p_reviewer_id uuid
+  p_expected_action text
 )
 returns text
 language plpgsql
@@ -16,16 +15,12 @@ declare
   v_action_token private.verification_email_action_tokens%rowtype;
   v_req public.verification_requests%rowtype;
 begin
+  perform private.require_admin_aal2();
+
   if p_token_hash is null or length(p_token_hash) <> 64
     or p_expected_action is null
     or p_expected_action not in ('approved', 'rejected') then
     raise exception 'Invalid or expired approval link';
-  end if;
-
-  if p_reviewer_id is null or not exists (
-    select 1 from private.admin_users a where a.user_id = p_reviewer_id
-  ) then
-    raise exception 'Admin access required';
   end if;
 
   select * into v_action_token
@@ -59,7 +54,7 @@ begin
       reviewer_note = case when v_action_token.action = 'approved'
         then 'Approved from the administrator email confirmation link.'
         else 'Rejected from the administrator email confirmation link.' end,
-      reviewed_by = p_reviewer_id,
+      reviewed_by = (select auth.uid()),
       reviewed_at = now()
   where id = v_req.id;
 
@@ -73,5 +68,5 @@ begin
 end;
 $function$;
 
-revoke all on function public.review_verification_request_by_email_token(text,text,uuid) from public, anon, authenticated;
-grant execute on function public.review_verification_request_by_email_token(text,text,uuid) to service_role;
+revoke all on function public.review_verification_request_by_email_token(text,text) from public, anon, authenticated, service_role;
+grant execute on function public.review_verification_request_by_email_token(text,text) to authenticated;
