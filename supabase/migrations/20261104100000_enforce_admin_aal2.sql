@@ -193,5 +193,63 @@ $function$;
 revoke all on function public.mark_fisher_invoice_paid(uuid, text, text) from public, anon;
 grant execute on function public.mark_fisher_invoice_paid(uuid, text, text) to authenticated;
 
+-- The fisher/admin override for immediate-order settlement also requires AAL2.
+create or replace function public.mark_order_paid(
+  p_order_id uuid,
+  p_payment_method text default null,
+  p_payment_reference text default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  v_user_id uuid := (select auth.uid());
+  v_fisher_id uuid;
+  v_status public.order_status;
+  v_billing_mode text;
+  v_payment_status text;
+begin
+  if v_user_id is null then raise exception 'Authentication required'; end if;
+
+  select coalesce(o.fisher_id_snapshot,c.fisher_id),
+         o.status,
+         o.billing_mode,
+         o.fisher_payment_status
+  into v_fisher_id,v_status,v_billing_mode,v_payment_status
+  from public.orders o
+  join public.catches c on c.id=o.catch_id
+  where o.id=p_order_id
+  for update of o;
+
+  if not found then raise exception 'Order not found'; end if;
+
+  if v_fisher_id <> v_user_id then
+    perform private.require_admin_aal2();
+  end if;
+
+  if v_status <> 'delivered'::public.order_status then
+    raise exception 'Only delivered orders can be settled';
+  end if;
+  if v_billing_mode <> 'immediate' then
+    raise exception 'Monthly orders are settled through their monthly statement';
+  end if;
+  if v_payment_status <> 'unpaid' then
+    raise exception 'This order is already settled or waived';
+  end if;
+
+  update public.orders
+  set fisher_payment_status='paid',
+      fisher_paid_at=now(),
+      fisher_payment_method=nullif(left(trim(coalesce(p_payment_method,'')),80),''),
+      fisher_payment_reference=nullif(left(trim(coalesce(p_payment_reference,'')),160),'')
+  where id=p_order_id;
+end;
+$function$;
+
+revoke all on function public.mark_order_paid(uuid, text, text) from public, anon;
+grant execute on function public.mark_order_paid(uuid, text, text) to authenticated;
+
 comment on function private.require_admin_aal2() is
   'Internal guard for allowlisted/profile administrators; requires JWT assurance level aal2.';
