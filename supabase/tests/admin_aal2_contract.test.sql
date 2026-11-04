@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(13);
+select plan(15);
 
 insert into auth.users (id,email) values
   ('00000000-0000-4000-8000-000000000031','aal2-admin-contract@test.local'),
@@ -57,6 +57,14 @@ values
    '00000000-0000-4000-8000-000000000032',
    date '2026-10-01',date '2026-10-31',date '2026-11-07',10,'open');
 
+insert into public.maree_monthly_commission_invoices
+  (id,restaurant_id,period_start,period_end,due_date,commission_total,delivery_total,status,declared_at,declared_by)
+values
+  ('50000000-0000-4000-8000-000000000031',
+   '00000000-0000-4000-8000-000000000032',
+   date '2026-10-01',date '2026-10-31',date '2026-11-07',6.50,0,'declared_paid',now(),
+   '00000000-0000-4000-8000-000000000032');
+
 select ok(
   not has_function_privilege('authenticated','private.require_admin_aal2()','EXECUTE'),
   'internal AAL2 guard is not directly executable by authenticated clients'
@@ -106,6 +114,15 @@ select throws_ok(
   'administrator override for monthly fisher invoice settlement is blocked at aal1'
 );
 
+select throws_ok(
+  $stmt$select public.verify_maree_commission_invoice_paid(
+    '50000000-0000-4000-8000-000000000031'::uuid
+  )$stmt$,
+  '42501',
+  'Verified MFA session required (aal2)',
+  'allowlisted administrator with aal1 cannot verify a Marée commission invoice'
+);
+
 set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000031","role":"authenticated","aal":"aal2"}';
 
 select lives_ok(
@@ -129,6 +146,13 @@ select lives_ok(
     'AAL2-INVOICE-APPROVED'
   )$stmt$,
   'administrator override for monthly fisher invoice settlement succeeds at aal2'
+);
+
+select lives_ok(
+  $stmt$select public.verify_maree_commission_invoice_paid(
+    '50000000-0000-4000-8000-000000000031'::uuid
+  )$stmt$,
+  'allowlisted administrator with aal2 can verify a Marée commission invoice'
 );
 
 select lives_ok(
