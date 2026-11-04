@@ -190,9 +190,6 @@ begin
   where invoice_id = p_invoice_id
     and status = 'unpaid';
 
-  update public.fisher_monthly_invoices
-  set cancellation_indemnity_total = 0
-  where id = p_invoice_id;
 end;
 $function$;
 
