@@ -53,7 +53,7 @@ insert into public.fisher_monthly_invoices
   (id,restaurant_id,fisher_id,period_start,period_end,due_date,subtotal,status)
 values
   ('40000000-0000-4000-8000-000000000031',
-   '00000000-0000-4000-8000-000000000032',
+   '00000000-0000-4000-8000-000000000031',
    '00000000-0000-4000-8000-000000000032',
    date '2026-10-01',date '2026-10-31',date '2026-11-07',10,'open');
 
