@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(8);
+select plan(10);
 
 insert into auth.users (id,email) values
   ('00000000-0000-4000-8000-000000000031','aal2-admin-contract@test.local'),
@@ -26,6 +26,23 @@ values
    'AAL2 Contract Fisher','Test Contact','+441534000031',
    'Fixture for server-side AAL2 contract.','pending');
 
+insert into public.catches
+  (id,fisher_id,species,zone,caught_at,landed_at,quantity_kg,remaining_kg,price_per_kg,method,storage_instructions,status)
+values
+  ('10000000-0000-4000-8000-000000000031',
+   '00000000-0000-4000-8000-000000000032',
+   'Bass','South coast',now()-interval '3 hours',now()-interval '2 hours',
+   1,0,10,'Line caught','Keep chilled at 0–4°C','sold_out');
+
+insert into public.orders
+  (id,catch_id,restaurant_id,quantity_kg,requested_slot,fulfilment,status,fisher_id_snapshot,billing_mode,fisher_payment_status)
+values
+  ('20000000-0000-4000-8000-000000000031',
+   '10000000-0000-4000-8000-000000000031',
+   '00000000-0000-4000-8000-000000000032',
+   0.5,now()-interval '1 day','collection','delivered',
+   '00000000-0000-4000-8000-000000000032','immediate','unpaid');
+
 select ok(
   not has_function_privilege('authenticated','private.require_admin_aal2()','EXECUTE'),
   'internal AAL2 guard is not directly executable by authenticated clients'
@@ -36,36 +53,56 @@ set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000031';
 set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000031","role":"authenticated","aal":"aal1"}';
 
 select throws_ok(
-  $$select public.review_verification_request(
+  $stmt$select public.review_verification_request(
     '30000000-0000-4000-8000-000000000031'::uuid,
     'approved'::public.verification_status,
     'Should be blocked without MFA'
-  )$$,
+  )$stmt$,
   '42501',
   'Verified MFA session required (aal2)',
   'allowlisted administrator with aal1 cannot approve a role change'
 );
 
 select throws_ok(
-  $$select public.update_maree_commercial_settings(6.5,20,'buyer')$$,
+  $stmt$select public.update_maree_commercial_settings(6.5,20,'buyer')$stmt$,
   '42501',
   'Verified MFA session required (aal2)',
   'allowlisted administrator with aal1 cannot change commercial settings'
 );
 
+select throws_ok(
+  $stmt$select public.mark_order_paid(
+    '20000000-0000-4000-8000-000000000031'::uuid,
+    'Bank transfer',
+    'AAL1-BLOCKED'
+  )$stmt$,
+  '42501',
+  'Verified MFA session required (aal2)',
+  'administrator override for fisher settlement is blocked at aal1'
+);
+
 set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000031","role":"authenticated","aal":"aal2"}';
 
 select lives_ok(
-  $select public.update_maree_commercial_settings(6.5,20,'buyer')$,
+  $stmt$select public.update_maree_commercial_settings(6.5,20,'buyer')$stmt$,
   'allowlisted administrator with aal2 can update commercial settings'
 );
 
 select lives_ok(
-  $$select public.review_verification_request(
+  $stmt$select public.mark_order_paid(
+    '20000000-0000-4000-8000-000000000031'::uuid,
+    'Bank transfer',
+    'AAL2-APPROVED'
+  )$stmt$,
+  'administrator override for fisher settlement succeeds at aal2'
+);
+
+select lives_ok(
+  $stmt$select public.review_verification_request(
     '30000000-0000-4000-8000-000000000031'::uuid,
     'approved'::public.verification_status,
     'Approved with verified MFA'
-  )$$,
+  )$stmt$,
   'allowlisted administrator with aal2 can approve a role change'
 );
 
@@ -87,7 +124,7 @@ set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000032';
 set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000032","role":"authenticated","aal":"aal2"}';
 
 select throws_ok(
-  $$select public.update_maree_commercial_settings(6.5,20,'buyer')$$,
+  $stmt$select public.update_maree_commercial_settings(6.5,20,'buyer')$stmt$,
   '42501',
   'Admin access required',
   'aal2 alone does not grant administrator privileges'
