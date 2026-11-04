@@ -88,7 +88,7 @@ Deno.serve(async (req: Request) => {
   const payload = body as { token: string; action: "approved" | "rejected" };
 
   const authorization = req.headers.get("Authorization") ?? "";
-  const bearer = /^Bearer\\s+([^\\s]+)$/i.exec(authorization);
+  const bearer = /^Bearer\s+([^\s]+)$/i.exec(authorization);
   if (!bearer) {
     return json(req, { error: "Sign in with the administrator account and complete MFA before confirming." }, 401);
   }
