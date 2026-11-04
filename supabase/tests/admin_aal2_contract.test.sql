@@ -16,6 +16,10 @@ where id in (
   '00000000-0000-4000-8000-000000000033'
 );
 
+update public.profiles
+set role='admin'
+where id='00000000-0000-4000-8000-000000000033';
+
 insert into private.admin_users(user_id)
 values ('00000000-0000-4000-8000-000000000031')
 on conflict (user_id) do nothing;
