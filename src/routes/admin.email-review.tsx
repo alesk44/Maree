@@ -26,6 +26,25 @@ function EmailReviewPage() {
 
   const confirm = async () => {
     if (!valid || busy || result) return;
+
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !sessionData.session) {
+      toast.error(t("Connectez-vous avec le compte administrateur dans un autre onglet, puis revenez confirmer ici."));
+      return;
+    }
+
+    const { data: assurance, error: assuranceError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (assuranceError || assurance.currentLevel !== "aal2") {
+      toast.error(t("Une session administrateur avec MFA vérifiée est obligatoire pour confirmer cette décision."));
+      return;
+    }
+
+    const { data: isAdmin, error: adminError } = await supabase.rpc("is_current_user_admin");
+    if (adminError || isAdmin !== true) {
+      toast.error(t("Accès administrateur non autorisé."));
+      return;
+    }
+
     setBusy(true);
     const { data, error } = await supabase.functions.invoke("review-verification-email-action", {
       body: { token, action },
