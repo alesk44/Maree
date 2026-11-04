@@ -140,7 +140,7 @@ The isolated branch now also stages the email confirmation path:
 Production remains unchanged: the live Edge Function was previously observed at active version 5 with `verify_jwt=false`. Do not claim email approval is MFA-protected in production until the reviewed source and config are deployed with explicit approval and a live read-back confirms the deployed version.
 
 ### Validation status
-- Static source checks confirm the new SQL migration has balanced `$function$` blocks and the AAL2 pgTAP contract has 10 declared assertions matching its plan.
+- Static source checks confirm the new SQL migration has balanced `$function$` blocks and the AAL2 pgTAP contract has 11 declared assertions matching its plan.
 - No SQL, pgTAP, Deno, TypeScript, lint, or build test has yet been executed in an isolated runtime. The source changes are staged, not proven runtime-safe.
 
 
