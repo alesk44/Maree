@@ -244,4 +244,4 @@ revoke all on function public.mark_order_paid(uuid, text, text) from public, ano
 grant execute on function public.mark_order_paid(uuid, text, text) to authenticated;
 
 comment on function private.require_admin_aal2() is
-  'Internal guard for allowlisted/profile administrators; requires JWT assurance level aal2.';
+  'Internal guard for allowlisted administrators; requires JWT assurance level aal2.';
