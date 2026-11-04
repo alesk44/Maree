@@ -473,7 +473,7 @@ select throws_ok(
        and fisher_id='00000000-0000-4000-8000-000000000001'),
     'Bank transfer','UNAUTHORISED-REF'
   )$$,
-  'P0001','Only the invoice fisher or an admin can confirm payment',
+  '42501','Admin access required',
   'restaurant cannot falsely confirm the fisher payment receipt'
 );
 reset role;
@@ -602,7 +602,7 @@ set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
 select is((select count(*) from public.maree_monthly_commission_invoices),0::bigint,'fisher cannot read restaurant Marée commission statements');
 select throws_ok(
   $$select public.verify_maree_commission_invoice_paid('40000000-0000-4000-8000-000000000001'::uuid)$$,
-  'P0001','Admin access required','fisher cannot verify a Marée commission payment'
+  '42501','Admin access required','fisher cannot verify a Marée commission payment'
 );
 reset role;
 
