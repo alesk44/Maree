@@ -56,6 +56,11 @@ select throws_ok(
 set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000031","role":"authenticated","aal":"aal2"}';
 
 select lives_ok(
+  $select public.update_maree_commercial_settings(6.5,20,'buyer')$,
+  'allowlisted administrator with aal2 can update commercial settings'
+);
+
+select lives_ok(
   $$select public.review_verification_request(
     '30000000-0000-4000-8000-000000000031'::uuid,
     'approved'::public.verification_status,
