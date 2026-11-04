@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(15);
+select plan(17);
 
 insert into auth.users (id,email) values
   ('00000000-0000-4000-8000-000000000031','aal2-admin-contract@test.local'),
@@ -201,5 +201,32 @@ select throws_ok(
 );
 
 reset role;
+
+select ok(
+  exists (
+    select 1 from pg_policies
+    where schemaname='public'
+      and tablename='verification_requests'
+      and policyname='Admins can review verification requests'
+      and qual like '%is_current_user_admin%'
+      and qual like '%aal%'
+      and with_check like '%aal%'
+  ),
+  'direct verification-request updates require allowlisted admin and aal2'
+);
+
+select ok(
+  exists (
+    select 1 from pg_policies
+    where schemaname='public'
+      and tablename='verification_documents'
+      and policyname='Admins can update verification document reviews'
+      and qual like '%is_current_user_admin%'
+      and qual like '%aal%'
+      and with_check like '%aal%'
+  ),
+  'direct verification-document review updates require allowlisted admin and aal2'
+);
+
 select * from finish();
 rollback;
