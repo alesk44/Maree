@@ -127,3 +127,18 @@ Regression contract added:
 - The production email-link RPC `review_verification_request_by_email_token(text)` is a separate service-role bearer-token authorization path. This migration does NOT secure or disable that path. Until it is replaced with an authenticated AAL2 owner flow (or explicitly redesigned and separately hardened), the platform cannot be described as enforcing MFA on every admin approval route.
 - The migration and pgTAP tests have been authored on GitHub only. They have NOT been executed against a local Supabase/Postgres database because Supabase hosted branching is unavailable on the current plan and no isolated local DB runner has been provisioned in this session.
 - Next required validation: run `supabase db reset` and `supabase test db` in a disposable local environment using the full migration history, inspect failures, then run app tests/build. Do not apply this migration to production before that validation and explicit owner approval.
+
+
+### Email approval path — AAL2 hardening now staged in source
+The isolated branch now also stages the email confirmation path:
+- `supabase/functions/review-verification-email-action/index.ts` requires a Bearer access token, verifies it with Supabase Auth `getUser(accessToken)`, then trusts the `aal2` claim only after that cryptographic verification.
+- It checks the verified subject matches the user returned by Auth, then calls the authenticated `public.is_current_user_admin()` RPC before using the service-role client to consume the action-bound one-time token.
+- `supabase/config.toml` sets `verify_jwt = true` for this Edge Function.
+- `src/routes/admin.email-review.tsx` gives an early UX check for a signed-in session, current AAL2, and admin allowlist membership. These client checks are supplementary; the Edge Function enforces the same conditions server-side.
+- The one-time token remains an additional authorization secret and is still hash-checked and action-bound in the database. It is no longer intended to be sufficient on its own.
+
+Production remains unchanged: the live Edge Function was previously observed at active version 5 with `verify_jwt=false`. Do not claim email approval is MFA-protected in production until the reviewed source and config are deployed with explicit approval and a live read-back confirms the deployed version.
+
+### Validation status
+- Static source checks confirm the new SQL migration has balanced `$function$` blocks and the AAL2 pgTAP contract has 10 declared assertions matching its plan.
+- No SQL, pgTAP, Deno, TypeScript, lint, or build test has yet been executed in an isolated runtime. The source changes are staged, not proven runtime-safe.
