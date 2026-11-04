@@ -46,7 +46,7 @@ values
   ('20000000-0000-4000-8000-000000000031',
    '10000000-0000-4000-8000-000000000031',
    '00000000-0000-4000-8000-000000000032',
-   0.5,now()-interval '1 day','collection','delivered',
+   0.5,now()+interval '1 day','collection','delivered',
    '00000000-0000-4000-8000-000000000032','immediate','unpaid');
 
 select ok(
