@@ -9,8 +9,9 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: supabase-db-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  # Serialize all local Supabase jobs for this branch across both database workflows.
+  group: supabase-migrations-${{ github.event.pull_request.head.ref || github.ref_name }}
+  cancel-in-progress: false
 
 jobs:
   database-tests:
@@ -20,7 +21,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 3.0.0
       # Database tests do not send email; Mailpit is not needed.
       # Excluding it also avoids binding its default host port (54324).
       - name: Start local Supabase
@@ -31,6 +32,8 @@ jobs:
         run: supabase test db
       - name: Verify concurrent last-stock reservations
         run: bash supabase/tests/reservation_concurrency.sh
+      - name: Verify concurrent monthly invoice generation
+        run: bash supabase/tests/monthly_billing_concurrency.sh
       - name: Stop local Supabase
         if: always()
         run: supabase stop --no-backup

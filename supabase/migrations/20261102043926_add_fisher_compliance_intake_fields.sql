@@ -1,0 +1,5 @@
+-- Historical version is recorded as applied in production.
+-- fisher_category and compliance_details are added idempotently by
+-- 20261102043827_secure_fisher_compliance_documents_and_listing_gate.sql
+-- and reasserted by 20261102182804_20261102070000_fisher_compliance_intake.sql.
+-- Live information_schema.columns was checked read-only.

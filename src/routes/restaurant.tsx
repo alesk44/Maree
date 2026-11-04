@@ -37,6 +37,9 @@ function Restaurant() {
   const [accountTab, setAccountTab] = useState<"activity" | "billing" | "profile">("activity");
   const [profileName, setProfileName] = useState("");
   const [billingMode, setBillingMode] = useState<"immediate"|"monthly">("immediate");
+  const [mareeFeeRate,setMareeFeeRate]=useState(0.065);
+  const [deliveryFeeRate,setDeliveryFeeRate]=useState(0.20);
+  const [deliveryFeePayer,setDeliveryFeePayer]=useState<'buyer'|'fisher'>('buyer');
 
   const loadOrders = async () => {
     setOrdersLoading(true);
@@ -44,6 +47,10 @@ function Restaurant() {
       const { data: auth } = await supabase.auth.getUser();
       setSignedIn(Boolean(auth.user));
       if (auth.user) {
+        const {data:commercialRows,error:commercialError}=await supabase.rpc('get_maree_commercial_settings');
+        if(commercialError) throw commercialError;
+        const commercial=Array.isArray(commercialRows)?commercialRows[0]:commercialRows;
+        if(commercial){setMareeFeeRate(Number(commercial.maree_fee_rate));setDeliveryFeeRate(Number(commercial.delivery_fee_rate));setDeliveryFeePayer(commercial.delivery_fee_payer==='fisher'?'fisher':'buyer');}
         const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", auth.user.id).maybeSingle();
         setProfileName(profile?.display_name ?? "");
       }
@@ -59,22 +66,23 @@ function Restaurant() {
   const avail = catches.filter((c) => c.status === "disponible" && c.qtyKg > 0);
   const sel = catches.find((c) => c.id === catchId);
   const estimatedSubtotal = sel ? Math.round(qty * sel.priceKg * 100) / 100 : 0;
-  const estimatedMareeFee = Math.round(estimatedSubtotal * 0.065 * 100) / 100;
-  const estimatedDeliveryFee = mode === "livraison" ? Math.round(estimatedSubtotal * 0.20 * 100) / 100 : 0;
-  const estimatedTotal = estimatedSubtotal + estimatedMareeFee + estimatedDeliveryFee + tipAmount;
+  const estimatedMareeFee = Math.round(estimatedSubtotal * mareeFeeRate * 100) / 100;
+  const estimatedDeliveryFee = mode === "livraison" ? Math.round(estimatedSubtotal * deliveryFeeRate * 100) / 100 : 0;
+  const estimatedBuyerDeliveryFee = deliveryFeePayer==='buyer'?estimatedDeliveryFee:0;
+  const estimatedTotal = estimatedSubtotal + estimatedMareeFee + estimatedBuyerDeliveryFee + tipAmount;
   const deliveredOrders = orders.filter(o=>o.status==="delivered");
   const immediateUnpaid = deliveredOrders.filter(o=>o.billing_mode==="immediate" && o.fisher_payment_status==="unpaid");
   const monthlyUnpaid = monthlyInvoices.filter(i=>i.status==="open");
   const openMonthlyOrderIds = new Set(monthlyUnpaid.flatMap(i=>i.items?.map(item=>item.order_id)??[]));
   const monthlyUnbilled = deliveredOrders.filter(o=>o.billing_mode==="monthly"&&o.fisher_payment_status==="unpaid"&&!openMonthlyOrderIds.has(o.id));
-  const fisherDebt = immediateUnpaid.reduce((sum,o)=>sum+Number(o.product_subtotal??0)+Number(o.tip_amount??0),0)
-    + monthlyUnpaid.reduce((sum,i)=>sum+Number(i.subtotal)+Number(i.tip_total??0),0)
-    + monthlyUnbilled.reduce((sum,o)=>sum+Number(o.product_subtotal??0)+Number(o.tip_amount??0),0);
+  const fisherDebt = immediateUnpaid.reduce((sum,o)=>sum+Number(o.product_subtotal??0)+Number(o.tip_amount??0)-(o.delivery_fee_payer_snapshot==='fisher'?Number(o.delivery_fee??0):0),0)
+    + monthlyUnpaid.reduce((sum,i)=>sum+Number(i.subtotal)+Number(i.tip_total??0)-Number(i.delivery_deduction_total??0),0)
+    + monthlyUnbilled.reduce((sum,o)=>sum+Number(o.product_subtotal??0)+Number(o.tip_amount??0)-(o.delivery_fee_payer_snapshot==='fisher'?Number(o.delivery_fee??0):0),0);
   const fisherTipDebt = immediateUnpaid.reduce((sum,o)=>sum+Number(o.tip_amount??0),0)
     + monthlyUnpaid.reduce((sum,i)=>sum+Number(i.tip_total??0),0)
     + monthlyUnbilled.reduce((sum,o)=>sum+Number(o.tip_amount??0),0);
-  const fisherPaid = deliveredOrders.filter(o=>o.fisher_payment_status==="paid").reduce((sum,o)=>sum+Number(o.product_subtotal??0)+Number(o.tip_amount??0),0);
-  const mareeAccrued = deliveredOrders.reduce((sum,o)=>sum+Number(o.maree_fee??0)+Number(o.delivery_fee??0),0);
+  const fisherPaid = deliveredOrders.filter(o=>o.fisher_payment_status==="paid").reduce((sum,o)=>sum+Number(o.product_subtotal??0)+Number(o.tip_amount??0)-(o.delivery_fee_payer_snapshot==='fisher'?Number(o.delivery_fee??0):0),0);
+  const mareeAccrued = deliveredOrders.reduce((sum,o)=>sum+Number(o.maree_fee??0)+(o.delivery_fee_payer_snapshot==='buyer'?Number(o.delivery_fee??0):0),0);
   const mareeSettled = mareeInvoices.filter(i=>i.status==="paid").reduce((sum,i)=>sum+Number(i.commission_total)+Number(i.delivery_total),0);
   const mareeOutstanding = Math.max(0,mareeAccrued-mareeSettled);
 
@@ -151,13 +159,13 @@ function Restaurant() {
       </div>
       <div className="grid gap-2">
         <h3 className="font-semibold">{t("Relevés mensuels de commission Marée")}</h3>
-        <p className="text-xs text-muted-foreground">{t("Ces relevés regroupent séparément la commission de 6,5 % et les frais de livraison de 20 % dus à Marée par le restaurant. Ils sont distincts des factures produits dues aux pêcheurs. Une déclaration de paiement reste à vérifier par l’administration.")}</p>
+        <p className="text-xs text-muted-foreground">{t("Ces relevés regroupent la commission Marée et les frais de livraison imputés au restaurant selon les tarifs figés à chaque réservation. Ils sont distincts des factures produits dues aux pêcheurs. Une déclaration de paiement reste à vérifier par l’administration.")}</p>
         {mareeInvoices.length===0 ? <Empty>{t("Aucun relevé mensuel de commission pour le moment.")}</Empty> :
           <ul className="grid gap-2">{mareeInvoices.map(i=><li key={i.id} className="rounded-xl border border-border p-4">
             <div className="flex flex-wrap justify-between gap-2"><strong>{t("Période")} {i.period_start} — {i.period_end}</strong><strong>{gbp(Number(i.commission_total)+Number(i.delivery_total))}</strong></div>
-            <p className="text-xs text-muted-foreground">{t("Commission Marée (6,5 %)")} : {gbp(Number(i.commission_total))} · {t("Livraison Marée (20 %)")} : {gbp(Number(i.delivery_total))}</p>
+            <p className="text-xs text-muted-foreground">{t("Commission Marée")} : {gbp(Number(i.commission_total))} · {t("Livraison facturée au restaurant")} : {gbp(Number(i.delivery_total))}</p>
             <p className="text-sm text-muted-foreground">{t("Échéance")} : {i.due_date} · {i.status==="paid"?t("Paiement vérifié par Marée"):i.status==="declared_paid"?t("Paiement déclaré — vérification Marée en attente"):i.status==="void"?t("Annulé"):t("À régler à Marée")}</p>
-            {i.items?.length ? <ul className="mt-2 grid gap-1 border-t border-border pt-2 text-xs">{i.items.map(item=><li key={item.order_id} className="flex flex-wrap justify-between gap-2"><span>Commande {item.order_id.slice(0,8).toUpperCase()} · {item.fulfilment==="delivery"?t("Livraison"):t("Retrait")} · {gbp(Number(item.product_subtotal))} {t("produits")}</span><strong>{t("Commission")} : {gbp(Number(item.commission_amount))} · {t("Livraison")} : {gbp(Number(item.delivery_amount))}</strong></li>)}</ul> : null}
+            {i.items?.length ? <ul className="mt-2 grid gap-1 border-t border-border pt-2 text-xs">{i.items.map(item=><li key={item.order_id} className="flex flex-wrap justify-between gap-2"><span>Commande {item.order_id.slice(0,8).toUpperCase()} · {item.fulfilment==="delivery"?t("Livraison"):t("Retrait")} · {gbp(Number(item.product_subtotal))} {t("produits")}</span><strong>{t("Commission")} : {gbp(Number(item.commission_amount))} · {t("Livraison")} : {gbp(Number(item.delivery_amount))} · {t(item.delivery_fee_payer_snapshot==='buyer'?'Payée par le restaurant':'Déduite du pêcheur')}</strong></li>)}</ul> : null}
             {i.payment_method&&<p className="text-xs text-muted-foreground">{t("Mode")} : {i.payment_method} {i.payment_reference?("· "+t("Référence")+" : "+i.payment_reference):""}</p>}
             {i.status==="open"&&<button type="button" className="btn btn-accent mt-3" onClick={async()=>{
               const method=window.prompt(t("Mode de paiement effectué (ex. virement bancaire)"));
@@ -175,18 +183,19 @@ function Restaurant() {
         <h3 className="font-semibold">{t("Factures mensuelles des pêcheurs")}</h3>
         {monthlyInvoices.length===0 ? <Empty>{t("Aucune facture mensuelle pour le moment. Elles apparaîtront après la génération mensuelle.")}</Empty> :
           <ul className="grid gap-2">{monthlyInvoices.map(i=><li key={i.id} className="rounded-xl border border-border p-4">
-            <div className="flex flex-wrap justify-between gap-2"><strong>{t("Période")} {i.period_start} — {i.period_end}</strong><strong>{gbp(Number(i.subtotal)+Number(i.tip_total??0))}</strong></div>
-            <p className="text-xs text-muted-foreground">{t("Produits")} : {gbp(Number(i.subtotal))} · {t("Pourboires")} : {gbp(Number(i.tip_total??0))}</p>
+            <div className="flex flex-wrap justify-between gap-2"><strong>{t("Période")} {i.period_start} — {i.period_end}</strong><strong>{gbp(Number(i.subtotal)+Number(i.tip_total??0)-Number(i.delivery_deduction_total??0)+Number(i.cancellation_indemnity_total??0))}</strong></div>
+            <p className="text-xs text-muted-foreground">{t("Produits")} : {gbp(Number(i.subtotal))} · {t("Pourboires")} : {gbp(Number(i.tip_total??0))} · {t("Livraison déduite du pêcheur")} : {gbp(Number(i.delivery_deduction_total??0))} · {t("Indemnités d’annulation")} : {gbp(Number(i.cancellation_indemnity_total??0))}</p>
             <p className="text-sm text-muted-foreground">{t("Pêcheur")} · {i.fisher_id.slice(0,8).toUpperCase()} · {t("Échéance")} : {i.due_date} · {i.status==="paid"?t("Réglée"):i.status==="void"?t("Refusée par le pêcheur"):t("À régler au pêcheur")}</p>
-            {i.items?.length ? <ul className="mt-2 grid gap-1 border-t border-border pt-2 text-xs">{i.items.map(item=><li key={item.order_id} className="flex flex-wrap justify-between gap-2"><span>Commande {item.order_id.slice(0,8).toUpperCase()} · {Number(item.quantity_kg)} kg × {gbp(Number(item.unit_price))}/kg · {t("Pourboire")} {gbp(Number(item.tip_amount??0))}</span><strong>{gbp(Number(item.product_subtotal)+Number(item.tip_amount??0))}</strong></li>)}</ul> : null}
+            {i.items?.length ? <ul className="mt-2 grid gap-1 border-t border-border pt-2 text-xs">{i.items.map(item=><li key={item.order_id} className="flex flex-wrap justify-between gap-2"><span>Commande {item.order_id.slice(0,8).toUpperCase()} · {Number(item.quantity_kg)} kg × {gbp(Number(item.unit_price))}/kg · {t("Pourboire")} {gbp(Number(item.tip_amount??0))}</span><strong>{gbp(Number(item.product_subtotal)+Number(item.tip_amount??0)-Number(item.delivery_deduction??0))}</strong></li>)}</ul> : null}
+            {i.cancellation_indemnities?.length ? <ul className="mt-2 grid gap-1 border-t border-border pt-2 text-xs">{i.cancellation_indemnities.map(item=><li key={item.id} className="flex justify-between gap-2"><span>{t("Indemnité d’annulation")} ·   {item.order_id.slice(0,8).toUpperCase()} · {item.status==="paid"?t("Réglée"):t("À régler au pêcheur")}</span><strong>{gbp(Number(item.amount))}</strong></li>)}</ul> : null}
             {i.paid_at&&<p className="text-xs text-muted-foreground">{t("Règlement confirmé")} : {dt(i.paid_at)} {i.payment_method||""} {i.payment_reference||""}</p>}
           </li>)}</ul>}
       </div>
       {orders.filter(o=>o.status==="delivered").length===0 ? <Empty>{t("Aucune commande livrée à afficher pour le moment.")}</Empty> :
-        <ul className="grid gap-2">{orders.filter(o=>o.status==="delivered").map(o=>{const lot=catches.find(c=>c.id===o.catch_id);const products=Number(o.product_subtotal??0);return <li key={o.id} className="rounded-xl border border-border p-4">
-          <div className="flex flex-wrap justify-between gap-2"><strong>{lot?.emoji} {t(lot?.species??"Produit")} · {Number(o.quantity_kg)} kg</strong><strong>{gbp(Number(o.total_amount??(products+Number(o.maree_fee??0)+Number(o.delivery_fee??0))))}</strong></div>
+        <ul className="grid gap-2">{orders.filter(o=>o.status==="delivered").map(o=>{const lot=catches.find(c=>c.id===o.catch_id);const products=Number(o.product_subtotal??0);const buyerDelivery=o.delivery_fee_payer_snapshot==='buyer'?Number(o.delivery_fee??0):0;return <li key={o.id} className="rounded-xl border border-border p-4">
+          <div className="flex flex-wrap justify-between gap-2"><strong>{lot?.emoji} {t(lot?.species??"Produit")} · {Number(o.quantity_kg)} kg</strong><strong>{gbp(Number(o.total_amount??(products+Number(o.maree_fee??0)+buyerDelivery+Number(o.tip_amount??0))))}</strong></div>
           <p className="text-xs text-muted-foreground">{t("Livrée")} · {dt(o.delivered_at??o.requested_slot)} · Réf. {o.id.slice(0,8).toUpperCase()}</p>
-          <p className="mt-1 text-sm">{t("Produits")} : {gbp(products)} · {t("Pourboire")} : {gbp(Number(o.tip_amount??0))} · {t("Commission Marée (6,5 %)")} : {gbp(Number(o.maree_fee??0))} · {t("Livraison (20 %)")} : {gbp(Number(o.delivery_fee??0))}</p>
+          <p className="mt-1 text-sm">{t("Produits")} : {gbp(products)} · {t("Pourboire")} : {gbp(Number(o.tip_amount??0))} · {t("Commission Marée ({rate} %)",{rate:(Number(o.maree_fee_rate)*100).toString()})} : {gbp(Number(o.maree_fee??0))} · {t("Livraison ({rate} %)",{rate:(Number(o.delivery_fee_rate)*100).toString()})} : {gbp(Number(o.delivery_fee??0))} · {t("Payeur")} : {t(o.delivery_fee_payer_snapshot==='buyer'?'Restaurant':'Pêcheur')}</p>
           <p className="mt-1 text-xs text-muted-foreground">{t("Relevé indicatif — ne constitue pas une facture fiscale ni une preuve de paiement.")}</p>
         </li>})}</ul>}
     </section>}
@@ -243,11 +252,11 @@ function Restaurant() {
           {sel && <div className="rounded-lg bg-secondary p-4 text-sm">
             <p className="font-semibold">{t("Résumé")}</p>
             <p>{qty} kg de {t(sel.species)} × {gbp(sel.priceKg)} = <strong>{gbp(estimatedSubtotal)}</strong></p>
-            <p>{t("Commission Marée Jersey (6,5 %, tous modes)")} : <strong>{gbp(estimatedMareeFee)}</strong></p>
-            <p>{t("Frais de livraison Marée Jersey (20 %, livraison uniquement)")} : <strong>{gbp(estimatedDeliveryFee)}</strong></p>
+            <p>{t("Commission Marée Jersey ({rate} %, tous modes)",{rate:(mareeFeeRate*100).toFixed(2)})} : <strong>{gbp(estimatedMareeFee)}</strong></p>
+            <p>{t("Frais de livraison")} ({(deliveryFeeRate*100).toFixed(2)} %) : <strong>{gbp(estimatedDeliveryFee)}</strong> · {t("Payeur")} : <strong>{t(deliveryFeePayer==='buyer'?'Restaurant':'Pêcheur')}</strong></p>
             <p>{t("Pourboire intégral au pêcheur")} : <strong>{gbp(tipAmount)}</strong></p>
             <p>{t("Total estimé pour le restaurant")} : <strong>{gbp(estimatedTotal)}</strong></p>
-            <p className="text-xs text-muted-foreground">{t("Le montant produits et le pourboire reviennent intégralement au pêcheur. Le pourboire n'est pas soumis à commission. La commission de 6,5 % revient à Marée pour chaque achat ; les frais de livraison de 20 % sont appliqués uniquement en livraison. GST non ajouté.")}</p>
+            <p className="text-xs text-muted-foreground">{t("Le montant produits et le pourboire reviennent intégralement au pêcheur. Le pourboire n'est pas soumis à commission. La commission de {commissionRate} % revient à Marée pour chaque achat ; les frais de livraison de {deliveryRate} % sont appliqués uniquement en livraison. GST non ajouté.",{commissionRate:(mareeFeeRate*100).toFixed(2),deliveryRate:(deliveryFeeRate*100).toFixed(2)})}</p>
             <p className="text-muted-foreground">{fishers.find((f) => f.id === sel.fisherId)?.boat} · {t(mode)}</p>
           </div>}
           <button className="btn" disabled={!signedIn}>{t("Envoyer la réservation")}</button>

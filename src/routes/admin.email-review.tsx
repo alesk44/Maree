@@ -9,7 +9,11 @@ export const Route = createFileRoute("/admin/email-review")({
     token: typeof search["token"] === "string" ? search["token"] : "",
     action: search["action"] === "approved" || search["action"] === "rejected" ? search["action"] : "",
   }),
-  head: () => ({ meta: [{ title: "Confirmation administrateur — Marée Jersey" }] }),
+  head: () => ({ meta: [
+    { title: "Confirmation administrateur — Marée Jersey" },
+    { name: "referrer", content: "no-referrer" },
+    { name: "robots", content: "noindex, nofollow" },
+  ] }),
   component: EmailReviewPage,
 });
 

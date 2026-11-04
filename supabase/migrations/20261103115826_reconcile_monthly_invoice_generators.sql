@@ -238,3 +238,12 @@ end;
 $function$;
 revoke all on function public.generate_monthly_billing_statements(date) from public, anon, authenticated;
 grant execute on function public.generate_monthly_billing_statements(date) to service_role;
+
+-- Keep the local migration chain aligned with the live scheduler: both monthly
+-- statements must be generated from one scheduled entry point.
+select cron.unschedule(jobid) from cron.job where jobname = 'maree-monthly-fisher-invoices';
+select cron.schedule(
+  'maree-monthly-fisher-invoices',
+  '0 3 1 * *',
+  $job$select public.generate_monthly_billing_statements((date_trunc('month', now()) - interval '1 month')::date);$job$
+);

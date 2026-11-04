@@ -1,0 +1,19 @@
+name: Database Contract
+on: [push, pull_request]
+
+concurrency:
+  # Share the same lock as supabase-migrations.yml to prevent Docker port collisions.
+  group: database-contract-${{ github.event.pull_request.head.ref || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  database-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 3.0.0
+      - run: supabase start -x studio,edge-runtime,logflare,vector,imgproxy
+      - run: supabase db reset --local
+      - run: supabase test db --local

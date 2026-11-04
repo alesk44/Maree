@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(210);
+select plan(213);
 
 -- Isolated auth users; the auth trigger creates their initial restaurant profiles.
 insert into auth.users (id, email) values
@@ -79,8 +79,18 @@ insert into public.verification_requests (
   ('30000000-0000-4000-8000-000000000004',
    '00000000-0000-4000-8000-000000000004',
    'restaurant', 'West Pier Kitchen', 'Test Contact D', '+441534000004',
-   'Test evidence for a second restaurant account.')
+   'Test evidence for a second restaurant account.'),
+  ('30000000-0000-4000-8000-000000000005',
+   '00000000-0000-4000-8000-000000000001',
+   'fisher', 'North Coast Fishing', 'Test Contact E', '+441534000005',
+   'Approved fixture for reservation and commercial contract tests.')
 on conflict (id) do nothing;
+
+update public.verification_requests
+set status='approved',
+    reviewed_by='00000000-0000-4000-8000-000000000005',
+    reviewed_at=now()
+where id='30000000-0000-4000-8000-000000000005';
 
 insert into public.verification_documents (
   id, request_id, user_id, document_type, file_path, original_filename, mime_type, size_bytes
@@ -105,7 +115,7 @@ select ok((select relrowsecurity from pg_class where oid = 'public.verification_
 select ok((select relrowsecurity from pg_class where oid = 'private.verification_email_action_tokens'::regclass), 'email action tokens have RLS enabled');
 select ok(not has_table_privilege('authenticated', 'private.verification_email_action_tokens', 'SELECT'), 'authenticated users cannot read email action tokens');
 select ok(not has_function_privilege('anon', 'public.create_verification_email_action_tokens(uuid,text,text,timestamptz)', 'EXECUTE'), 'anonymous users cannot create email decision tokens');
-select ok(not has_function_privilege('authenticated', 'public.review_verification_request_by_email_token(text)', 'EXECUTE'), 'authenticated users cannot execute email decision RPC');
+select ok(not has_function_privilege('authenticated', 'public.review_verification_request_by_email_token(text,text)', 'EXECUTE'), 'authenticated users cannot execute email decision RPC');
 
 select ok(not has_column_privilege('anon', 'public.profiles', 'phone', 'SELECT'), 'anonymous users cannot read profile phone numbers');
 select ok(not has_column_privilege('authenticated', 'public.profiles', 'phone', 'SELECT'), 'authenticated users cannot directly read private profile phone numbers');
@@ -220,6 +230,21 @@ reset role;
 -- catch is no longer publicly available, but cannot inspect another restaurant's lot.
 update public.catches set status='reserved'
 where id='10000000-0000-4000-8000-000000000001';
+
+-- Editing price on a manually reserved listing must not silently republish it.
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
+select lives_ok(
+  $$select public.update_catch_inventory('10000000-0000-4000-8000-000000000001'::uuid, null, 8.75)$$,
+  'fisher can update price on their reserved listing'
+);
+select is(
+  (select status from public.catches where id='10000000-0000-4000-8000-000000000001'),
+  'reserved'::public.catch_status,
+  'manual inventory edits preserve the reserved listing state'
+);
+reset role;
+
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000003';
 select is(
@@ -253,10 +278,12 @@ select is(
 );
 select is(
   (select status from public.catches where id='10000000-0000-4000-8000-000000000001'),
-  'available'::public.catch_status,
-  'restored catch becomes available again'
+  'reserved'::public.catch_status,
+  'fisher refusal preserves the reserved listing state'
 );
 reset role;
+update public.catches set status='available'
+where id='10000000-0000-4000-8000-000000000001';
 
 -- Admin approval must update the request and grant the requested role atomically.
 set local role authenticated;
@@ -281,7 +308,7 @@ set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000007';
 select is(public.is_current_user_admin(), true, 'separate admin grant is recognized without changing restaurant role');
 select is((select role::text from public.profiles where id = '00000000-0000-4000-8000-000000000007'), 'restaurant', 'separate admin grant preserves the restaurant business role');
-select is((select count(*) from public.verification_requests), 4::bigint, 'separate admin can read all verification requests');
+select is((select count(*) from public.verification_requests), 5::bigint, 'separate admin can read all verification requests');
 select is((select count(*) from public.catches), 2::bigint, 'separate admin grant can read all catch lots');
 select is((select count(*) from public.orders), 2::bigint, 'separate admin grant can read all orders');
 select is((select count(*) from public.profiles), 7::bigint, 'separate admin grant can read all profiles');
@@ -337,6 +364,11 @@ select is(
   'rejected billing preference update leaves the valid fisher setting unchanged'
 );
 reset role;
+
+-- The earlier inventory-edit contract deliberately changes this lot's price to £8.75.
+-- Restore the commercial fixture price so these fee assertions test the £8.50 baseline.
+update public.catches set price_per_kg=8.50
+where id='10000000-0000-4000-8000-000000000001';
 
 -- Verify server-side Marée fee calculation for collection and delivery.
 set local role authenticated;
@@ -478,8 +510,8 @@ select throws_ok(
   $maree_test$select public.reserve_catch(
     '10000000-0000-4000-8000-000000000001'::uuid,0.5,now()+interval '5 days','collection',null
   )$maree_test$,
-  'P0001','Ordering is blocked: at least three monthly invoices are overdue and unpaid',
-  'restaurant with three overdue unpaid fisher invoices cannot place another order'
+  'P0001','Ordering is blocked: at least three monthly invoices are open and unpaid',
+  'restaurant with three open unpaid fisher invoices cannot place another order'
 );
 reset role;
 
@@ -612,6 +644,9 @@ insert into public.orders (
   '00000000-0000-4000-8000-000000000001',5,0.33,0,5.33
 );
 
+-- A reserved listing state is intentional and must survive stock restoration.
+update public.catches set status='reserved'
+where id='10000000-0000-4000-8000-000000000003';
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000003';
 select is(
@@ -623,6 +658,9 @@ reset role;
 select is((select status from public.orders where id='20000000-0000-4000-8000-000000000003'),'cancelled'::public.order_status,'free cancellation marks the order cancelled');
 select is((select cancellation_penalty from public.orders where id='20000000-0000-4000-8000-000000000003'),0::numeric,'free cancellation has no penalty');
 select is((select remaining_kg from public.catches where id='10000000-0000-4000-8000-000000000003'),1::numeric,'free cancellation restores reserved stock');
+select is((select status from public.catches where id='10000000-0000-4000-8000-000000000003'),'reserved'::public.catch_status,'free cancellation preserves a fisher-reserved listing state');
+update public.catches set status='available'
+where id='10000000-0000-4000-8000-000000000003';
 
 update public.catches set remaining_kg=0.5,status='available'
 where id='10000000-0000-4000-8000-000000000003';
@@ -864,7 +902,7 @@ reset role;
 
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000005';
-select is((select count(*) from public.notifications where event_type='verification_request_received'),4::bigint,'trusted admin receives each verification request notification');
+select is((select count(*) from public.notifications where event_type='verification_request_received'),5::bigint,'trusted admin receives each verification request notification');
 reset role;
 
 -- Notification follow-up contract: verification outcomes and invoice lifecycle.

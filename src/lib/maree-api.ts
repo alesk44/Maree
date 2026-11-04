@@ -193,14 +193,14 @@ export async function publishCatch(input: Omit<Catch, "id">): Promise<string> {
 export async function updateCatch(id: string, patch: Partial<Pick<Catch, "qtyKg" | "priceKg" | "status">>): Promise<void> {
   const values: Record<string, unknown> = {};
   if (patch.qtyKg !== undefined) {
-    values.quantity_kg = patch.qtyKg;
-    values.remaining_kg = patch.qtyKg;
-    values.status = patch.qtyKg === 0 ? "sold_out" : "available";
+    values["quantity_kg"] = patch.qtyKg;
+    values["remaining_kg"] = patch.qtyKg;
+    values["status"] = patch.qtyKg === 0 ? "sold_out" : "available";
   }
-  if (patch.priceKg !== undefined) values.price_per_kg = patch.priceKg;
+  if (patch.priceKg !== undefined) values["price_per_kg"] = patch.priceKg;
   if (patch.status !== undefined) {
-    values.status = ({ disponible: "available", réservé: "reserved", épuisé: "sold_out" } as const)[patch.status];
-    if (patch.status === "épuisé") values.remaining_kg = 0;
+    values["status"] = ({ disponible: "available", réservé: "reserved", épuisé: "sold_out" } as const)[patch.status];
+    if (patch.status === "épuisé") values["remaining_kg"] = 0;
   }
   const { error } = await supabase.from("catches").update(values).eq("id", id);
   if (error) throw error;

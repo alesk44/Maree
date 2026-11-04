@@ -1,0 +1,3 @@
+-- Duplicate historical ledger entry retained for version continuity.
+-- The profile avatar schema/storage changes are established by
+-- 20261102040258_profile_avatars.sql. Do not apply the same DDL twice.
