@@ -142,3 +142,6 @@ Production remains unchanged: the live Edge Function was previously observed at 
 ### Validation status
 - Static source checks confirm the new SQL migration has balanced `$function$` blocks and the AAL2 pgTAP contract has 10 declared assertions matching its plan.
 - No SQL, pgTAP, Deno, TypeScript, lint, or build test has yet been executed in an isolated runtime. The source changes are staged, not proven runtime-safe.
+
+
+**Least-privilege refinement:** the staged `private.require_admin_aal2()` guard now requires explicit membership in `private.admin_users` plus JWT `aal2`. A profile role of `admin` alone is deliberately insufficient for these privileged operations. This avoids broadening the existing allowlist-only authority used by commercial settings and payment-verification RPCs.
