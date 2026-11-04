@@ -365,6 +365,11 @@ select is(
 );
 reset role;
 
+-- The earlier inventory-edit contract deliberately changes this lot's price to £8.75.
+-- Restore the commercial fixture price so these fee assertions test the £8.50 baseline.
+update public.catches set price_per_kg=8.50
+where id='10000000-0000-4000-8000-000000000001';
+
 -- Verify server-side Marée fee calculation for collection and delivery.
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000003';
