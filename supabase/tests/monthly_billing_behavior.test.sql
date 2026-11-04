@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(29);
+select plan(30);
 
 -- Isolated accounting fixtures. All timestamps are pinned to October 2026 so
 -- the tests remain deterministic regardless of the date on which CI runs.
@@ -309,6 +309,14 @@ select is(
    where order_id='20000000-0000-4000-8000-000000000022'),
   'paid',
   'invoice payment settles the cancellation receivable'
+);
+
+select is(
+  (select cancellation_indemnity_total from public.fisher_monthly_invoices
+   where id=(select invoice_id from public.fisher_cancellation_indemnities
+     where order_id='20000000-0000-4000-8000-000000000022')),
+  12.50::numeric,
+  'settlement preserves the historical cancellation indemnity total on the paid invoice'
 );
 
 
