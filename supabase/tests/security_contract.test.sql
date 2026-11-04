@@ -235,7 +235,7 @@ where id='10000000-0000-4000-8000-000000000001';
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
 select lives_ok(
-  $select public.update_catch_inventory('10000000-0000-4000-8000-000000000001'::uuid, null, 8.75)$,
+  $$select public.update_catch_inventory('10000000-0000-4000-8000-000000000001'::uuid, null, 8.75)$$,
   'fisher can update price on their reserved listing'
 );
 select is(
