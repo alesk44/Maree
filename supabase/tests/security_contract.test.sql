@@ -221,7 +221,7 @@ select throws_ok(
 );
 select throws_ok(
   $$select public.review_verification_request('30000000-0000-4000-8000-000000000001'::uuid, 'approved'::public.verification_status, null)$$,
-  'P0001', 'Admin access required',
+  '42501', 'Admin access required',
   'fisher cannot review verification requests'
 );
 reset role;
