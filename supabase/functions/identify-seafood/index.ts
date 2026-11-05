@@ -102,6 +102,21 @@ Deno.serve(async (req: Request) => {
     return json(req, { error: "Only JPEG, PNG or WEBP images up to 4 MB are accepted." }, 400);
   }
 
+  const { data: quota, error: quotaError } = await userClient.rpc("consume_seafood_recognition_quota");
+  if (quotaError || !quota || typeof quota.allowed !== "boolean") {
+    console.error("Seafood recognition quota check failed", quotaError?.message ?? "Invalid quota response");
+    return json(req, { error: "Recognition is temporarily unavailable. Please try again later." }, 503);
+  }
+  if (!quota.allowed) {
+    const retryAfter = Math.max(1, Math.min(86400, Number(quota.retry_after_seconds) || 60));
+    headers.set("Retry-After", String(retryAfter));
+    return new Response(JSON.stringify({
+      error: "Recognition limit reached. Please try again later.",
+      remaining_today: Number(quota.remaining_today) || 0,
+      retry_after_seconds: retryAfter,
+    }), { status: 429, headers });
+  }
+
   try {
     const prompt = `Identify visible seafood species for a Jersey (Channel Islands) fish-market traceability assistant.
 Return JSON only, with this exact shape:
