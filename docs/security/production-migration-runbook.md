@@ -99,7 +99,7 @@ Release sequence after backup and rehearsal:
 5. Test email approval/rejection with: missing JWT, invalid JWT, non-admin, AAL1, AAL2 allowlisted admin, wrong action, expired token, replayed token and concurrent token use. Confirm a mismatch does not consume the token.
 6. Continue with migrations 3 through 8 only after the email route is confirmed and all prior post-migration checks pass.
 
-Do not deploy the Fishial V2 function as part of this release. PR #14 remains a separate feature and requires reconciliation with the security branch and its own release approval.
+Do not deploy the Fishial V2 function as part of this release. PR #14 has been merged into the security branch after passing Verify, Marée CI and Database Contract; its adapter, quota approval check and tests are now staged in PR #13. The function remains undeployed and requires separate release approval.
 
 ## 6. Owner MFA and emergency recovery
 
