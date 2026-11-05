@@ -137,7 +137,7 @@ set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000005';
 set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000005","role":"authenticated","aal":"aal2"}';
 select throws_ok(
-  $select public.review_verification_request_by_email_token('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','rejected')$,
+  $select$ public.review_verification_request_by_email_token('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','rejected') $select$,
   'P0001','Action does not match this confirmation link',
   'mismatched email action is rejected before token consumption'
 );
