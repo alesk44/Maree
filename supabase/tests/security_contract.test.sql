@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(214);
+select plan(224);
 
 -- Isolated auth users; the auth trigger creates their initial restaurant profiles.
 insert into auth.users (id, email) values
@@ -708,6 +708,67 @@ reset role;
 select is((select status from public.orders where id='20000000-0000-4000-8000-000000000004'),'cancelled'::public.order_status,'late cancellation completes only after buyer acceptance');
 select is((select cancellation_penalty from public.orders where id='20000000-0000-4000-8000-000000000004'),7.50::numeric,'accepted cancellation retains the agreed penalty');
 select is((select remaining_kg from public.catches where id='10000000-0000-4000-8000-000000000003'),1::numeric,'accepted late cancellation restores reserved stock');
+
+-- Accepted late-cancellation penalties become fisher receivables, never product sales.
+select is(
+  (select count(*) from public.fisher_cancellation_indemnities where order_id='20000000-0000-4000-8000-000000000004'),
+  1::bigint,
+  'accepting a late cancellation creates exactly one fisher indemnity receivable'
+);
+select is(
+  (select amount from public.fisher_cancellation_indemnities where order_id='20000000-0000-4000-8000-000000000004'),
+  7.50::numeric,
+  'the accepted cancellation amount is recorded exactly'
+);
+select is(
+  (select status from public.fisher_cancellation_indemnities where order_id='20000000-0000-4000-8000-000000000004'),
+  'unpaid'::text,
+  'the accepted indemnity remains unpaid until fisher settlement'
+);
+select is(
+  (select cancellation_indemnity_total from public.fisher_monthly_invoices
+   where id=(select invoice_id from public.fisher_cancellation_indemnities where order_id='20000000-0000-4000-8000-000000000004')),
+  7.50::numeric,
+  'the fisher monthly statement includes the accepted indemnity'
+);
+select is(
+  (select subtotal from public.fisher_monthly_invoices
+   where id=(select invoice_id from public.fisher_cancellation_indemnities where order_id='20000000-0000-4000-8000-000000000004')),
+  0::numeric,
+  'a cancellation indemnity is not misclassified as delivered product revenue'
+);
+select is(
+  (select count(*) from public.fisher_monthly_invoice_items where order_id='20000000-0000-4000-8000-000000000004'),
+  0::bigint,
+  'a cancelled order does not create a fisher product invoice line'
+);
+select is(
+  (select count(*) from public.maree_monthly_commission_invoice_items where order_id='20000000-0000-4000-8000-000000000004'),
+  0::bigint,
+  'a cancellation indemnity does not create a Marée commission invoice line'
+);
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
+select lives_ok(
+  $select public.mark_fisher_invoice_paid(
+    (select invoice_id from public.fisher_cancellation_indemnities where order_id='20000000-0000-4000-8000-000000000004'),
+    'Bank transfer','INDEMNITY-TEST'
+  )$,
+  'fisher can confirm receipt of a monthly statement containing a cancellation indemnity'
+);
+reset role;
+select is(
+  (select status from public.fisher_cancellation_indemnities where order_id='20000000-0000-4000-8000-000000000004'),
+  'paid'::text,
+  'settling the fisher statement settles its linked cancellation indemnity'
+);
+select is(
+  (select status from public.fisher_monthly_invoices
+   where id=(select invoice_id from public.fisher_cancellation_indemnities where order_id='20000000-0000-4000-8000-000000000004')),
+  'paid'::text,
+  'the statement containing the indemnity is marked paid atomically'
+);
+
 
 -- Declining a late cancellation offer must leave the order active and stock reserved.
 update public.catches set remaining_kg=0.5,status='available'
