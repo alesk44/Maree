@@ -102,6 +102,7 @@ function Admin() {
       if (authError) throw authError;
       if (!user) {
         setIsAdmin(false);
+        setMfaRequired(false);
         setRequests([]);
         return;
       }
@@ -175,6 +176,8 @@ function Admin() {
 
   useEffect(() => { void loadRequests(); }, [loadRequests]);
 
+  const handleMfaVerified = useCallback(() => { void loadRequests(); }, [loadRequests]);
+
   const saveCommercialSettings = async () => {
     const commission=Number(mareeFeePercent),delivery=Number(deliveryFeePercent);
     if(!Number.isFinite(commission)||commission<0||commission>100||!Number.isFinite(delivery)||delivery<0||delivery>100){toast.error(t('Les taux doivent être compris entre 0 et 100 %.'));return;}
@@ -228,7 +231,7 @@ function Admin() {
         <button className="btn" type="button" onClick={() => void loadRequests()} disabled={loading}>{t("Actualiser")}</button>
       </header>
 
-      {isAdmin && mfaRequired && <AdminMfaGate onVerified={() => void loadRequests()} />}
+      {isAdmin && mfaRequired && <AdminMfaGate onVerified={handleMfaVerified} />}
 
       {isAdmin && !loading && !mfaRequired && <section className="card grid gap-4 p-5">
         <div><h2 className="font-display text-2xl font-semibold">{t('Paramètres commerciaux')}</h2><p className="text-sm text-muted-foreground">{t('Ces réglages s’appliquent uniquement aux nouvelles réservations. Les commandes existantes conservent leurs taux et leur payeur d’origine.')}</p></div>
