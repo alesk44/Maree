@@ -92,8 +92,20 @@ Deno.serve(async (req: Request) => {
   if (Object.keys(input).some((key) => !["imageBase64", "mimeType"].includes(key)) ||
       typeof input.imageBase64 !== "string" || typeof input.mimeType !== "string" ||
       !["image/jpeg", "image/png", "image/webp"].includes(input.mimeType) ||
-      !/^[A-Za-z0-9+/]+={0,2}$/.test(input.imageBase64) || input.imageBase64.length > 5_600_000) {
+      !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(input.imageBase64) ||
+      input.imageBase64.length === 0 || input.imageBase64.length > 5_592_408) {
     return json(req, { error: "Only JPEG, PNG or WEBP images up to 4 MB are accepted." }, 400);
+  }
+
+  // Decode and enforce the real byte limit before consuming quota.
+  let imageBytes: Uint8Array;
+  try {
+    imageBytes = Uint8Array.from(atob(input.imageBase64), (char) => char.charCodeAt(0));
+  } catch {
+    return json(req, { error: "Image data is not valid base64." }, 400);
+  }
+  if (imageBytes.byteLength === 0 || imageBytes.byteLength > 4 * 1024 * 1024) {
+    return json(req, { error: "Image must be between 1 byte and 4 MB." }, 413);
   }
 
   const { data: quota, error: quotaError } = await userClient.rpc("consume_seafood_recognition_quota");
@@ -112,11 +124,6 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const imageBytes = Uint8Array.from(atob(input.imageBase64 as string), (char) => char.charCodeAt(0));
-    if (imageBytes.byteLength === 0 || imageBytes.byteLength > 4 * 1024 * 1024) {
-      return json(req, { error: "Image must be between 1 byte and 4 MB." }, 413);
-    }
-
     const authResponse = await fetch("https://api-recognition.fishial.ai/v2/auth", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
