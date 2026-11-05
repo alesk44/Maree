@@ -11,7 +11,6 @@ create index if not exists seafood_recognition_attempts_user_created_idx
   on private.seafood_recognition_attempts (user_id, created_at desc);
 
 alter table private.seafood_recognition_attempts enable row level security;
-revoke all on schema private from public, anon, authenticated;
 revoke all on private.seafood_recognition_attempts from public, anon, authenticated;
 
 create or replace function public.consume_seafood_recognition_quota()
