@@ -85,7 +85,7 @@ Storage baseline:
 - `fisher-compliance`: private bucket, 0 objects.
 - Total: 2 buckets, 1 object.
 
-The database dump and Storage object export are separate deliverables. A companion local script `maree-storage-backup.cjs` downloads Storage objects with SHA-256 checksums; it requires Node.js and `@supabase/supabase-js`, and the service-role/secret key is entered locally (never in chat or Git). After export, verify the manifest reports 2 buckets and 1 object, then encrypt the directory and keep an off-site copy. This script has passed a Node syntax check only; it has not been run against production.
+The database dump and Storage object export are separate deliverables. A companion local script `maree-storage-backup.cjs` downloads Storage objects with SHA-256 checksums; it requires Node.js and `@supabase/supabase-js`, and the service-role/secret key is entered locally (never in chat or Git). After export, verify the manifest reports 2 buckets and 1 object, then encrypt the directory and keep an off-site copy. The Storage script passed `node --check` and a local mocked integration test covering two buckets, one downloaded object, manifest generation and checksum generation. It has NOT been run against production; live export and checksum verification remain outstanding.
 
 ## 3. Restore drill — must pass before production change
 
