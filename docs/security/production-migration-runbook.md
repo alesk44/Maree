@@ -106,7 +106,7 @@ A successful `supabase db reset` in GitHub Actions proves that repository migrat
 On the restored local snapshot (or a verified local clone of the production schema and data):
 
 1. Confirm the migration ledger matches the 45-version production baseline.
-2. Apply the eight pending migrations individually in the exact chronological order documented in the reconciliation report.
+2. For the PR #13 rehearsal, apply security/accounting migrations 1–7 individually in the exact chronological order documented in the reconciliation report. Separately rehearse migration 8 only against the PR #15 feature candidate; do not combine its production release with PR #13.
 3. Stop on the first error. Do not skip a migration or manually mark it as applied.
 4. After each migration, check the expected objects, constraints, indexes, policies, function signatures and grants.
 5. Run all pgTAP tests, database contract tests, reservation concurrency tests, and monthly billing concurrency tests.
@@ -152,7 +152,8 @@ Supabase MFA references:
 ## 7. Post-migration verification
 
 Read-only checks after the release:
-- Migration ledger has all eight expected versions and no unexpected versions.
+- **PR #13 release:** migration ledger contains the seven expected security/accounting versions and no unexpected versions.
+- **PR #15 release only:** apply and verify `20261105100000_seafood_recognition_quota` in its own approved maintenance window.
 - `public.fisher_cancellation_indemnities` exists.
 - `public.fisher_monthly_invoices.cancellation_indemnity_total` exists.
 - `private.require_admin_aal2()` exists and is not directly executable by anon/authenticated.
