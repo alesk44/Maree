@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { AdminMfaGate } from "@/components/admin-mfa-gate";
+import { AdminMfaBackupSetup, AdminMfaGate } from "@/components/admin-mfa-gate";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { useLanguage } from "@/lib/i18n";
@@ -232,6 +232,7 @@ function Admin() {
       </header>
 
       {isAdmin && mfaRequired && <AdminMfaGate onVerified={handleMfaVerified} />}
+      {isAdmin && !loading && !mfaRequired && <AdminMfaBackupSetup />}
 
       {isAdmin && !loading && !mfaRequired && <section className="card grid gap-4 p-5">
         <div><h2 className="font-display text-2xl font-semibold">{t('Paramètres commerciaux')}</h2><p className="text-sm text-muted-foreground">{t('Ces réglages s’appliquent uniquement aux nouvelles réservations. Les commandes existantes conservent leurs taux et leur payeur d’origine.')}</p></div>
