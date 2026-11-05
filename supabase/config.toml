@@ -20,3 +20,9 @@ jwt_expiry = 3600
 
 [storage]
 enabled = true
+
+[functions.identify-seafood]
+verify_jwt = true
+
+[functions.identify-fishial]
+verify_jwt = true
