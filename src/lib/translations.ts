@@ -872,6 +872,7 @@ Object.assign(translations, {
 Object.assign(translations, {
   "Dette pêcheurs": ["Owed to fishers", "Datorii către pescari"],
   "Produits et pourboires non réglés": ["Unpaid products and tips", "Produse și bacșișuri neachitate"],
+  "Produits, pourboires et indemnités non réglés": ["Unpaid products, tips and cancellation indemnities", "Produse, bacșișuri și indemnizații de anulare neachitate"],
   "Pourboires à reverser": ["Tips payable to fishers", "Bacșișuri de plătit pescarilor"],
   "100 % destinés aux pêcheurs": ["100% goes to fishers", "100% pentru pescari"],
   "Paiements pêcheurs confirmés": ["Payments to fishers confirmed", "Plăți către pescari confirmate"],
