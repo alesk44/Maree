@@ -137,7 +137,7 @@ set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000005';
 set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000005","role":"authenticated","aal":"aal2"}';
 select throws_ok(
-  $select$ public.review_verification_request_by_email_token('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','rejected') $select$,
+  $select$SELECT public.review_verification_request_by_email_token('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','rejected') $select$,
   'P0001','Action does not match this confirmation link',
   'mismatched email action is rejected before token consumption'
 );
@@ -190,7 +190,7 @@ select ok(has_table_privilege('anon', 'public.public_fisher_directory', 'SELECT'
 set local role anon;
 set local "request.jwt.claim.sub" = '';
 select is((select count(*) from public.catches), 1::bigint, 'anonymous catalogue sees available catch lots only');
-select is((select count(id) from public.profiles), 3::bigint, 'anonymous profile reads see fisher profiles only');
+select is((select count(id) from public.profiles), 4::bigint, 'anonymous profile reads see fisher profiles only, including the approved token-test fisher');
 reset role;
 
 -- Restaurant A sees only its own orders and verification request.
@@ -365,10 +365,10 @@ set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000007';
 set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000007","role":"authenticated","aal":"aal2"}';
 select is(public.is_current_user_admin(), true, 'separate admin grant is recognized without changing restaurant role');
 select is((select role::text from public.profiles where id = '00000000-0000-4000-8000-000000000007'), 'restaurant', 'separate admin grant preserves the restaurant business role');
-select is((select count(*) from public.verification_requests), 5::bigint, 'separate admin can read all verification requests');
+select is((select count(*) from public.verification_requests), 6::bigint, 'separate admin can read all verification requests, including the email-token fixture');
 select is((select count(*) from public.catches), 2::bigint, 'separate admin grant can read all catch lots');
 select is((select count(*) from public.orders), 2::bigint, 'separate admin grant can read all orders');
-select is((select count(*) from public.profiles), 7::bigint, 'separate admin grant can read all profiles');
+select is((select count(*) from public.profiles), 8::bigint, 'separate admin grant can read all profiles, including the email-token fixture');
 select is((select count(*) from public.verification_documents), 3::bigint, 'separate admin grant can read all verification documents');
 select lives_ok(
   $$select public.review_verification_request('30000000-0000-4000-8000-000000000004'::uuid, 'approved'::public.verification_status, 'Approved by separate admin')$$,
@@ -802,7 +802,7 @@ select is(
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
 select lives_ok(
-  $select public.mark_fisher_invoice_paid(
+  $SELECT public.mark_fisher_invoice_paid(
     (select invoice_id from public.fisher_cancellation_indemnities where order_id='20000000-0000-4000-8000-000000000004'),
     'Bank transfer','INDEMNITY-TEST'
   )$,
