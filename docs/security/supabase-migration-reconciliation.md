@@ -152,7 +152,7 @@ Supabase MFA references:
 ## CI / GitHub state at inspection
 
 - PR #14 was merged into `security/owner-auth-hardening` (not `main`) after the rebased head passed Verify, Marée CI and Database Contract. Merge commit/current security branch head: `d7cc52cac4aec083f6b030d2d0bb5f3a1a0ac528`. The Fishial adapter, approved-role quota check, pending/rejected pgTAP cases, config and function code are now integrated into the security branch. Fishial has not been deployed.
-- PR #13 remains open and in draft, targeting `main`. Its head is the security branch at `d7cc52cac4aec083f6b030d2d0bb5f3a1a0ac528`. The post-integration CI rerun was in progress at the last read; do not merge until Verify, Build verification, Marée CI, Database Contract and Supabase migration tests all succeed on this exact head.
+- PR #13 remains open and in draft, targeting `main`. Its head follows the current `security/owner-auth-hardening` branch tip. This report update itself triggers a final CI rerun; do not merge until Verify, Build verification, Marée CI, Database Contract and Supabase migration tests all succeed on the final report commit.
 - PR #12 head `31c86859a6d116ab168aa1c692da43e40331badf`: Verify, Build verification, Marée CI and Database Contract all succeeded. It is a separate eight-file static public informational PWA under `public/assistant/`, with no backend privileges or private data. It remains separate from the security/migration release and has not been merged.
 - The security branch contains the corrected eight-migration inventory and the production migration/recovery runbook. The CI rebuilds the branch schema locally; this is not production migration evidence.
 
