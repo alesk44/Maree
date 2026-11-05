@@ -36,7 +36,7 @@ begin
   from public.profiles p
   where p.id = v_user_id;
 
-  if v_role not in ('fisher', 'restaurant') then
+  if v_role is null or v_role not in ('fisher', 'restaurant') then
     raise exception 'Approved fisher or restaurant account required' using errcode = '42501';
   end if;
 
