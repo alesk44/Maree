@@ -32,6 +32,7 @@ The function returns HTTP 503 until both values exist. Do not add paid credentia
 - The server rejects images over 4 MB for this initial proof of concept.
 - No automatic retries are performed.
 - No feedback submission, image collection upload, GPS metadata or portal collection headers are sent.
+- Important: Fishial's API tutorial states that an image is also added to a Portal collection if the API key has an upload folder configured. Before any real photo test, verify in the Fishial portal that no upload folder is attached to the API key; otherwise do not use customer/fisher photos until the retention, access and deletion terms are confirmed.
 - No provider call is possible until server secrets are configured.
 
 ## Known gaps / release gates
