@@ -74,7 +74,7 @@ export function AdminMfaGate({ onVerified }: Props) {
   };
 
   const verify = async () => {
-    if (!factorId || !/^\\d{6,8}$/.test(code.trim())) {
+    if (!factorId || !/^\d{6,8}$/.test(code.trim())) {
       setError(t("Saisissez le code temporaire à 6 à 8 chiffres de votre authenticator."));
       return;
     }
@@ -133,7 +133,7 @@ export function AdminMfaGate({ onVerified }: Props) {
             <div className="grid gap-3">
               <label className="grid gap-1 text-sm font-medium">
                 {t("2. Code temporaire de votre application")}
-                <input className="field" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6,8}" maxLength={8} value={code} onChange={(event) => setCode(event.target.value.replace(/\\D/g, "").slice(0, 8))} placeholder="123456" />
+                <input className="field" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6,8}" maxLength={8} value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 8))} placeholder="123456" />
               </label>
               <button type="button" className="btn btn-accent w-fit" onClick={() => void verify()} disabled={busy || code.trim().length < 6}>{busy ? t("Vérification…") : t("Vérifier et activer l’accès admin")}</button>
             </div>
