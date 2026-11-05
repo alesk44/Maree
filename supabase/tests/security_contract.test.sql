@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(230);
+select plan(231);
 
 -- Isolated auth users; the auth trigger creates their initial restaurant profiles.
 insert into auth.users (id, email) values
@@ -339,6 +339,17 @@ select is(
 reset role;
 update public.catches set status='available'
 where id='10000000-0000-4000-8000-000000000001';
+
+-- Admin approval must reject an authenticated but non-MFA (AAL1) session.
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000005';
+set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000005","role":"authenticated","aal":"aal1"}';
+select throws_ok(
+  $select public.review_verification_request('30000000-0000-4000-8000-000000000003'::uuid, 'approved'::public.verification_status, 'Should be blocked without MFA')$,
+  '42501','Verified MFA session required (aal2)',
+  'allowlisted admin cannot approve a verification request with an AAL1 session'
+);
+reset role;
 
 -- Admin approval must update the request and grant the requested role atomically.
 set local role authenticated;
