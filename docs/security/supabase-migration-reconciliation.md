@@ -14,26 +14,29 @@ The production migration ledger contains 45 entries. Its latest applied migratio
 
 The repository contains:
 - `main`: 51 SQL migration files.
-- `security/owner-auth-hardening`: 53 SQL migration files.
+- `security/owner-auth-hardening` (PR #13): 52 SQL migration files.
+- `feature/seafood-recognition-quota` (PR #15): 52 SQL migration files.
 
-A complete filename/version-set comparison (not merely a comparison of versions greater than the production head) found **eight** migrations in the security branch that are absent from the production ledger. The earlier report listed only five and omitted three earlier-version migrations. This corrected list supersedes that earlier count.
+A complete filename/version-set comparison (not merely a comparison of versions greater than the production head) found **seven** migrations absent from production in the security/accounting release branch, plus **one separate feature migration** in PR #15. The earlier report listed only five and omitted three earlier-version migrations. The current release grouping is:
 
-| Version | Migration | Present in main | Present in security | In production |
-|---|---|---:|---:|---:|
-| 20261103160000 | recheck_fisher_eligibility_on_reservation | yes | yes | no |
-| 20261103170000 | bind_email_review_action_to_token | yes | yes | no |
-| 20261103180000 | add_missing_foreign_key_indexes | yes | yes | no |
-| 20261103230000 | fisher_cancellation_indemnity_receivables | yes | yes | no |
-| 20261103235000 | preserve_catch_state_on_cancellation | yes | yes | no |
-| 20261104001000 | preserve_catch_state_on_inventory_edit | yes | yes | no |
-| 20261104100000 | enforce_admin_aal2 | no | yes | no |
-| 20261105100000 | seafood_recognition_quota | no | yes | no |
+| Version | Migration | Present in main | Present in PR #13 security | Present in PR #15 seafood | In production |
+|---|---|---:|---:|---:|---:|
+| 20261103160000 | recheck_fisher_eligibility_on_reservation | yes | yes | yes | no |
+| 20261103170000 | bind_email_review_action_to_token | yes | yes | yes | no |
+| 20261103180000 | add_missing_foreign_key_indexes | yes | yes | yes | no |
+| 20261103230000 | fisher_cancellation_indemnity_receivables | yes | yes | yes | no |
+| 20261103235000 | preserve_catch_state_on_cancellation | yes | yes | yes | no |
+| 20261104001000 | preserve_catch_state_on_inventory_edit | yes | yes | yes | no |
+| 20261104100000 | enforce_admin_aal2 | no | yes | no | no |
+| 20261105100000 | seafood_recognition_quota | no | no | yes | no |
+
+PR #13 owns migrations 1–7. Migration 8 is owned by separate draft PR #15 and must not be applied as part of the PR #13 release.
 
 There are no production-ledger migrations absent from the `main` migration directory in this comparison.
 
 ## Required migration order and dependencies
 
-Preserve the exact chronological order below. Do not cherry-pick the last five and omit the earlier three.
+Preserve the exact chronological order below. PR #13's security/accounting release rehearses and applies steps 1–7 only. Step 8 belongs to the separately reviewed PR #15 feature release; do not include it in the PR #13 production window.
 
 1. `20261103160000_recheck_fisher_eligibility_on_reservation` — rechecks the fisher's approved `verification_requests` record and profile role while reserving a catch; locks the verification request before the profile to match the approval RPC lock order.
 2. `20261103170000_bind_email_review_action_to_token` — installs/revokes the internal AAL2 guard and replaces the one-argument email-token RPC with an action-bound two-argument RPC. It rejects action mismatch before consuming a token. It requires the existing admin allowlist and verification-token schema.
@@ -42,7 +45,7 @@ Preserve the exact chronological order below. Do not cherry-pick the last five a
 5. `20261103235000_preserve_catch_state_on_cancellation` — updates cancellation/refusal stock restoration so manually paused/reserved catch state is preserved.
 6. `20261104001000_preserve_catch_state_on_inventory_edit` — updates inventory editing so non-sold-out catch states are preserved.
 7. `20261104100000_enforce_admin_aal2` — reapplies the internal allowlist+AAL2 guard and protects admin RPCs and direct verification-table updates. It depends on the cancellation-indemnity table introduced at step 4 because the admin invoice-settlement function updates that table.
-8. `20261105100000_seafood_recognition_quota` — creates the private recognition quota ledger and authenticated quota RPC. The Fishial V2 adapter depends on it.
+8. **PR #15 only:** `20261105100000_seafood_recognition_quota` — creates the private recognition quota ledger and authenticated quota RPC. The Fishial V2 adapter depends on it; rehearse and release separately after PR #15 approval.
 
 The quota RPC in the Fishial branch additionally checks that `verification_requests.status = 'approved'` for the same `requested_role` as the profile. The production schema confirms:
 - `verification_requests.requested_role` is `public.app_role`.
@@ -151,8 +154,9 @@ Supabase MFA references:
 
 ## CI / GitHub state at inspection
 
-- PR #14 was merged into `security/owner-auth-hardening` (not `main`) after the rebased head passed Verify, Marée CI and Database Contract. Merge commit/current security branch head: `d7cc52cac4aec083f6b030d2d0bb5f3a1a0ac528`. The Fishial adapter, approved-role quota check, pending/rejected pgTAP cases, config and function code are now integrated into the security branch. Fishial has not been deployed.
-- PR #13 remains open and in draft, targeting `main`. Its head follows the current `security/owner-auth-hardening` branch tip. This report update itself triggers a final CI rerun; do not merge until Verify, Build verification, Marée CI, Database Contract and Supabase migration tests all succeed on the final report commit.
+- PR #13 remains open and in draft, targeting `main`. Its current head at this report update is `56911a5b63edb524479e2097613565d6fcbfc2b1`; the five required workflows are being rerun after the latest runbook edits. Do not merge until all five succeed on the final head.
+- Seafood recognition has been removed from PR #13 and isolated in separate draft PR #15, based on `main`, with 8 files and 8 commits. Its head `d2ebf267628301a2fc7e7bb9810463012d6116e8` has all five workflows green. PR #15 contains the quota migration and Fishial/OpenAI adapters; it is not deployed and is not part of PR #13.
+- PR #14 is no longer the current integration boundary for seafood recognition; use PR #15 as the sole review/release candidate for that feature.
 - PR #12 head `31c86859a6d116ab168aa1c692da43e40331badf`: Verify, Build verification, Marée CI and Database Contract all succeeded. It is a separate eight-file static public informational PWA under `public/assistant/`, with no backend privileges or private data. It remains separate from the security/migration release and has not been merged.
 - The security branch contains the corrected eight-migration inventory and the production migration/recovery runbook. The CI rebuilds the branch schema locally; this is not production migration evidence.
 
@@ -160,4 +164,4 @@ Supabase MFA references:
 
 This report is a corrected reconciliation and release-preparation record, not authorization to mutate production.
 
-Production has not been migrated, Auth settings have not been changed, and Edge Functions have not been deployed. The eight-migration drift, live email approval mismatch, owner MFA enrollment/recovery readiness, and Free-plan backup/restore gap remain release gates. Do not apply migrations or deploy until the ordered set is validated, a recoverable backup/restore has been demonstrated, and the coordinated Edge Function change is ready.
+Production has not been migrated, Auth settings have not been changed, and Edge Functions have not been deployed. The seven-migration security/accounting drift, the separately staged seafood quota migration, live email approval mismatch, owner MFA enrollment/recovery readiness, and Free-plan backup/restore gap remain release gates. Do not apply migrations or deploy until the ordered set is validated, a recoverable backup/restore has been demonstrated, and the coordinated Edge Function change is ready.
