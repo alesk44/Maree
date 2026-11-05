@@ -139,13 +139,17 @@ Deno.serve(async (req: Request) => {
       return json(req, { error: "Fishial authentication response was invalid." }, 502);
     }
 
+    // Use an ArrayBuffer-backed body for compatibility with Deno's Fetch BodyInit types.
+    const requestBody = new ArrayBuffer(imageBytes.byteLength);
+    new Uint8Array(requestBody).set(imageBytes);
+
     const recognitionResponse = await fetch("https://api-recognition.fishial.ai/v2/recognize", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${authPayload.access_token}`,
         "Content-Type": input.mimeType as string,
       },
-      body: imageBytes,
+      body: requestBody,
       signal: AbortSignal.timeout(30_000),
     });
     if (!recognitionResponse.ok) {
