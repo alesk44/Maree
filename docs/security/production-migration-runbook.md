@@ -57,6 +57,36 @@ References:
 - https://supabase.com/docs/guides/platform/migrating-within-supabase/backup-restore
 - https://supabase.com/docs/guides/storage/management/download-objects
 
+### Read-only pre-backup integrity baseline — 2026-11-05 14:54:56 UTC
+
+Exact row counts were captured on production with read-only `count(*)` queries. Re-capture immediately before the actual export and compare again after restore; these counts are a checkpoint, not a frozen snapshot.
+
+| Table | Rows |
+|---|---:|
+| `public.profiles` | 2 |
+| `public.verification_requests` | 3 |
+| `public.catches` | 1 |
+| `public.orders` | 3 |
+| `public.fisher_monthly_invoices` | 0 |
+| `public.fisher_monthly_invoice_items` | 0 |
+| `public.maree_monthly_commission_invoices` | 0 |
+| `public.maree_monthly_commission_invoice_items` | 0 |
+| `public.verification_documents` | 0 |
+| `public.notifications` | 0 |
+| `public.catch_traceability_codes` | 0 |
+| `public.catch_traceability_events` | 0 |
+| `public.restaurant_fisher_billing_settings` | 0 |
+| `private.verification_email_action_tokens` | 4 |
+| `private.admin_users` | 1 |
+| `auth.users` | 2 |
+
+Storage baseline:
+- `avatars`: public bucket, 1 object, 1,320,422 bytes.
+- `fisher-compliance`: private bucket, 0 objects.
+- Total: 2 buckets, 1 object.
+
+The database dump and Storage object export are separate deliverables. A companion local script `maree-storage-backup.cjs` downloads Storage objects with SHA-256 checksums; it requires Node.js and `@supabase/supabase-js`, and the service-role/secret key is entered locally (never in chat or Git). After export, verify the manifest reports 2 buckets and 1 object, then encrypt the directory and keep an off-site copy. This script has passed a Node syntax check only; it has not been run against production.
+
 ## 3. Restore drill — must pass before production change
 
 Use a disposable local PostgreSQL 17/Supabase environment on the workstation. Do not create a paid Supabase project or branch for this drill.
