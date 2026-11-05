@@ -125,7 +125,7 @@ Regression contract added:
 
 ### Important unresolved boundary
 - The production email-link RPC `review_verification_request_by_email_token(text)` is a separate service-role bearer-token authorization path. This migration does NOT secure or disable that path. Until it is replaced with an authenticated AAL2 owner flow (or explicitly redesigned and separately hardened), the platform cannot be described as enforcing MFA on every admin approval route.
-- Initial validation was subsequently completed by GitHub Actions on commit `2b10eb6b0c2ce02254979b4af14a0510def97aa9`. The hosted runner rebuilt the database from repository migrations and passed the pgTAP security contract tests, concurrent last-stock reservation tests, and concurrent monthly-invoice generation tests.
+- Final validation on commit `f238078de4b2f0ea53e2d073f21483068687fecf` completed successfully across all five GitHub Actions workflows. The hosted runner rebuilt the database from repository migrations and passed all 391 pgTAP assertions across 13 test files, plus concurrent last-stock reservation tests and concurrent monthly-invoice generation tests.
 - The same commit passed Build verification, Marée CI, Verify, Supabase migration tests, and Database Contract workflows. This validates the staged branch in CI; it does not apply the migration to production or prove the live Edge Function has been deployed.
 - Keep production unchanged until explicit owner approval, dashboard MFA/password-policy checks, and a separately verified deployment/migration plan.
 
@@ -133,7 +133,7 @@ Regression contract added:
 ### Email approval path — AAL2 hardening now staged in source
 The isolated branch now also stages the email confirmation path:
 - `supabase/functions/review-verification-email-action/index.ts` requires a Bearer access token, verifies it with Supabase Auth `getUser(accessToken)`, then trusts the `aal2` claim only after that cryptographic verification.
-- It checks the verified subject matches the user returned by Auth, then calls the authenticated `public.is_current_user_admin()` RPC before using the service-role client to consume the action-bound one-time token.
+- It checks the verified subject matches the user returned by Auth, calls the authenticated `public.is_current_user_admin()` RPC, then calls the action-bound two-argument review RPC through the user-scoped client carrying the same verified Bearer JWT. The database function independently enforces the allowlist and AAL2; the token is not consumed through a service-role database call.
 - `supabase/config.toml` sets `verify_jwt = true` for this Edge Function.
 - `src/routes/admin.email-review.tsx` gives an early UX check for a signed-in session, current AAL2, and admin allowlist membership. These client checks are supplementary; the Edge Function enforces the same conditions server-side.
 - The one-time token remains an additional authorization secret and is still hash-checked and action-bound in the database. It is no longer intended to be sufficient on its own.
@@ -141,7 +141,7 @@ The isolated branch now also stages the email confirmation path:
 Production remains unchanged: the live Edge Function was previously observed at active version 5 with `verify_jwt=false`. Do not claim email approval is MFA-protected in production until the reviewed source and config are deployed with explicit approval and a live read-back confirms the deployed version.
 
 ### Validation status — updated 2026-11-04
-- GitHub Actions passed all five workflows on the current security branch head `2b10eb6b0c2ce02254979b4af14a0510def97aa9`: Build verification, Marée CI, Verify, Supabase migration tests, and Database Contract.
+- GitHub Actions passed all five workflows on security branch head `f238078de4b2f0ea53e2d073f21483068687fecf`: Build verification, Marée CI, Verify, Supabase migration tests, and Database Contract. Supabase migration tests report 391 successful assertions across 13 pgTAP files, plus both concurrency checks.
 - The database workflow rebuilt the schema from repository migrations and passed pgTAP security contracts plus concurrent inventory-reservation and monthly-invoice-generation tests.
 - The migration and Edge Function remain staged on the branch only. No production migration, function deployment, or merge was performed.
 - Remaining production gates: decide/retire the email approval bearer-token exception in live deployment, confirm owner MFA enrollment and Auth password protections in the dashboard, review the final diff, and obtain explicit owner approval before any production change.
