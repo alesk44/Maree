@@ -94,6 +94,31 @@ Do not add public/authenticated policies simply to silence the advisor.
 
 Do not blanket-revoke authenticated EXECUTE: the flagged functions support approved business flows. Continue function-by-function authorization review and verify the exact grants after the migration set is tested.
 
+### Function-by-function inventory
+
+All 16 advisor-flagged public functions were read in full. All pin `search_path TO ''`; none is executable by `anon`; all are executable by `authenticated` and `service_role` as required by the current RPC design. No blanket revoke is appropriate.
+
+| Function | Authorization / exposure review |
+|---|---|
+| `attach_external_traceability` | Authenticated fisher/restaurant role; fisher catch ownership or restaurant order ownership is checked before insert. |
+| `decide_order_cancellation` | Authenticated fisher role; order ownership is checked and the order is locked. |
+| `declare_maree_commission_invoice_paid` | Authenticated restaurant role; open invoice must belong to the caller. |
+| `get_maree_commercial_settings` | Authenticated read-only return of global commission/delivery pricing only. |
+| `get_my_business_profile` | Filters strictly to `auth.uid()`. |
+| `get_my_fisher_private_details` | Filters strictly to `auth.uid()`. |
+| `mark_fisher_invoice_paid` | Fisher self-service or allowlisted admin; admin branch is protected by the staged AAL2 migration. |
+| `mark_order_paid` | Owning fisher or allowlisted admin; admin branch is protected by the staged AAL2 migration. |
+| `request_order_cancellation` | Restaurant role and ownership of the order are checked; order is locked. |
+| `reserve_catch` | Restaurant role; catch stock is locked; approved fisher verification record and matching fisher profile are required. |
+| `respond_order_cancellation` | Restaurant role and ownership of the order are checked; order and catch are locked. |
+| `review_verification_request` | Currently has allowlist plus legacy `profiles.role='admin'` fallback; staged AAL2 migration removes the fallback and requires AAL2. |
+| `update_catch_inventory` | Fisher role and catch ownership are checked; stock cannot be increased on an existing lot. |
+| `update_maree_commercial_settings` | Allowlisted admin only; staged AAL2 migration adds assurance-level enforcement. |
+| `update_order_status` | Fisher role, order ownership and allowed state transitions are checked; inventory is locked before stock restoration. |
+| `verify_maree_commission_invoice_paid` | Allowlisted admin only; staged AAL2 migration adds assurance-level enforcement. |
+
+The three RLS-enabled/no-policy findings remain intentional private/service-only access, not a reason to add broad policies. The Performance Advisor reports six unindexed foreign keys, exactly covered by migration `20261103180000`; it also reports 14 currently unused indexes at INFO level. No unused indexes were dropped.
+
 ## Owner MFA and recovery readiness
 
 Read-only production query at this inspection:
@@ -102,35 +127,34 @@ Read-only production query at this inspection:
 - Unverified TOTP factors for allowlisted admins: 0.
 - Active sessions for allowlisted admins: 2.
 
-The staged admin UI supports initial TOTP enrollment and challenge verification, but has no in-app lost-factor recovery path. Before enforcing AAL2 in production:
+The security branch now stages an MFA gate plus a backup-factor management panel:
+- Initial TOTP enrollment and verification.
+- Selection between multiple verified factors during admin challenge.
+- Enrollment of a second TOTP factor on a separate device.
+- A visible count of verified factors before AAL2 enforcement.
+
+This UI has not been deployed to production and no application TOTP factor has been enrolled or tested. Supabase Auth does not provide recovery codes; its documentation recommends registering a backup factor. The owner should verify two separate application factors and test both challenge paths before AAL2 enforcement. Supabase Dashboard account MFA is separate from application-user MFA and should also have a backup factor.
+
+Before enforcing AAL2:
 1. Confirm the allowlisted owner can access the Supabase Dashboard independently of the application session.
-2. Enroll and verify TOTP for the allowlisted application account, then verify a fresh AAL2 session.
-3. Document and test the emergency factor-reset procedure through the trusted Supabase project owner/admin path.
-4. Keep a second trusted organization/project owner where possible; do not assume an application admin allowlist entry is equivalent to Supabase organization ownership.
-5. Verify the email approval route and all admin RPCs after coordinated migration/deployment.
+2. Deploy the reviewed app build only after the backup/restore preflight; enroll and verify two application TOTP factors on separate devices.
+3. Test login/challenge with each factor. Revoke old application sessions and confirm a fresh session reports AAL2.
+4. Enable Dashboard account MFA separately and enroll its backup factor. Supabase documents that enabling account MFA signs out other Dashboard sessions.
+5. Keep a second trusted organization/project owner where possible. Do not assume an application admin allowlist entry is equivalent to Supabase organization ownership.
 
-The connector cannot inspect or change the complete Auth dashboard configuration. Leaked-password protection remains disabled and must be checked/enabled through the dashboard after preserving the current settings and confirming the plan supports it. No Auth setting was changed.
+The connector cannot inspect or change the complete Auth dashboard configuration. Leaked-password protection remains disabled and must be checked/enabled through the dashboard after preserving the current settings and confirming feature availability. No Auth setting was changed.
 
-## Backup and restore readiness — Free plan
-
-The Supabase organization is on the Free plan. Supabase documentation states daily automated database backups are provided on Pro, Team and Enterprise; Free projects should regularly export data with the Supabase CLI and store off-site.
-
-No backup inventory/download/restore API is exposed by the connected Supabase actions used in this inspection. Therefore:
-- No verified production backup has been obtained in this run.
-- No restore has been executed or tested.
-- Do not apply production migrations until a manual logical database export is created, Storage objects are separately exported, the exports are stored securely off-site, and a restore has been tested in a disposable local PostgreSQL/Supabase environment.
-- Keep connection strings and credentials out of chat and logs. Use locally managed environment variables/secrets.
-- Record the backup timestamp, schema/data coverage, Storage bucket coverage, checksums, restore duration, and post-restore smoke-test results.
-
-Supabase backup guidance: https://supabase.com/docs/guides/platform/backups
-CLI dump reference: https://supabase.com/docs/reference/cli/supabase-db-dump
+Supabase MFA references:
+- https://supabase.com/docs/guides/auth/auth-mfa
+- https://supabase.com/docs/reference/javascript/auth-mfa
+- https://supabase.com/docs/guides/platform/multi-factor-authentication
 
 ## CI / GitHub state at inspection
 
-- PR #13 head `a734c560bf8352e6c9bb0de25d5670a8eb83bc41`: Build verification, Verify, Marée CI, Database Contract, Supabase migration tests all completed successfully. The database workflow rebuilt the branch schema and passed its pgTAP/concurrency suite. This is branch CI evidence, not production migration evidence.
-- PR #14 head `444b23beb7a18c6cca65af3a6eae49852b92c589`: the two malformed pgTAP dollar-quote assertions were corrected and verified in the branch file. Verify, Build and Marée CI succeeded; the fresh Database Contract run was still in progress at the last read. The previous Database Contract run failed at the quota test because of those malformed delimiters.
-- PR #14 is based on `security/owner-auth-hardening` and the branch was behind the current target by two commits at the last comparison. Reconcile/rebase the branch and rerun all required workflows before considering merge.
-- PR #12 head `31c86859a6d116ab168aa1c692da43e40331badf`: Verify, Build verification, Marée CI and Database Contract all succeeded. It is a separate eight-file static public informational PWA under `public/assistant/`, with no backend privileges or private data. Keep it separate from the security/migration release.
+- PR #14 was merged into `security/owner-auth-hardening` (not `main`) after the rebased head passed Verify, Marée CI and Database Contract. Merge commit/current security branch head: `d7cc52cac4aec083f6b030d2d0bb5f3a1a0ac528`. The Fishial adapter, approved-role quota check, pending/rejected pgTAP cases, config and function code are now integrated into the security branch. Fishial has not been deployed.
+- PR #13 remains open and in draft, targeting `main`. Its head is the security branch at `d7cc52cac4aec083f6b030d2d0bb5f3a1a0ac528`. The post-integration CI rerun was in progress at the last read; do not merge until Verify, Build verification, Marée CI, Database Contract and Supabase migration tests all succeed on this exact head.
+- PR #12 head `31c86859a6d116ab168aa1c692da43e40331badf`: Verify, Build verification, Marée CI and Database Contract all succeeded. It is a separate eight-file static public informational PWA under `public/assistant/`, with no backend privileges or private data. It remains separate from the security/migration release and has not been merged.
+- The security branch contains the corrected eight-migration inventory and the production migration/recovery runbook. The CI rebuilds the branch schema locally; this is not production migration evidence.
 
 ## Current decision
 
