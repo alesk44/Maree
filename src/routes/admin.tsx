@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { AdminMfaBackupSetup, AdminMfaGate } from "@/components/admin-mfa-gate";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { useLanguage } from "@/lib/i18n";
@@ -16,6 +17,7 @@ export const Route = createFileRoute("/admin")({
 
 type AdminOrder = { id: string; catch_id: string; quantity_kg: number; status: string; created_at: string; product_subtotal:number|string|null; maree_fee:number|string|null; delivery_fee:number|string|null; delivery_fee_payer_snapshot:'buyer'|'fisher'; tip_amount:number|string; fisher_payment_status:"unpaid"|"paid"|"waived" };
 type AdminCommissionInvoice = { id:string; restaurant_id:string; period_start:string; period_end:string; due_date:string; commission_total:number|string; delivery_total:number|string; status:"open"|"declared_paid"|"paid"|"void"; declared_at:string|null; payment_method:string|null; payment_reference:string|null };
+type FisherInvoiceSummary = { status:"open"|"paid"|"void"; cancellation_indemnity_total:number|string|null };
 type VerificationDocument = { id:string; request_id:string; original_filename:string; document_type:string; file_path:string; expires_at:string|null; review_status:string; reviewer_note:string|null; signed_url?:string|null };
 
 type VerificationRequest = {
@@ -36,10 +38,12 @@ function Admin() {
   const { t, language } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [mfaRequired, setMfaRequired] = useState(false);
   const [requests, setRequests] = useState<VerificationRequest[]>([]);
   const [documents, setDocuments] = useState<VerificationDocument[]>([]);
   const [allOrders, setAllOrders] = useState<AdminOrder[]>([]);
   const [commissionInvoices, setCommissionInvoices] = useState<AdminCommissionInvoice[]>([]);
+  const [fisherInvoices, setFisherInvoices] = useState<FisherInvoiceSummary[]>([]);
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -100,6 +104,7 @@ function Admin() {
       if (authError) throw authError;
       if (!user) {
         setIsAdmin(false);
+        setMfaRequired(false);
         setRequests([]);
         return;
       }
@@ -107,11 +112,20 @@ function Admin() {
       if (adminAccessError) throw adminAccessError;
       if (adminAccess !== true) {
         setIsAdmin(false);
+        setMfaRequired(false);
         setRequests([]);
         setError(t("Accès réservé à l’équipe d’administration."));
         return;
       }
       setIsAdmin(true);
+      const { data: assurance, error: assuranceError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (assuranceError) throw assuranceError;
+      if (assurance.currentLevel !== "aal2") {
+        setMfaRequired(true);
+        setLoading(false);
+        return;
+      }
+      setMfaRequired(false);
       // Load verification requests independently so a reporting query cannot
       // prevent admins from reviewing pending fishermen/restaurants.
       const { data: data, error: requestsError } = await supabase
@@ -149,6 +163,16 @@ function Admin() {
         setReportingError(t("Relevés financiers Marée indisponibles : vérifiez la synchronisation du schéma Supabase."));
         console.warn("Marée commission statements could not be loaded", commissionError);
       }
+      const { data: fisherInvoiceRows, error: fisherInvoiceError } = await supabase
+        .from("fisher_monthly_invoices")
+        .select("status,cancellation_indemnity_total");
+      if (!fisherInvoiceError) {
+        setFisherInvoices((fisherInvoiceRows ?? []) as FisherInvoiceSummary[]);
+      } else {
+        setFisherInvoices([]);
+        setReportingError(t("Relevés pêcheurs indisponibles : vérifiez la synchronisation du schéma Supabase."));
+        console.warn("Fisher monthly statements could not be loaded", fisherInvoiceError);
+      }
       const {data:commercialRows,error:commercialLoadError}=await supabase.rpc('get_maree_commercial_settings');
       if(commercialLoadError){setCommercialError(t('Paramètres commerciaux indisponibles.'));console.warn('Commercial settings could not be loaded',commercialLoadError);}
       else {const commercial=Array.isArray(commercialRows)?commercialRows[0]:commercialRows;if(commercial){setMareeFeePercent((Number(commercial.maree_fee_rate)*100).toString());setDeliveryFeePercent((Number(commercial.delivery_fee_rate)*100).toString());setDeliveryFeePayer(commercial.delivery_fee_payer==='fisher'?'fisher':'buyer');setCommercialError(null);}}
@@ -163,6 +187,8 @@ function Admin() {
   }, [language]);
 
   useEffect(() => { void loadRequests(); }, [loadRequests]);
+
+  const handleMfaVerified = useCallback(() => { void loadRequests(); }, [loadRequests]);
 
   const saveCommercialSettings = async () => {
     const commission=Number(mareeFeePercent),delivery=Number(deliveryFeePercent);
@@ -217,7 +243,10 @@ function Admin() {
         <button className="btn" type="button" onClick={() => void loadRequests()} disabled={loading}>{t("Actualiser")}</button>
       </header>
 
-      {isAdmin && !loading && <section className="card grid gap-4 p-5">
+      {isAdmin && mfaRequired && <AdminMfaGate onVerified={handleMfaVerified} />}
+      {isAdmin && !loading && !mfaRequired && <AdminMfaBackupSetup />}
+
+      {isAdmin && !loading && !mfaRequired && <section className="card grid gap-4 p-5">
         <div><h2 className="font-display text-2xl font-semibold">{t('Paramètres commerciaux')}</h2><p className="text-sm text-muted-foreground">{t('Ces réglages s’appliquent uniquement aux nouvelles réservations. Les commandes existantes conservent leurs taux et leur payeur d’origine.')}</p></div>
         {commercialError&&<p role="alert" className="text-sm text-destructive">{commercialError}</p>}
         <div className="grid gap-3 sm:grid-cols-2">
@@ -228,12 +257,14 @@ function Admin() {
         <p className="text-xs text-muted-foreground">{t('Si le pêcheur paie, les frais sont retenus sur son montant à recevoir et ne sont pas ajoutés au relevé Marée du restaurant. Le choix est figé sur chaque commande.')}</p>
         <button type="button" className="btn btn-accent w-fit" disabled={savingCommercial||Boolean(commercialError)} onClick={()=>void saveCommercialSettings()}>{savingCommercial?t('Enregistrement…'):t('Enregistrer les paramètres')}</button>
       </section>}
-      {isAdmin && !loading && (() => {
+      {isAdmin && !loading && !mfaRequired && (() => {
         const deliveredOrders = allOrders.filter((order) => order.status === "delivered");
         const deliveredBase = deliveredOrders.reduce((sum, order) => sum + Number(order.product_subtotal ?? 0), 0);
         const tips = deliveredOrders.reduce((sum,order)=>sum+Number(order.tip_amount??0),0);
-        const fisherDue = deliveredOrders.filter(order=>order.fisher_payment_status==="unpaid").reduce((sum,order)=>sum+Number(order.product_subtotal??0)+Number(order.tip_amount??0)-(order.delivery_fee_payer_snapshot==='fisher'?Number(order.delivery_fee??0):0),0);
-        const fisherPaid = deliveredOrders.filter(order=>order.fisher_payment_status==="paid").reduce((sum,order)=>sum+Number(order.product_subtotal??0)+Number(order.tip_amount??0)-(order.delivery_fee_payer_snapshot==='fisher'?Number(order.delivery_fee??0):0),0);
+        const cancellationIndemnitiesDue = fisherInvoices.filter(invoice=>invoice.status==="open").reduce((sum,invoice)=>sum+Number(invoice.cancellation_indemnity_total??0),0);
+        const cancellationIndemnitiesPaid = fisherInvoices.filter(invoice=>invoice.status==="paid").reduce((sum,invoice)=>sum+Number(invoice.cancellation_indemnity_total??0),0);
+        const fisherDue = deliveredOrders.filter(order=>order.fisher_payment_status==="unpaid").reduce((sum,order)=>sum+Number(order.product_subtotal??0)+Number(order.tip_amount??0)-(order.delivery_fee_payer_snapshot==='fisher'?Number(order.delivery_fee??0):0),0) + cancellationIndemnitiesDue;
+        const fisherPaid = deliveredOrders.filter(order=>order.fisher_payment_status==="paid").reduce((sum,order)=>sum+Number(order.product_subtotal??0)+Number(order.tip_amount??0)-(order.delivery_fee_payer_snapshot==='fisher'?Number(order.delivery_fee??0):0),0) + cancellationIndemnitiesPaid;
         const mareeCommission = deliveredOrders.reduce((sum, order) => sum + Number(order.maree_fee ?? 0), 0);
         const mareeDeliveryBuyer = deliveredOrders.reduce((sum, order) => sum + (order.delivery_fee_payer_snapshot==='buyer'?Number(order.delivery_fee ?? 0):0), 0);
         const mareeDeliveryFisher = deliveredOrders.reduce((sum, order) => sum + (order.delivery_fee_payer_snapshot==='fisher'?Number(order.delivery_fee ?? 0):0), 0);
@@ -248,8 +279,8 @@ function Admin() {
             <div className="card p-4"><p className="text-xs text-muted-foreground">{t("Commandes totales")}</p><p className="mt-1 text-2xl font-semibold">{allOrders.length}</p></div>
             <div className="card p-4"><p className="text-xs text-muted-foreground">{t("Volume livré (base)")}</p><p className="mt-1 text-2xl font-semibold">{fmt(deliveredBase)}</p></div>
             <div className="card p-4"><p className="text-xs text-muted-foreground">{t("Pourboires")}</p><p className="mt-1 text-2xl font-semibold">{fmt(tips)}</p></div>
-            <div className="card p-4"><p className="text-xs text-muted-foreground">{t("Dette pêcheurs")}</p><p className="mt-1 text-2xl font-semibold">{fmt(fisherDue)}</p></div>
-            <div className="card p-4"><p className="text-xs text-muted-foreground">{t("Paiements pêcheurs confirmés")}</p><p className="mt-1 text-2xl font-semibold">{fmt(fisherPaid)}</p></div>
+            <div className="card p-4"><p className="text-xs text-muted-foreground">{t("Dette pêcheurs")}</p><p className="mt-1 text-2xl font-semibold">{fmt(fisherDue)}</p><p className="mt-1 text-xs text-muted-foreground">{t("Dont indemnités d’annulation impayées")}: {fmt(cancellationIndemnitiesDue)}</p></div>
+            <div className="card p-4"><p className="text-xs text-muted-foreground">{t("Paiements pêcheurs confirmés")}</p><p className="mt-1 text-2xl font-semibold">{fmt(fisherPaid)}</p><p className="mt-1 text-xs text-muted-foreground">{t("Dont indemnités d’annulation payées")}: {fmt(cancellationIndemnitiesPaid)}</p></div>
             <div className="card p-4"><p className="text-xs text-muted-foreground">{t("Commission Marée ({rate} %)",{rate:(Number(mareeFeePercent)||0).toString()})}</p><p className="mt-1 text-2xl font-semibold">{fmt(mareeCommission)}</p></div>
           </div>
           <div className="card grid gap-3 p-5 sm:grid-cols-2">
@@ -261,7 +292,7 @@ function Admin() {
           <p className="text-xs text-muted-foreground">{t("Les montants proviennent des prix et frais figés à la réservation : la livraison est soit facturée au restaurant, soit retenue sur le règlement du pêcheur. La commission Marée reste due par le restaurant. Aucun paiement en ligne n’est activé.")}</p>
         </section>;
       })()}
-      {isAdmin && !loading && <section className="card grid gap-3 p-5">
+      {isAdmin && !loading && !mfaRequired && <section className="card grid gap-3 p-5">
         <div><h2 className="font-display text-2xl font-semibold">{t("Commissions Marée à vérifier")}</h2><p className="text-sm text-muted-foreground">{t("Les restaurants déclarent leurs règlements hors plateforme. Seule cette validation administrative marque le relevé comme payé.")}</p></div>
         {commissionInvoices.length===0 ? <p className="text-sm text-muted-foreground">{t("Aucun relevé mensuel de commission généré.")}</p> :
           <ul className="grid gap-2">{commissionInvoices.map((invoice)=><li key={invoice.id} className="rounded-xl border border-border p-4">
@@ -279,7 +310,7 @@ function Admin() {
           <p role="alert" className="text-sm">{error ?? t("Connectez-vous avec un compte administrateur.")}</p>
           <Link className="btn btn-accent w-fit" to="/connexion">{t("Connexion")}</Link>
         </section>
-      ) : (
+      ) : mfaRequired ? null : (
         <>
           {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
           <section className="card grid gap-2 p-5">

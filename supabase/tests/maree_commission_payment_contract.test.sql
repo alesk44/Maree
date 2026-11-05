@@ -68,13 +68,14 @@ set local role authenticated;
 set local "request.jwt.claim.sub"='00000000-0000-4000-8000-000000000051';
 select throws_ok(
   $$select public.verify_maree_commission_invoice_paid('40000000-0000-4000-8000-000000000051')$$,
-  'P0001','Admin access required',
+  '42501','Admin access required',
   'a restaurant cannot verify its own payment declaration'
 );
 reset role;
 
 set local role authenticated;
 set local "request.jwt.claim.sub"='00000000-0000-4000-8000-000000000053';
+set local "request.jwt.claims"='{"sub":"00000000-0000-4000-8000-000000000053","role":"authenticated","aal":"aal2"}';
 select lives_ok(
   $$select public.verify_maree_commission_invoice_paid('40000000-0000-4000-8000-000000000051')$$,
   'Marée admin can verify the declared payment'

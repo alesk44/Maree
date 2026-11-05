@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(213);
+select plan(231);
 
 -- Isolated auth users; the auth trigger creates their initial restaurant profiles.
 insert into auth.users (id, email) values
@@ -11,7 +11,8 @@ insert into auth.users (id, email) values
   ('00000000-0000-4000-8000-000000000004', 'maree-restaurant-b@test.local'),
   ('00000000-0000-4000-8000-000000000005', 'maree-admin@test.local'),
   ('00000000-0000-4000-8000-000000000006', 'maree-fisher-upgrade@test.local'),
-  ('00000000-0000-4000-8000-000000000007', 'maree-admin-restaurant@test.local')
+  ('00000000-0000-4000-8000-000000000007', 'maree-admin-restaurant@test.local'),
+  ('00000000-0000-4000-8000-000000000008', 'maree-email-token-test@test.local')
 on conflict (id) do nothing;
 
 update public.profiles set role = 'fisher', display_name = 'Fisher A'
@@ -83,7 +84,11 @@ insert into public.verification_requests (
   ('30000000-0000-4000-8000-000000000005',
    '00000000-0000-4000-8000-000000000001',
    'fisher', 'North Coast Fishing', 'Test Contact E', '+441534000005',
-   'Approved fixture for reservation and commercial contract tests.')
+   'Approved fixture for reservation and commercial contract tests.'),
+  ('30000000-0000-4000-8000-000000000006',
+   '00000000-0000-4000-8000-000000000008',
+   'fisher', 'Token Action Test', 'Test Contact F', '+441534000008',
+   'Pending fixture for email token action binding.')
 on conflict (id) do nothing;
 
 update public.verification_requests
@@ -115,7 +120,57 @@ select ok((select relrowsecurity from pg_class where oid = 'public.verification_
 select ok((select relrowsecurity from pg_class where oid = 'private.verification_email_action_tokens'::regclass), 'email action tokens have RLS enabled');
 select ok(not has_table_privilege('authenticated', 'private.verification_email_action_tokens', 'SELECT'), 'authenticated users cannot read email action tokens');
 select ok(not has_function_privilege('anon', 'public.create_verification_email_action_tokens(uuid,text,text,timestamptz)', 'EXECUTE'), 'anonymous users cannot create email decision tokens');
-select ok(not has_function_privilege('authenticated', 'public.review_verification_request_by_email_token(text,text)', 'EXECUTE'), 'authenticated users cannot execute email decision RPC');
+select ok(has_function_privilege('authenticated', 'public.review_verification_request_by_email_token(text,text)', 'EXECUTE'), 'authenticated users can invoke the email decision RPC, which enforces AAL2 internally');
+select ok(not has_function_privilege('anon', 'public.review_verification_request_by_email_token(text,text)', 'EXECUTE')
+  and not has_function_privilege('service_role', 'public.review_verification_request_by_email_token(text,text)', 'EXECUTE'),
+  'email decision RPC is unavailable to anon and service_role');
+
+-- Email decision action must match the action bound to the one-time token before consumption.
+insert into private.verification_email_action_tokens(request_id,action,token_hash,expires_at)
+values(
+  '30000000-0000-4000-8000-000000000006',
+  'approved'::public.verification_status,
+  'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+  now()+interval '1 hour'
+);
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000005';
+set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000005","role":"authenticated","aal":"aal2"}';
+select throws_ok(
+  $select$SELECT public.review_verification_request_by_email_token('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','rejected') $select$,
+  'P0001','Action does not match this confirmation link',
+  'mismatched email action is rejected before token consumption'
+);
+reset role;
+select ok(
+  (select consumed_at is null from private.verification_email_action_tokens where token_hash='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'),
+  'mismatched email action leaves the one-time token unconsumed'
+);
+select is(
+  (select status::text from public.verification_requests where id='30000000-0000-4000-8000-000000000006'),
+  'pending',
+  'mismatched email action leaves the verification request pending'
+);
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000005';
+set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000005","role":"authenticated","aal":"aal2"}';
+select is(
+  public.review_verification_request_by_email_token('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','approved'),
+  'approved'::text,
+  'the matching email action can consume the token and approve the request'
+);
+reset role;
+select is(
+  (select status::text from public.verification_requests where id='30000000-0000-4000-8000-000000000006'),
+  'approved',
+  'matching email action applies the approved decision'
+);
+select is(
+  (select role::text from public.profiles where id='00000000-0000-4000-8000-000000000008'),
+  'fisher',
+  'matching email action grants only the requested professional role'
+);
+
 
 select ok(not has_column_privilege('anon', 'public.profiles', 'phone', 'SELECT'), 'anonymous users cannot read profile phone numbers');
 select ok(not has_column_privilege('authenticated', 'public.profiles', 'phone', 'SELECT'), 'authenticated users cannot directly read private profile phone numbers');
@@ -135,7 +190,7 @@ select ok(has_table_privilege('anon', 'public.public_fisher_directory', 'SELECT'
 set local role anon;
 set local "request.jwt.claim.sub" = '';
 select is((select count(*) from public.catches), 1::bigint, 'anonymous catalogue sees available catch lots only');
-select is((select count(id) from public.profiles), 3::bigint, 'anonymous profile reads see fisher profiles only');
+select is((select count(id) from public.profiles), 4::bigint, 'anonymous profile reads see fisher profiles only, including the approved token-test fisher');
 reset role;
 
 -- Restaurant A sees only its own orders and verification request.
@@ -221,7 +276,7 @@ select throws_ok(
 );
 select throws_ok(
   $$select public.review_verification_request('30000000-0000-4000-8000-000000000001'::uuid, 'approved'::public.verification_status, null)$$,
-  'P0001', 'Admin access required',
+  '42501', 'Admin access required',
   'fisher cannot review verification requests'
 );
 reset role;
@@ -285,9 +340,21 @@ reset role;
 update public.catches set status='available'
 where id='10000000-0000-4000-8000-000000000001';
 
+-- Admin approval must reject an authenticated but non-MFA (AAL1) session.
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000005';
+set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000005","role":"authenticated","aal":"aal1"}';
+select throws_ok(
+  $$select public.review_verification_request('30000000-0000-4000-8000-000000000003'::uuid, 'approved'::public.verification_status, 'Should be blocked without MFA')$$,
+  '42501','Verified MFA session required (aal2)',
+  'allowlisted admin cannot approve a verification request with an AAL1 session'
+);
+reset role;
+
 -- Admin approval must update the request and grant the requested role atomically.
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000005';
+set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000005","role":"authenticated","aal":"aal2"}';
 select lives_ok(
   $$select public.review_verification_request('30000000-0000-4000-8000-000000000003'::uuid, 'approved'::public.verification_status, 'Approved by test admin')$$,
   'admin can approve a pending verification request'
@@ -306,12 +373,13 @@ reset role;
 -- A restaurant-role account with a separate admin grant can access admin functions.
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000007';
+set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000007","role":"authenticated","aal":"aal2"}';
 select is(public.is_current_user_admin(), true, 'separate admin grant is recognized without changing restaurant role');
 select is((select role::text from public.profiles where id = '00000000-0000-4000-8000-000000000007'), 'restaurant', 'separate admin grant preserves the restaurant business role');
-select is((select count(*) from public.verification_requests), 5::bigint, 'separate admin can read all verification requests');
+select is((select count(*) from public.verification_requests), 6::bigint, 'separate admin can read all verification requests, including the email-token fixture');
 select is((select count(*) from public.catches), 2::bigint, 'separate admin grant can read all catch lots');
 select is((select count(*) from public.orders), 2::bigint, 'separate admin grant can read all orders');
-select is((select count(*) from public.profiles), 7::bigint, 'separate admin grant can read all profiles');
+select is((select count(*) from public.profiles), 8::bigint, 'separate admin grant can read all profiles, including the email-token fixture');
 select is((select count(*) from public.verification_documents), 3::bigint, 'separate admin grant can read all verification documents');
 select lives_ok(
   $$select public.review_verification_request('30000000-0000-4000-8000-000000000004'::uuid, 'approved'::public.verification_status, 'Approved by separate admin')$$,
@@ -471,7 +539,7 @@ select throws_ok(
        and fisher_id='00000000-0000-4000-8000-000000000001'),
     'Bank transfer','UNAUTHORISED-REF'
   )$$,
-  'P0001','Only the invoice fisher or an admin can confirm payment',
+  '42501','Admin access required',
   'restaurant cannot falsely confirm the fisher payment receipt'
 );
 reset role;
@@ -600,12 +668,13 @@ set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
 select is((select count(*) from public.maree_monthly_commission_invoices),0::bigint,'fisher cannot read restaurant Marée commission statements');
 select throws_ok(
   $$select public.verify_maree_commission_invoice_paid('40000000-0000-4000-8000-000000000001'::uuid)$$,
-  'P0001','Admin access required','fisher cannot verify a Marée commission payment'
+  '42501','Admin access required','fisher cannot verify a Marée commission payment'
 );
 reset role;
 
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000005';
+set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000005","role":"authenticated","aal":"aal2"}';
 select lives_ok(
   $$select public.verify_maree_commission_invoice_paid('40000000-0000-4000-8000-000000000001'::uuid)$$,
   'admin can verify a restaurant payment declaration'
@@ -702,6 +771,67 @@ reset role;
 select is((select status from public.orders where id='20000000-0000-4000-8000-000000000004'),'cancelled'::public.order_status,'late cancellation completes only after buyer acceptance');
 select is((select cancellation_penalty from public.orders where id='20000000-0000-4000-8000-000000000004'),7.50::numeric,'accepted cancellation retains the agreed penalty');
 select is((select remaining_kg from public.catches where id='10000000-0000-4000-8000-000000000003'),1::numeric,'accepted late cancellation restores reserved stock');
+
+-- Accepted late-cancellation penalties become fisher receivables, never product sales.
+select is(
+  (select count(*) from public.fisher_cancellation_indemnities where order_id='20000000-0000-4000-8000-000000000004'),
+  1::bigint,
+  'accepting a late cancellation creates exactly one fisher indemnity receivable'
+);
+select is(
+  (select amount from public.fisher_cancellation_indemnities where order_id='20000000-0000-4000-8000-000000000004'),
+  7.50::numeric,
+  'the accepted cancellation amount is recorded exactly'
+);
+select is(
+  (select status from public.fisher_cancellation_indemnities where order_id='20000000-0000-4000-8000-000000000004'),
+  'unpaid'::text,
+  'the accepted indemnity remains unpaid until fisher settlement'
+);
+select is(
+  (select cancellation_indemnity_total from public.fisher_monthly_invoices
+   where id=(select invoice_id from public.fisher_cancellation_indemnities where order_id='20000000-0000-4000-8000-000000000004')),
+  7.50::numeric,
+  'the fisher monthly statement includes the accepted indemnity'
+);
+select is(
+  (select subtotal from public.fisher_monthly_invoices
+   where id=(select invoice_id from public.fisher_cancellation_indemnities where order_id='20000000-0000-4000-8000-000000000004')),
+  0::numeric,
+  'a cancellation indemnity is not misclassified as delivered product revenue'
+);
+select is(
+  (select count(*) from public.fisher_monthly_invoice_items where order_id='20000000-0000-4000-8000-000000000004'),
+  0::bigint,
+  'a cancelled order does not create a fisher product invoice line'
+);
+select is(
+  (select count(*) from public.maree_monthly_commission_invoice_items where order_id='20000000-0000-4000-8000-000000000004'),
+  0::bigint,
+  'a cancellation indemnity does not create a Marée commission invoice line'
+);
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
+select lives_ok(
+  'SELECT public.mark_fisher_invoice_paid(
+    (select invoice_id from public.fisher_cancellation_indemnities where order_id=''20000000-0000-4000-8000-000000000004''),
+    ''Bank transfer'',''INDEMNITY-TEST''
+  )',
+  'fisher can confirm receipt of a monthly statement containing a cancellation indemnity'
+);
+reset role;
+select is(
+  (select status from public.fisher_cancellation_indemnities where order_id='20000000-0000-4000-8000-000000000004'),
+  'paid'::text,
+  'settling the fisher statement settles its linked cancellation indemnity'
+);
+select is(
+  (select status from public.fisher_monthly_invoices
+   where id=(select invoice_id from public.fisher_cancellation_indemnities where order_id='20000000-0000-4000-8000-000000000004')),
+  'paid'::text,
+  'the statement containing the indemnity is marked paid atomically'
+);
+
 
 -- Declining a late cancellation offer must leave the order active and stock reserved.
 update public.catches set remaining_kg=0.5,status='available'
@@ -902,7 +1032,8 @@ reset role;
 
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000005';
-select is((select count(*) from public.notifications where event_type='verification_request_received'),5::bigint,'trusted admin receives each verification request notification');
+set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000005","role":"authenticated","aal":"aal2"}';
+select is((select count(*) from public.notifications where event_type='verification_request_received'),6::bigint,'trusted admin receives each verification request notification, including the email-token fixture');
 reset role;
 
 -- Notification follow-up contract: verification outcomes and invoice lifecycle.
@@ -912,6 +1043,7 @@ select ok(to_regprocedure('private.create_maree_invoice_notifications()') is not
 
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000005';
+set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000005","role":"authenticated","aal":"aal2"}';
 select lives_ok(
   $review$select public.review_verification_request('30000000-0000-4000-8000-000000000002'::uuid, 'rejected'::public.verification_status, 'Missing supporting evidence')$review$,
   'admin rejection produces a final verification decision'
@@ -945,6 +1077,7 @@ reset role;
 
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000005';
+set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000005","role":"authenticated","aal":"aal2"}';
 select ok(exists(select 1 from public.notifications where event_type='maree_invoice_payment_declared'), 'admin receives a private alert when a restaurant declares payment');
 reset role;
 
