@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(224);
+select plan(230);
 
 -- Isolated auth users; the auth trigger creates their initial restaurant profiles.
 insert into auth.users (id, email) values
@@ -11,7 +11,8 @@ insert into auth.users (id, email) values
   ('00000000-0000-4000-8000-000000000004', 'maree-restaurant-b@test.local'),
   ('00000000-0000-4000-8000-000000000005', 'maree-admin@test.local'),
   ('00000000-0000-4000-8000-000000000006', 'maree-fisher-upgrade@test.local'),
-  ('00000000-0000-4000-8000-000000000007', 'maree-admin-restaurant@test.local')
+  ('00000000-0000-4000-8000-000000000007', 'maree-admin-restaurant@test.local'),
+  ('00000000-0000-4000-8000-000000000008', 'maree-email-token-test@test.local')
 on conflict (id) do nothing;
 
 update public.profiles set role = 'fisher', display_name = 'Fisher A'
@@ -83,7 +84,11 @@ insert into public.verification_requests (
   ('30000000-0000-4000-8000-000000000005',
    '00000000-0000-4000-8000-000000000001',
    'fisher', 'North Coast Fishing', 'Test Contact E', '+441534000005',
-   'Approved fixture for reservation and commercial contract tests.')
+   'Approved fixture for reservation and commercial contract tests.'),
+  ('30000000-0000-4000-8000-000000000006',
+   '00000000-0000-4000-8000-000000000008',
+   'fisher', 'Token Action Test', 'Test Contact F', '+441534000008',
+   'Pending fixture for email token action binding.')
 on conflict (id) do nothing;
 
 update public.verification_requests
@@ -119,6 +124,53 @@ select ok(has_function_privilege('authenticated', 'public.review_verification_re
 select ok(not has_function_privilege('anon', 'public.review_verification_request_by_email_token(text,text)', 'EXECUTE')
   and not has_function_privilege('service_role', 'public.review_verification_request_by_email_token(text,text)', 'EXECUTE'),
   'email decision RPC is unavailable to anon and service_role');
+
+-- Email decision action must match the action bound to the one-time token before consumption.
+insert into private.verification_email_action_tokens(request_id,action,token_hash,expires_at)
+values(
+  '30000000-0000-4000-8000-000000000006',
+  'approved'::public.verification_status,
+  'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+  now()+interval '1 hour'
+);
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000005';
+set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000005","role":"authenticated","aal":"aal2"}';
+select throws_ok(
+  $select public.review_verification_request_by_email_token('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','rejected')$,
+  'P0001','Action does not match this confirmation link',
+  'mismatched email action is rejected before token consumption'
+);
+reset role;
+select ok(
+  (select consumed_at is null from private.verification_email_action_tokens where token_hash='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'),
+  'mismatched email action leaves the one-time token unconsumed'
+);
+select is(
+  (select status::text from public.verification_requests where id='30000000-0000-4000-8000-000000000006'),
+  'pending',
+  'mismatched email action leaves the verification request pending'
+);
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000005';
+set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000005","role":"authenticated","aal":"aal2"}';
+select is(
+  public.review_verification_request_by_email_token('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','approved'),
+  'approved'::text,
+  'the matching email action can consume the token and approve the request'
+);
+reset role;
+select is(
+  (select status::text from public.verification_requests where id='30000000-0000-4000-8000-000000000006'),
+  'approved',
+  'matching email action applies the approved decision'
+);
+select is(
+  (select role::text from public.profiles where id='00000000-0000-4000-8000-000000000008'),
+  'fisher',
+  'matching email action grants only the requested professional role'
+);
+
 
 select ok(not has_column_privilege('anon', 'public.profiles', 'phone', 'SELECT'), 'anonymous users cannot read profile phone numbers');
 select ok(not has_column_privilege('authenticated', 'public.profiles', 'phone', 'SELECT'), 'authenticated users cannot directly read private profile phone numbers');
