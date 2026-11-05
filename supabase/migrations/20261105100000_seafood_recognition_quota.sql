@@ -22,6 +22,7 @@ as $function$
 declare
   v_user_id uuid := auth.uid();
   v_role text;
+  v_is_approved boolean := false;
   v_now timestamptz := clock_timestamp();
   v_recent_count integer;
   v_daily_count integer;
@@ -37,6 +38,21 @@ begin
   where p.id = v_user_id;
 
   if v_role is null or v_role not in ('fisher', 'restaurant') then
+    raise exception 'Approved fisher or restaurant account required' using errcode = '42501';
+  end if;
+
+  -- The profile role is assigned during review, but the verification record
+  -- remains the canonical approval decision. Require an approved request for
+  -- the same role; missing, pending, rejected, or mismatched records fail closed.
+  select exists (
+    select 1
+    from public.verification_requests vr
+    where vr.user_id = v_user_id
+      and vr.requested_role::text = v_role
+      and vr.status = 'approved'::public.verification_status
+  ) into v_is_approved;
+
+  if not v_is_approved then
     raise exception 'Approved fisher or restaurant account required' using errcode = '42501';
   end if;
 
