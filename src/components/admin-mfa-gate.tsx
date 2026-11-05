@@ -39,19 +39,19 @@ export function AdminMfaGate({ onVerified }: Props) {
         if (pending) {
           setFactorId(pending.id);
           setMode("challenge");
-          setError(t("Un facteur TOTP non vérifié existe déjà. Saisissez le code de l’application qui avait servi à son enrôlement."));
+          setError("Un facteur TOTP non vérifié existe déjà. Saisissez le code de l’application qui avait servi à son enrôlement.");
           return;
         }
         setMode("enroll");
       } catch (cause) {
         if (active) {
-          setError(cause instanceof Error ? cause.message : t("Impossible de vérifier l’état MFA."));
+          setError(cause instanceof Error ? cause.message : "Impossible de vérifier l’état MFA.");
           setMode("enroll");
         }
       }
     })();
     return () => { active = false; };
-  }, [onVerified, t]);
+  }, [onVerified]);
 
   const startEnrollment = async () => {
     setBusy(true);
