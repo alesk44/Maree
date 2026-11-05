@@ -76,6 +76,20 @@ Deno.serve(async (req: Request) => {
     return json(req, { error: "Only an approved fisher or restaurant account can use seafood recognition." }, 403);
   }
 
+  // A role alone is not proof of approval: the canonical decision lives in
+  // verification_requests. Fail closed if the request is absent or unreadable.
+  const { data: approval, error: approvalError } = await userClient
+    .from("verification_requests")
+    .select("id")
+    .eq("user_id", userData.user.id)
+    .eq("requested_role", profile.role)
+    .eq("status", "approved")
+    .limit(1)
+    .maybeSingle();
+  if (approvalError || !approval) {
+    return json(req, { error: "Your account verification must be approved before using seafood recognition." }, 403);
+  }
+
   let input: Record<string, unknown>;
   try {
     const raw = await req.text();
