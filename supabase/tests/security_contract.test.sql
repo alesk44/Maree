@@ -802,10 +802,10 @@ select is(
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
 select lives_ok(
-  $SELECT public.mark_fisher_invoice_paid(
-    (select invoice_id from public.fisher_cancellation_indemnities where order_id='20000000-0000-4000-8000-000000000004'),
-    'Bank transfer','INDEMNITY-TEST'
-  )$,
+  'SELECT public.mark_fisher_invoice_paid(
+    (select invoice_id from public.fisher_cancellation_indemnities where order_id=''20000000-0000-4000-8000-000000000004''),
+    ''Bank transfer'',''INDEMNITY-TEST''
+  )',
   'fisher can confirm receipt of a monthly statement containing a cancellation indemnity'
 );
 reset role;
