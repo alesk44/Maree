@@ -11,6 +11,8 @@ Scope: preparation only. This runbook is not an execution approval.
 - The live `review-verification-email-action` Edge Function is version 7 with `verify_jwt=false` and calls the legacy one-argument SQL RPC.
 - The allowlisted application admin currently has zero verified TOTP factors. The security branch now stages initial enrollment, selection between verified factors, and enrollment of a second backup TOTP factor. This UI is not yet deployed to production, and no factor enrollment has been verified.
 - The Free plan does not include Supabase's daily automated database backups. No verified manual backup or restore drill has yet been completed.
+- Fresh read-only Auth/Security Advisor snapshot at 2026-11-05 15:19 UTC: 0 verified TOTP factors, 0 unverified TOTP factors and 2 active owner sessions; `review-verification-email-action` remains v7 with `verify_jwt=false`; leaked-password protection remains disabled. Do not enable AAL2 or change Auth settings until the staged MFA UI and two-factor owner enrollment have been validated.
+- The same Security Advisor snapshot reports 16 authenticated-callable `SECURITY DEFINER` RPC warnings and 3 RLS-enabled tables with no policies (`private.admin_users`, `private.verification_email_action_tokens`, `public.maree_commercial_settings`). These are tracked review findings, not a reason to add broad policies or revoke intentional RPC access blindly; validate each function's internal role/ownership checks and the table grants before changing them.
 - Do not execute production migrations, Auth changes, or Edge Function deployments until every gate below is checked.
 
 ## 1. Freeze and capture the release candidate
