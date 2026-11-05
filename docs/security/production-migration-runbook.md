@@ -36,13 +36,16 @@ printf '\n'
 export DB_URL
 supabase db dump --db-url "$DB_URL" -f "$BACKUP_DIR/roles.sql" --role-only
 supabase db dump --db-url "$DB_URL" -f "$BACKUP_DIR/schema.sql"
-supabase db dump --db-url "$DB_URL" -f "$BACKUP_DIR/data.sql" --use-copy --data-only
+supabase db dump --db-url "$DB_URL" -f "$BACKUP_DIR/data.sql" --use-copy --data-only -x "storage.buckets_vectors" -x "storage.vector_indexes"
+supabase db dump --db-url "$DB_URL" -f "$BACKUP_DIR/history_schema.sql" --schema supabase_migrations
+supabase db dump --db-url "$DB_URL" -f "$BACKUP_DIR/history_data.sql" --use-copy --data-only --schema supabase_migrations
 unset DB_URL
 sha256sum "$BACKUP_DIR"/*.sql > "$BACKUP_DIR/SHA256SUMS"
 ```
 
 Important coverage checks:
-- The current Supabase CLI reference says `db dump` excludes managed schemas including `auth`, `storage`, and extension-owned schemas. A separate Supabase restore guide describes `auth.users` as included, so the official guidance is not fully consistent. Treat Auth coverage as unverified until the actual generated files are inspected with the installed CLI version; compare the `auth.users` count against the read-only baseline below and follow the current supported Auth export/restore procedure if it is absent. Do not assume the three SQL files alone constitute a complete disaster-recovery image.
+- Supabase's current CLI reference says the standard dump filters managed schemas, while the current platform restore guide describes `auth.users` as included. Treat Auth coverage as **unverified until inspected**: search the generated `data.sql` for a `COPY auth.users` block and compare restored Auth-user counts with the production baseline. The companion PowerShell script records this as `auth_users_copy_detected`; a false value is a hard recovery blocker, not a harmless warning. Never upload or commit these files: the data dump may contain email addresses and password hashes.
+- Preserve the CLI migration ledger separately with `history_schema.sql` and `history_data.sql` using `--schema supabase_migrations`. These are separate from the seven pending Marée feature migrations.
 - Inspect the generated schema/data exports locally and record exactly which application schemas and tables are present, especially `public` and `private`.
 - Follow current Supabase documentation for any separately supported Auth/user export needed for the recovery target. Do not manually copy secrets or JWT signing keys into the backup directory.
 - Database backups do not contain Storage object bytes. Export every required Storage bucket/object separately using the supported Storage CLI or S3-compatible export method. Preserve bucket names, object paths, metadata and checksums.
@@ -85,7 +88,7 @@ Storage baseline:
 - `fisher-compliance`: private bucket, 0 objects.
 - Total: 2 buckets, 1 object.
 
-The database dump and Storage object export are separate deliverables. A companion local script `maree-storage-backup.cjs` downloads Storage objects with SHA-256 checksums; it requires Node.js and `@supabase/supabase-js`, and the service-role/secret key is entered locally (never in chat or Git). After export, verify the manifest reports 2 buckets and 1 object, then encrypt the directory and keep an off-site copy. The Storage script passed `node --check` and a local mocked integration test covering two buckets, one downloaded object, manifest generation and checksum generation. It has NOT been run against production; live export and checksum verification remain outstanding.
+The database dump and Storage object export are separate deliverables. The Windows helper `maree-production-backup.ps1` writes under the current user's `%LOCALAPPDATA%\\Maree-Backups`, restricts the new backup directory ACL to that Windows account, exports roles/schema/data and the migration ledger, creates SHA-256 checksums, and flags whether an `auth.users` COPY block was detected. It requires Supabase CLI, Docker Desktop and a percent-encoded database connection string entered locally. The companion `maree-storage-backup.cjs` downloads Storage objects with SHA-256 checksums; it requires Node.js and `@supabase/supabase-js`, and refuses to read the secret key without an interactive TTY so it cannot fall back to echoing it. After export, verify the manifest reports 2 buckets and 1 object, then encrypt the directory and keep an off-site copy. The Storage script passed `node --check`, a mocked two-bucket/one-object export and a real SHA-256 verification of the mocked artifact. It has NOT been run against production; live export and checksum verification remain outstanding.
 
 ## 3. Restore drill — must pass before production change
 
