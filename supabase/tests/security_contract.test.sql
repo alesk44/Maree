@@ -1022,7 +1022,7 @@ reset role;
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000005';
 set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000005","role":"authenticated","aal":"aal2"}';
-select is((select count(*) from public.notifications where event_type='verification_request_received'),5::bigint,'trusted admin receives each verification request notification');
+select is((select count(*) from public.notifications where event_type='verification_request_received'),6::bigint,'trusted admin receives each verification request notification, including the email-token fixture');
 reset role;
 
 -- Notification follow-up contract: verification outcomes and invoice lifecycle.
