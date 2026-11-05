@@ -7,7 +7,7 @@ Scope: preparation only. This runbook is not an execution approval.
 
 - Production is on Supabase Free, PostgreSQL 17.11, region eu-west-2.
 - Production migration ledger: 45; latest applied: `20261103220545_admin_managed_delivery_payer`.
-- Eight migrations are absent from production. Their exact order is in `docs/security/supabase-migration-reconciliation.md`.
+- Eight migrations are absent from production. Seven belong to the security/accounting release in PR #13; the eighth, `20261105100000_seafood_recognition_quota`, belongs to the separate seafood-recognition PR #15. Keep that feature migration out of the PR #13 production release. Their exact order is in `docs/security/supabase-migration-reconciliation.md`.
 - The live `review-verification-email-action` Edge Function is version 7 with `verify_jwt=false` and calls the legacy one-argument SQL RPC.
 - The allowlisted application admin currently has zero verified TOTP factors. The security branch now stages initial enrollment, selection between verified factors, and enrollment of a second backup TOTP factor. This UI is not yet deployed to production, and no factor enrollment has been verified.
 - The Free plan does not include Supabase's daily automated database backups. No verified manual backup or restore drill has yet been completed.
@@ -129,9 +129,9 @@ Release sequence after backup and rehearsal:
    - Before deployment, configure the Edge Function environment variables `MAREE_APP_URL` and, if needed, `MAREE_ALLOWED_ORIGINS` with the exact HTTPS origin(s) of the deployed Marée frontend (origin only: scheme + hostname + optional port; no path). The function rejects browser origins not in this allowlist. If these variables are missing, browser calls with an Origin header will be rejected. Do not guess the production domain; read it from the actual frontend deployment and test both allowed and disallowed origins.
    - Set environment variables through the Supabase Dashboard or local CLI secret workflow; never commit their values. They are origin configuration, not authorization: JWT validation, verified AAL2 and database allowlist checks remain mandatory.
 5. Test email approval/rejection with: missing JWT, invalid JWT, non-admin, AAL1, AAL2 allowlisted admin, wrong action, expired token, replayed token and concurrent token use. Confirm a mismatch does not consume the token.
-6. Continue with migrations 3 through 8 only after the email route is confirmed and all prior post-migration checks pass.
+6. Continue with security/accounting migrations 3 through 7 only after the email route is confirmed and all prior post-migration checks pass. Do not apply migration 8 (`20261105100000_seafood_recognition_quota`) as part of PR #13; it is reserved for the separate PR #15 seafood-recognition release.
 
-Do not deploy the Fishial V2 function as part of this release. PR #14 has been merged into the security branch after passing Verify, Marée CI and Database Contract; its adapter, quota approval check and tests are now staged in PR #13. The function remains undeployed and requires separate release approval.
+Do not deploy the Fishial V2 function as part of this release. Seafood recognition, its quota migration, Fishial/OpenAI adapters and photo-identification UI are isolated in separate draft PR #15 (8 files, 8 commits), based on `main`. PR #15 has its own five green CI workflows on head `d2ebf267628301a2fc7e7bb9810463012d6116e8`; it is not part of PR #13 and requires its own review, provider-secret setup, migration rehearsal and explicit release approval.
 
 ## 6. Owner MFA and emergency recovery
 
@@ -157,10 +157,10 @@ Read-only checks after the release:
 - `public.fisher_monthly_invoices.cancellation_indemnity_total` exists.
 - `private.require_admin_aal2()` exists and is not directly executable by anon/authenticated.
 - The two-argument email-token RPC exists; the legacy one-argument RPC is absent.
-- `private.seafood_recognition_attempts` and `public.consume_seafood_recognition_quota()` exist with the intended grants.
+- **Separate PR #15 release only:** `private.seafood_recognition_attempts` and `public.consume_seafood_recognition_quota()` exist with the intended grants.
 - The six foreign-key indexes from migration 3 exist.
 - AAL1 admin calls fail; allowlisted AAL2 admin calls succeed; ordinary AAL2 users remain denied.
-- Fishial quota denies pending/rejected/mismatched-role accounts and enforces 3 requests per 10 minutes and 10 per 24 hours.
+- **Separate PR #15 release only:** Fishial quota denies pending/rejected/mismatched-role accounts and enforces 3 requests per 10 minutes and 10 per 24 hours.
 - Cancellation indemnities, monthly invoices, inventory state preservation, order settlement and commission calculations pass their contract tests.
 - Edge Function read-back shows the intended version and `verify_jwt=true`.
 - Re-run Security Advisor. Retain intentional no-policy RLS findings for private/service-only tables; do not add broad policies to silence warnings.
