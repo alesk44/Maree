@@ -17,6 +17,7 @@ export const Route = createFileRoute("/admin")({
 
 type AdminOrder = { id: string; catch_id: string; quantity_kg: number; status: string; created_at: string; product_subtotal:number|string|null; maree_fee:number|string|null; delivery_fee:number|string|null; delivery_fee_payer_snapshot:'buyer'|'fisher'; tip_amount:number|string; fisher_payment_status:"unpaid"|"paid"|"waived" };
 type AdminCommissionInvoice = { id:string; restaurant_id:string; period_start:string; period_end:string; due_date:string; commission_total:number|string; delivery_total:number|string; status:"open"|"declared_paid"|"paid"|"void"; declared_at:string|null; payment_method:string|null; payment_reference:string|null };
+type FisherInvoiceSummary = { status:"open"|"paid"|"void"; cancellation_indemnity_total:number|string|null };
 type VerificationDocument = { id:string; request_id:string; original_filename:string; document_type:string; file_path:string; expires_at:string|null; review_status:string; reviewer_note:string|null; signed_url?:string|null };
 
 type VerificationRequest = {
@@ -42,6 +43,7 @@ function Admin() {
   const [documents, setDocuments] = useState<VerificationDocument[]>([]);
   const [allOrders, setAllOrders] = useState<AdminOrder[]>([]);
   const [commissionInvoices, setCommissionInvoices] = useState<AdminCommissionInvoice[]>([]);
+  const [fisherInvoices, setFisherInvoices] = useState<FisherInvoiceSummary[]>([]);
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -161,6 +163,16 @@ function Admin() {
         setReportingError(t("Relevés financiers Marée indisponibles : vérifiez la synchronisation du schéma Supabase."));
         console.warn("Marée commission statements could not be loaded", commissionError);
       }
+      const { data: fisherInvoiceRows, error: fisherInvoiceError } = await supabase
+        .from("fisher_monthly_invoices")
+        .select("status,cancellation_indemnity_total");
+      if (!fisherInvoiceError) {
+        setFisherInvoices((fisherInvoiceRows ?? []) as FisherInvoiceSummary[]);
+      } else {
+        setFisherInvoices([]);
+        setReportingError(t("Relevés pêcheurs indisponibles : vérifiez la synchronisation du schéma Supabase."));
+        console.warn("Fisher monthly statements could not be loaded", fisherInvoiceError);
+      }
       const {data:commercialRows,error:commercialLoadError}=await supabase.rpc('get_maree_commercial_settings');
       if(commercialLoadError){setCommercialError(t('Paramètres commerciaux indisponibles.'));console.warn('Commercial settings could not be loaded',commercialLoadError);}
       else {const commercial=Array.isArray(commercialRows)?commercialRows[0]:commercialRows;if(commercial){setMareeFeePercent((Number(commercial.maree_fee_rate)*100).toString());setDeliveryFeePercent((Number(commercial.delivery_fee_rate)*100).toString());setDeliveryFeePayer(commercial.delivery_fee_payer==='fisher'?'fisher':'buyer');setCommercialError(null);}}
@@ -249,8 +261,10 @@ function Admin() {
         const deliveredOrders = allOrders.filter((order) => order.status === "delivered");
         const deliveredBase = deliveredOrders.reduce((sum, order) => sum + Number(order.product_subtotal ?? 0), 0);
         const tips = deliveredOrders.reduce((sum,order)=>sum+Number(order.tip_amount??0),0);
-        const fisherDue = deliveredOrders.filter(order=>order.fisher_payment_status==="unpaid").reduce((sum,order)=>sum+Number(order.product_subtotal??0)+Number(order.tip_amount??0)-(order.delivery_fee_payer_snapshot==='fisher'?Number(order.delivery_fee??0):0),0);
-        const fisherPaid = deliveredOrders.filter(order=>order.fisher_payment_status==="paid").reduce((sum,order)=>sum+Number(order.product_subtotal??0)+Number(order.tip_amount??0)-(order.delivery_fee_payer_snapshot==='fisher'?Number(order.delivery_fee??0):0),0);
+        const cancellationIndemnitiesDue = fisherInvoices.filter(invoice=>invoice.status==="open").reduce((sum,invoice)=>sum+Number(invoice.cancellation_indemnity_total??0),0);
+        const cancellationIndemnitiesPaid = fisherInvoices.filter(invoice=>invoice.status==="paid").reduce((sum,invoice)=>sum+Number(invoice.cancellation_indemnity_total??0),0);
+        const fisherDue = deliveredOrders.filter(order=>order.fisher_payment_status==="unpaid").reduce((sum,order)=>sum+Number(order.product_subtotal??0)+Number(order.tip_amount??0)-(order.delivery_fee_payer_snapshot==='fisher'?Number(order.delivery_fee??0):0),0) + cancellationIndemnitiesDue;
+        const fisherPaid = deliveredOrders.filter(order=>order.fisher_payment_status==="paid").reduce((sum,order)=>sum+Number(order.product_subtotal??0)+Number(order.tip_amount??0)-(order.delivery_fee_payer_snapshot==='fisher'?Number(order.delivery_fee??0):0),0) + cancellationIndemnitiesPaid;
         const mareeCommission = deliveredOrders.reduce((sum, order) => sum + Number(order.maree_fee ?? 0), 0);
         const mareeDeliveryBuyer = deliveredOrders.reduce((sum, order) => sum + (order.delivery_fee_payer_snapshot==='buyer'?Number(order.delivery_fee ?? 0):0), 0);
         const mareeDeliveryFisher = deliveredOrders.reduce((sum, order) => sum + (order.delivery_fee_payer_snapshot==='fisher'?Number(order.delivery_fee ?? 0):0), 0);
@@ -265,8 +279,8 @@ function Admin() {
             <div className="card p-4"><p className="text-xs text-muted-foreground">{t("Commandes totales")}</p><p className="mt-1 text-2xl font-semibold">{allOrders.length}</p></div>
             <div className="card p-4"><p className="text-xs text-muted-foreground">{t("Volume livré (base)")}</p><p className="mt-1 text-2xl font-semibold">{fmt(deliveredBase)}</p></div>
             <div className="card p-4"><p className="text-xs text-muted-foreground">{t("Pourboires")}</p><p className="mt-1 text-2xl font-semibold">{fmt(tips)}</p></div>
-            <div className="card p-4"><p className="text-xs text-muted-foreground">{t("Dette pêcheurs")}</p><p className="mt-1 text-2xl font-semibold">{fmt(fisherDue)}</p></div>
-            <div className="card p-4"><p className="text-xs text-muted-foreground">{t("Paiements pêcheurs confirmés")}</p><p className="mt-1 text-2xl font-semibold">{fmt(fisherPaid)}</p></div>
+            <div className="card p-4"><p className="text-xs text-muted-foreground">{t("Dette pêcheurs")}</p><p className="mt-1 text-2xl font-semibold">{fmt(fisherDue)}</p><p className="mt-1 text-xs text-muted-foreground">{t("Dont indemnités d’annulation impayées")}: {fmt(cancellationIndemnitiesDue)}</p></div>
+            <div className="card p-4"><p className="text-xs text-muted-foreground">{t("Paiements pêcheurs confirmés")}</p><p className="mt-1 text-2xl font-semibold">{fmt(fisherPaid)}</p><p className="mt-1 text-xs text-muted-foreground">{t("Dont indemnités d’annulation payées")}: {fmt(cancellationIndemnitiesPaid)}</p></div>
             <div className="card p-4"><p className="text-xs text-muted-foreground">{t("Commission Marée ({rate} %)",{rate:(Number(mareeFeePercent)||0).toString()})}</p><p className="mt-1 text-2xl font-semibold">{fmt(mareeCommission)}</p></div>
           </div>
           <div className="card grid gap-3 p-5 sm:grid-cols-2">
