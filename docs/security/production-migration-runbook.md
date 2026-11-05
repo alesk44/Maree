@@ -9,7 +9,7 @@ Scope: preparation only. This runbook is not an execution approval.
 - Production migration ledger: 45; latest applied: `20261103220545_admin_managed_delivery_payer`.
 - Eight migrations are absent from production. Their exact order is in `docs/security/supabase-migration-reconciliation.md`.
 - The live `review-verification-email-action` Edge Function is version 7 with `verify_jwt=false` and calls the legacy one-argument SQL RPC.
-- The allowlisted application admin currently has zero verified TOTP factors. The admin UI in the security branch supports initial enrollment, but not lost-factor recovery.
+- The allowlisted application admin currently has zero verified TOTP factors. The security branch now stages initial enrollment, selection between verified factors, and enrollment of a second backup TOTP factor. This UI is not yet deployed to production, and no factor enrollment has been verified.
 - The Free plan does not include Supabase's daily automated database backups. No verified manual backup or restore drill has yet been completed.
 - Do not execute production migrations, Auth changes, or Edge Function deployments until every gate below is checked.
 
@@ -93,7 +93,7 @@ The current production Edge Function is incompatible with the new two-argument e
 
 Release sequence after backup and rehearsal:
 1. Deploy the reviewed application build containing the initial admin TOTP enrollment gate, without applying AAL2 enforcement yet. Confirm it is the intended app target and no automatic production deployment is triggered.
-2. The allowlisted owner signs in, enrolls TOTP, verifies the factor, signs in again if required, and confirms the current session reports AAL2. Verify the account's recovery route before proceeding.
+2. The allowlisted owner signs in, enrolls and verifies two TOTP factors on separate devices, and tests a challenge with each factor. Revoke existing application sessions and require a fresh AAL2 sign-in. Do not proceed with only one verified factor.
 3. During the approved maintenance window, apply migrations 1 and 2 in order. The legacy email RPC is removed at step 2; the old Edge Function will fail closed during the transition rather than continue using the bearer-only path.
 4. Immediately deploy the reviewed `review-verification-email-action` function with gateway JWT verification enabled. Read back the deployed version and `verify_jwt=true`; confirm the deployed source matches the reviewed commit.
 5. Test email approval/rejection with: missing JWT, invalid JWT, non-admin, AAL1, AAL2 allowlisted admin, wrong action, expired token, replayed token and concurrent token use. Confirm a mismatch does not consume the token.
@@ -105,10 +105,17 @@ Do not deploy the Fishial V2 function as part of this release. PR #14 remains a 
 
 Before AAL2 enforcement:
 - Verify one allowlisted admin is the intended owner identity.
-- Verify a TOTP factor is enrolled and `verified`, and a fresh session is AAL2.
-- Confirm the owner can still access the Supabase organization/project Dashboard independently of the application session.
-- Document and test the emergency factor-reset path using the trusted Supabase project owner/admin account. Keep a second trusted organization owner where possible.
-- The application currently has no self-service lost-factor recovery UI. Do not enforce AAL2 until the manual recovery path is documented and tested.
+- Supabase Auth does not provide recovery codes. Supabase documents support for multiple factors (up to 10) and recommends a backup TOTP factor; losing all factors can make account recovery impossible.
+- The security branch now stages an application UI to enroll a second TOTP factor and choose between verified factors during challenge. This reduces single-device lockout risk but cannot recover an account after all factors are lost.
+- Verify two application TOTP factors on separate devices and test both challenge paths before enabling AAL2.
+- Supabase Dashboard account MFA is separate from the project's application-user MFA. Enable Dashboard account MFA and register a backup factor there as well; enabling it logs out other Dashboard sessions, so sign in again with MFA.
+- Confirm the owner can access the Supabase organization/project Dashboard independently of the application session. Keep a second trusted organization owner where possible.
+- Do not enforce AAL2 until the updated application UI is deployed, two application factors are verified, fresh AAL2 login is tested, and Dashboard account MFA is configured.
+
+Supabase MFA references:
+- https://supabase.com/docs/guides/auth/auth-mfa
+- https://supabase.com/docs/reference/javascript/auth-mfa
+- https://supabase.com/docs/guides/platform/multi-factor-authentication
 
 ## 7. Post-migration verification
 
