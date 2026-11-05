@@ -42,7 +42,7 @@ sha256sum "$BACKUP_DIR"/*.sql > "$BACKUP_DIR/SHA256SUMS"
 ```
 
 Important coverage checks:
-- Supabase CLI applies Supabase-specific filtering and excludes managed/internal schemas (including Auth and Storage internals and extension-owned schemas) from ordinary dumps. Do not assume the three SQL files alone constitute a complete disaster-recovery image.
+- The current Supabase CLI reference says `db dump` excludes managed schemas including `auth`, `storage`, and extension-owned schemas. A separate Supabase restore guide describes `auth.users` as included, so the official guidance is not fully consistent. Treat Auth coverage as unverified until the actual generated files are inspected with the installed CLI version; compare the `auth.users` count against the read-only baseline below and follow the current supported Auth export/restore procedure if it is absent. Do not assume the three SQL files alone constitute a complete disaster-recovery image.
 - Inspect the generated schema/data exports locally and record exactly which application schemas and tables are present, especially `public` and `private`.
 - Follow current Supabase documentation for any separately supported Auth/user export needed for the recovery target. Do not manually copy secrets or JWT signing keys into the backup directory.
 - Database backups do not contain Storage object bytes. Export every required Storage bucket/object separately using the supported Storage CLI or S3-compatible export method. Preserve bucket names, object paths, metadata and checksums.
