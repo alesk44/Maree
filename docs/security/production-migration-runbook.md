@@ -146,6 +146,17 @@ These migrations are not treated as safely reversible. Do not run `supabase db r
 - Restore Storage objects separately from the database. Reconcile bucket/object metadata after restoration.
 - After any restore, rotate/reissue credentials as appropriate through the Dashboard, re-check Auth provider settings, Edge Functions, redirect URLs, webhooks and storage policies. Never restore secrets into Git or chat.
 
+## CI validation — 2026-11-05
+
+The current release candidate documentation commit is `be82e4b72799fe1ccc5f693b6eb1c3e5fc2183d2`. All five required GitHub Actions workflows completed successfully on this exact SHA:
+- Build verification
+- Marée CI
+- Verify
+- Supabase migration tests
+- Database Contract
+
+The executable source commit `f238078de4b2f0ea53e2d073f21483068687fecf` passed 391 pgTAP assertions across 13 test files, plus concurrent last-stock reservation and concurrent monthly-invoice generation checks. The later `be82e4b` commit only reconciles security documentation; its five workflows also passed. This CI evidence validates repository code on a clean local database, not a restore of production data.
+
 ## Current execution status
 
 - Backup created: no.
