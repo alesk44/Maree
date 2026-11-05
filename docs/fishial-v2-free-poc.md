@@ -19,12 +19,10 @@ Fishial V2 docs: https://docs.fishial.ai/api/api_reference
 Getting started: https://docs.fishial.ai/api/getting_started
 Developer API FAQ: https://docs.fishial.ai/faqs/developers%20api
 
-## Secrets — not configured
-Configure these only in Supabase Edge Function secrets, never in frontend code, GitHub, SQL, or chat:
-- `FISHIAL_CLIENT_ID`
-- `FISHIAL_CLIENT_SECRET`
+## Secrets — owner reports configured; function not deployed
+The owner reports that `FISHIAL_CLIENT_ID` and `FISHIAL_CLIENT_SECRET` have been added in the Supabase Dashboard. Their values have not been read back or exposed.
 
-The function returns HTTP 503 until both values exist. Do not add paid credentials or enable a paid plan without explicit owner approval. The Fishial FAQ currently says the Developers API is free; the portal still requires an active subscription selection and offers a free plan for testing. Free-plan request limits and long-term commercial terms have not been independently confirmed.
+The Fishial Edge Function is still **not deployed**, so these credentials are not currently used by this adapter. Do not copy them into frontend code, GitHub, SQL, logs, or chat. Do not deploy this function to the active production project as part of the test setup. Do not add paid credentials or enable a paid plan without explicit owner approval. The Fishial FAQ currently says the Developers API is free; the portal still requires an active subscription selection and offers a free plan for testing. Free-plan request limits and long-term commercial terms have not been independently confirmed.
 
 ## Cost controls
 - Existing application quota is applied before contacting Fishial.
@@ -33,7 +31,7 @@ The function returns HTTP 503 until both values exist. Do not add paid credentia
 - No automatic retries are performed.
 - No feedback submission, image collection upload, GPS metadata or portal collection headers are sent.
 - Important: Fishial's API tutorial states that an image is also added to a Portal collection if the API key has an upload folder configured. Before any real photo test, verify in the Fishial portal that no upload folder is attached to the API key; otherwise do not use customer/fisher photos until the retention, access and deletion terms are confirmed.
-- No provider call is possible until server secrets are configured.
+- No provider call is possible through this adapter until the function is deliberately deployed to an isolated test backend. The configured project has not been used to deploy this function.
 
 ## Known gaps / release gates
 - Fishial V2 provides English common names and scientific names; it does not provide French common names in the documented recognition response.
