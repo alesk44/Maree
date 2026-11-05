@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { AdminMfaGate } from "@/components/admin-mfa-gate";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { useLanguage } from "@/lib/i18n";
@@ -36,6 +37,7 @@ function Admin() {
   const { t, language } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [mfaRequired, setMfaRequired] = useState(false);
   const [requests, setRequests] = useState<VerificationRequest[]>([]);
   const [documents, setDocuments] = useState<VerificationDocument[]>([]);
   const [allOrders, setAllOrders] = useState<AdminOrder[]>([]);
@@ -107,11 +109,20 @@ function Admin() {
       if (adminAccessError) throw adminAccessError;
       if (adminAccess !== true) {
         setIsAdmin(false);
+        setMfaRequired(false);
         setRequests([]);
         setError(t("Accès réservé à l’équipe d’administration."));
         return;
       }
       setIsAdmin(true);
+      const { data: assurance, error: assuranceError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (assuranceError) throw assuranceError;
+      if (assurance.currentLevel !== "aal2") {
+        setMfaRequired(true);
+        setLoading(false);
+        return;
+      }
+      setMfaRequired(false);
       // Load verification requests independently so a reporting query cannot
       // prevent admins from reviewing pending fishermen/restaurants.
       const { data: data, error: requestsError } = await supabase
@@ -217,7 +228,9 @@ function Admin() {
         <button className="btn" type="button" onClick={() => void loadRequests()} disabled={loading}>{t("Actualiser")}</button>
       </header>
 
-      {isAdmin && !loading && <section className="card grid gap-4 p-5">
+      {isAdmin && mfaRequired && <AdminMfaGate onVerified={() => void loadRequests()} />}
+
+      {isAdmin && !loading && !mfaRequired && <section className="card grid gap-4 p-5">
         <div><h2 className="font-display text-2xl font-semibold">{t('Paramètres commerciaux')}</h2><p className="text-sm text-muted-foreground">{t('Ces réglages s’appliquent uniquement aux nouvelles réservations. Les commandes existantes conservent leurs taux et leur payeur d’origine.')}</p></div>
         {commercialError&&<p role="alert" className="text-sm text-destructive">{commercialError}</p>}
         <div className="grid gap-3 sm:grid-cols-2">
@@ -228,7 +241,7 @@ function Admin() {
         <p className="text-xs text-muted-foreground">{t('Si le pêcheur paie, les frais sont retenus sur son montant à recevoir et ne sont pas ajoutés au relevé Marée du restaurant. Le choix est figé sur chaque commande.')}</p>
         <button type="button" className="btn btn-accent w-fit" disabled={savingCommercial||Boolean(commercialError)} onClick={()=>void saveCommercialSettings()}>{savingCommercial?t('Enregistrement…'):t('Enregistrer les paramètres')}</button>
       </section>}
-      {isAdmin && !loading && (() => {
+      {isAdmin && !loading && !mfaRequired && (() => {
         const deliveredOrders = allOrders.filter((order) => order.status === "delivered");
         const deliveredBase = deliveredOrders.reduce((sum, order) => sum + Number(order.product_subtotal ?? 0), 0);
         const tips = deliveredOrders.reduce((sum,order)=>sum+Number(order.tip_amount??0),0);
@@ -261,7 +274,7 @@ function Admin() {
           <p className="text-xs text-muted-foreground">{t("Les montants proviennent des prix et frais figés à la réservation : la livraison est soit facturée au restaurant, soit retenue sur le règlement du pêcheur. La commission Marée reste due par le restaurant. Aucun paiement en ligne n’est activé.")}</p>
         </section>;
       })()}
-      {isAdmin && !loading && <section className="card grid gap-3 p-5">
+      {isAdmin && !loading && !mfaRequired && <section className="card grid gap-3 p-5">
         <div><h2 className="font-display text-2xl font-semibold">{t("Commissions Marée à vérifier")}</h2><p className="text-sm text-muted-foreground">{t("Les restaurants déclarent leurs règlements hors plateforme. Seule cette validation administrative marque le relevé comme payé.")}</p></div>
         {commissionInvoices.length===0 ? <p className="text-sm text-muted-foreground">{t("Aucun relevé mensuel de commission généré.")}</p> :
           <ul className="grid gap-2">{commissionInvoices.map((invoice)=><li key={invoice.id} className="rounded-xl border border-border p-4">
@@ -279,7 +292,7 @@ function Admin() {
           <p role="alert" className="text-sm">{error ?? t("Connectez-vous avec un compte administrateur.")}</p>
           <Link className="btn btn-accent w-fit" to="/connexion">{t("Connexion")}</Link>
         </section>
-      ) : (
+      ) : mfaRequired ? null : (
         <>
           {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
           <section className="card grid gap-2 p-5">
