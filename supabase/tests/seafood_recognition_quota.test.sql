@@ -58,7 +58,7 @@ reset role;
 set local role authenticated;
 set local "request.jwt.claim.sub"='00000000-0000-4000-8000-000000000083';
 select throws_ok(
-  $select public.consume_seafood_recognition_quota()$,
+  $$select public.consume_seafood_recognition_quota()$$,
   '42501',
   'Approved fisher or restaurant account required',
   'pending fisher cannot consume recognition quota'
@@ -68,7 +68,7 @@ reset role;
 set local role authenticated;
 set local "request.jwt.claim.sub"='00000000-0000-4000-8000-000000000084';
 select throws_ok(
-  $select public.consume_seafood_recognition_quota()$,
+  $$select public.consume_seafood_recognition_quota()$$,
   '42501',
   'Approved fisher or restaurant account required',
   'rejected fisher cannot consume recognition quota'
