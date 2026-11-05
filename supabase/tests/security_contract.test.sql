@@ -345,7 +345,7 @@ set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000005';
 set local "request.jwt.claims" = '{"sub":"00000000-0000-4000-8000-000000000005","role":"authenticated","aal":"aal1"}';
 select throws_ok(
-  $select public.review_verification_request('30000000-0000-4000-8000-000000000003'::uuid, 'approved'::public.verification_status, 'Should be blocked without MFA')$,
+  $$select public.review_verification_request('30000000-0000-4000-8000-000000000003'::uuid, 'approved'::public.verification_status, 'Should be blocked without MFA')$$,
   '42501','Verified MFA session required (aal2)',
   'allowlisted admin cannot approve a verification request with an AAL1 session'
 );
