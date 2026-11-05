@@ -35,13 +35,6 @@ export function AdminMfaGate({ onVerified }: Props) {
           setMode("challenge");
           return;
         }
-        const pending = factors.totp.find((factor) => factor.status === "unverified");
-        if (pending) {
-          setFactorId(pending.id);
-          setMode("challenge");
-          setError("Un facteur TOTP non vérifié existe déjà. Saisissez le code de l’application qui avait servi à son enrôlement.");
-          return;
-        }
         setMode("enroll");
       } catch (cause) {
         if (active) {
