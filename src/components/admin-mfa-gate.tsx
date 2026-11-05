@@ -188,11 +188,11 @@ export function AdminMfaBackupSetup() {
           })));
         }
       } catch (cause) {
-        if (active) setError(cause instanceof Error ? cause.message : t("Impossible de vérifier les facteurs MFA."));
+        if (active) setError(cause instanceof Error ? cause.message : "Impossible de vérifier les facteurs MFA.");
       }
     })();
     return () => { active = false; };
-  }, [t]);
+  }, []);
 
   const verifiedCount = factors.filter((factor) => factor.status === "verified").length;
 
