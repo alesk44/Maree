@@ -31,9 +31,10 @@ export function AdminMfaGate({ onVerified }: Props) {
           return;
         }
         const verified = factors.totp.filter((factor) => factor.status === "verified");
-        setVerifiedFactors(verified.map((factor) => ({ id: factor.id, friendly_name: factor.friendly_name })));
-        if (verified.length > 0) {
-          setFactorId(verified[0].id);
+        setVerifiedFactors(verified.map((factor) => ({ id: factor.id, friendly_name: factor.friendly_name ?? null })));
+        const primaryFactor = verified[0];
+        if (primaryFactor) {
+          setFactorId(primaryFactor.id);
           setMode("challenge");
           return;
         }
@@ -167,7 +168,7 @@ export function AdminMfaBackupSetup() {
     if (factorsError) throw factorsError;
     setFactors(data.totp.map((factor) => ({
       id: factor.id,
-      friendly_name: factor.friendly_name,
+      friendly_name: factor.friendly_name ?? null,
       status: factor.status,
     })));
     return data.totp;
@@ -182,7 +183,7 @@ export function AdminMfaBackupSetup() {
         if (active) {
           setFactors(data.totp.map((factor) => ({
             id: factor.id,
-            friendly_name: factor.friendly_name,
+            friendly_name: factor.friendly_name ?? null,
             status: factor.status,
           })));
         }
