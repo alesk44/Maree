@@ -26,3 +26,6 @@ verify_jwt = true
 
 [functions.identify-seafood]
 verify_jwt = true
+
+[functions.identify-fishial]
+verify_jwt = true
