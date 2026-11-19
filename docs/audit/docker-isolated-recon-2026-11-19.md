@@ -75,6 +75,14 @@ The README and historical audit docs still require real two-account restaurant/f
 5. Produce a fresh file-level audit of PRs #3/#5/#12/#13/#15 and the accounting fix branches; preserve separate feature boundaries.
 6. Only after a local evidence pack exists, prepare isolated code corrections and repeat the full checks.
 
-## Hard release prohibitions
+## Authorization update — 2026-11-19
 
-No merge to `main`; no production Supabase SQL, migration push/repair, Auth setting change, secret change, Edge Function deployment, Cloudflare deployment, live-data mutation, or paid API activation without a separate explicit owner approval.
+The repository owner has since explicitly authorized conditional PR merges when the technical review finds a change safe, necessary, and adequately validated. The earlier blanket "no merge to main" line in this report is superseded. This is not a blanket instruction to merge any open PR: each candidate still requires exact-head review, dependency and migration-order checks, current green CI, and a clean mergeability check. PRs #3, #5, #12, #13 and #15 remain Draft in the latest metadata read; no review submissions or inline review threads were returned for #12, #13 or #15.
+
+Fresh connector read on 2026-11-19 confirmed all five workflows completed successfully on the recorded PR heads:
+- PR #13 head `ec6485e23d0aef7c6ace1fc54cc50e54a0a7c139`: Marée CI, Build verification, Verify, Supabase migration tests, Database Contract.
+- PR #15 head `d2ebf267628301a2fc7e7bb9810463012d6116e8`: the same five workflows.
+
+These workflow results are historical runs attached to those exact commits; they do not replace a new local Docker run or prove production readiness. PR #12's latest head still needs a fresh CI check before it can be considered merge-ready.
+
+The following remain prohibited without separate explicit owner approval: production Supabase SQL or migration push/repair; production Auth setting changes; secret changes; Edge Function deployment; Cloudflare production deployment; live-data mutation; and paid API/provider activation. Conditional merge permission does not authorize any of these operations.
