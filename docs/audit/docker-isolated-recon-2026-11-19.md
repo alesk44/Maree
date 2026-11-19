@@ -118,3 +118,21 @@ The fisher payment UI fix is also a candidate, but must be tested together with 
 No PR or feature branch was merged in this session. PR #12 is the strongest narrow merge candidate: eight static PWA files, current four-workflow CI green, no production deployment workflow on push to main (Cloudflare preview deployment is manual), and explicit public/unauthenticated/no-privilege messaging. It remains a draft and is held for local Docker validation and final review.
 
 PR #5 is based on `feature/supabase-shared-data-v2`, not `main`; PR #3 overlaps PR #12 on five files and contains a much larger, divergent app/database change. Neither should be merged as-is.
+
+
+## Deeper review of monthly invoice reconciliation candidate — 2026-11-19
+
+The 14 pgTAP assertions in `monthly_invoice_generator_contract.test.sql` are catalog/definition checks (function existence, SECURITY DEFINER/search_path, grants, and presence of selected SQL fragments). They do **not** execute invoice-generation scenarios. Before this migration can be accepted, add behavioural tests for:
+1. Two consecutive runs produce one header and one line per eligible order, with totals unchanged.
+2. An eligible delivered order added after the first run is incorporated into an open invoice.
+3. A formerly eligible order changed/cancelled before finalization is removed from an open invoice and totals decrease correctly.
+4. A late eligible order against a finalized/paid invoice raises and leaves the finalized invoice untouched.
+5. Two concurrent generator calls do not duplicate headers, lines, or totals.
+6. Month boundaries around Jersey daylight-saving transitions are assigned to the intended billing month.
+7. A single order cannot be attached to more than one fisher statement or more than one Marée commission statement.
+
+One point requires schema-level confirmation before merge: the Marée commission generator uses `ON CONFLICT (invoice_id,order_id)` but, unlike the fisher generator, does not explicitly search for the same order already attached to a *different* commission invoice. Confirm that a database-wide uniqueness constraint on `order_id` already prevents this; if not, add a duplicate-link guard and a pgTAP regression test. The code-search index did not return the table DDL, so this invariant is currently unverified.
+
+The candidate migration also assumes invoice rows with status `open` are mutable and all other statuses are immutable. Verify the actual status enum/check constraint and all transition paths (open → declared/paid/void) against the production billing contract before release.
+
+**Decision:** do not cherry-pick or merge the reconciliation branch yet. Its SQL design is promising, but static pgTAP assertions alone are insufficient evidence for accounting correctness. Local Supabase reset plus behavioural and concurrency tests are required first.
