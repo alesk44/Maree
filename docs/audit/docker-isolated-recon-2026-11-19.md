@@ -83,6 +83,13 @@ Fresh connector read on 2026-11-19 confirmed all five workflows completed succes
 - PR #13 head `ec6485e23d0aef7c6ace1fc54cc50e54a0a7c139`: Marée CI, Build verification, Verify, Supabase migration tests, Database Contract.
 - PR #15 head `d2ebf267628301a2fc7e7bb9810463012d6116e8`: the same five workflows.
 
-These workflow results are historical runs attached to those exact commits; they do not replace a new local Docker run or prove production readiness. PR #12's latest head still needs a fresh CI check before it can be considered merge-ready.
+These workflow results are historical runs attached to those exact commits; they do not replace a new local Docker run or prove production readiness.
+
+Additional current-head CI evidence:
+- PR #12 head `31c86859a6d116ab168aa1c692da43e40331badf`: Database Contract, Build verification, Verify, and Marée CI all completed successfully.
+- PR #5 head `a5c60c6bd7cea4689b5dc2fd388698a29de2fca0`: Verify and Supabase migration tests completed successfully. Important: PR #5 currently targets `feature/supabase-shared-data-v2`, not `main`; do not merge it until its base/dependency chain is deliberately reconciled.
+- PR #3 head `66abf1655e6ad25fadd086f99262af725c85b356`: Verify completed successfully, but it changes 58 files including workflows, migrations and app code, and overlaps PR #12 on five public assistant files. It is not an equivalent or safe substitute for the isolated PR #12.
+
+PR #12 is the narrowest owner-console candidate (8 static PWA files) and its latest four CI workflows are green. Its UI explicitly identifies itself as public and unauthenticated, states that GOD mode grants no privilege, and says the AI engine is not connected. Its service worker only caches same-origin static shell assets. It is a plausible future merge candidate after local Docker checks and final review; it has not been merged.
 
 The following remain prohibited without separate explicit owner approval: production Supabase SQL or migration push/repair; production Auth setting changes; secret changes; Edge Function deployment; Cloudflare production deployment; live-data mutation; and paid API/provider activation. Conditional merge permission does not authorize any of these operations.
