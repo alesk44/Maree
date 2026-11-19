@@ -93,3 +93,28 @@ Additional current-head CI evidence:
 PR #12 is the narrowest owner-console candidate (8 static PWA files) and its latest four CI workflows are green. Its UI explicitly identifies itself as public and unauthenticated, states that GOD mode grants no privilege, and says the AI engine is not connected. Its service worker only caches same-origin static shell assets. It is a plausible future merge candidate after local Docker checks and final review; it has not been merged.
 
 The following remain prohibited without separate explicit owner approval: production Supabase SQL or migration push/repair; production Auth setting changes; secret changes; Edge Function deployment; Cloudflare production deployment; live-data mutation; and paid API/provider activation. Conditional merge permission does not authorize any of these operations.
+
+
+## Accounting and legacy branch reconciliation — 2026-11-19
+
+Read-only branch comparisons against `main` show that the older accounting/fix branches are divergent and must not be merged wholesale:
+
+| Branch | Ahead | Behind | File-level changes vs main | Assessment |
+|---|---:|---:|---:|---|
+| `feature/accounting-ledger-tips` | 24 | 6 | 11 | Diverged accounting implementation with two billing migrations, ledger/tips changes, route/UI changes and workflow edits. Reuse only after per-file review and local regression tests. |
+| `fix/monthly-invoice-generator-reconciliation` | 3 | 5 | 2 | Narrow candidate: one 240-line SQL reconciliation migration and one 39-line pgTAP contract. It rebuilds open invoice item rows, recomputes totals, prevents silently omitting late orders from finalized invoices, and restricts generator execution to service_role/trusted scheduler. Requires local migration replay and concurrency tests before cherry-picking. |
+| `fix/fisher-payment-double-count` | 1 | 5 | 1 | Narrow five-line UI correction. Its stated intent is to avoid counting paid monthly invoices twice because their underlying orders are also marked paid. Must be checked against current accounting semantics and cancellation indemnities. |
+| `feature/fishial-v2-free-poc` | 94 | 0 | 24 | Large branch containing multiple features and later security/seafood changes; not a safe integration source. |
+| `security/traceability-role-guard` | 1 | 5 | 1 | Isolated traceability role-guard migration; review against the current RLS and PR #5 before considering it. |
+| `integration/traceability-main` | 0 | 0 | 0 | Identical to main at comparison time. |
+| `security/owner-auth-hardening` | 133 | 0 | 19 PR files | PR #13's reviewed feature branch; use the PR's actual 19-file diff, not a wholesale branch merge. |
+
+The monthly invoice reconciliation SQL was inspected statically. It is materially more defensive than the older idempotency-only generator: it rebuilds open invoice lines from eligible delivered monthly orders, deletes stale lines only from open invoices, recomputes persisted totals, rejects late eligible orders for finalized statements, and checks for an order already attached to another invoice. This is a promising candidate, not yet validated: no Docker/local PostgreSQL replay or concurrent execution was run in this session.
+
+The fisher payment UI fix is also a candidate, but must be tested together with PR #13's cancellation-indemnity changes to ensure a paid monthly statement is counted once and paid indemnities are not lost or duplicated.
+
+## Merge decision at this checkpoint
+
+No PR or feature branch was merged in this session. PR #12 is the strongest narrow merge candidate: eight static PWA files, current four-workflow CI green, no production deployment workflow on push to main (Cloudflare preview deployment is manual), and explicit public/unauthenticated/no-privilege messaging. It remains a draft and is held for local Docker validation and final review.
+
+PR #5 is based on `feature/supabase-shared-data-v2`, not `main`; PR #3 overlaps PR #12 on five files and contains a much larger, divergent app/database change. Neither should be merged as-is.
