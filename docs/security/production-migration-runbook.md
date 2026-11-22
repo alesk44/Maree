@@ -124,7 +124,7 @@ On the restored local snapshot (or a verified local clone of the production sche
 The current production Edge Function is incompatible with the new two-argument email-token RPC.
 
 - Migration `20261103170000_bind_email_action_to_token` replaces the legacy one-argument RPC.
-- The deployed Edge Function v7 still calls the one-argument RPC using a service-role client.
+- The deployed review Edge Function v8 still calls the one-argument RPC using a service-role client.
 - The reviewed branch Edge Function requires a verified Bearer JWT, checks the user with Auth `getUser`, requires AAL2 and allowlist membership, then calls the two-argument RPC with the user's JWT.
 
 Release sequence after backup and rehearsal:
