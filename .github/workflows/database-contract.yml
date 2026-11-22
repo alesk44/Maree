@@ -1,6 +1,9 @@
 name: Database Contract
 on: [push, pull_request]
 
+permissions:
+  contents: read
+
 concurrency:
   # Share the same lock as supabase-migrations.yml to prevent Docker port collisions.
   group: database-contract-${{ github.event.pull_request.head.ref || github.ref_name }}
