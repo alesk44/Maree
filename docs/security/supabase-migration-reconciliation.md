@@ -66,15 +66,18 @@ Read-only SQL checks confirm the later cancellation, AAL2 and quota objects are 
 
 Production still has the older cancellation and inventory function definitions. The first missing migration also rechecks fisher approval during reservation, and the second binds the email-confirmation action to the stored one-time token.
 
-## Live email-approval path — release-critical
+## Live email-approval and notification paths — release-critical
 
-Current Supabase Edge Function read-back:
-- `review-verification-email-action`: ACTIVE, version 7, `verify_jwt=false`.
-- Deployed source uses wildcard CORS and a service-role client to call the legacy one-argument token RPC.
-- The new repository source requires a Bearer access token, verifies it with Supabase Auth `getUser`, checks the verified subject and AAL2 claim, checks allowlist membership through a user-scoped client, and calls the action-bound two-argument RPC with the user-scoped client.
-- The corresponding migration drops the old one-argument SQL function.
+Read-only production read-back on 2026-11-22:
+- `review-verification-email-action`: ACTIVE v8, `verify_jwt=false`. Deployed code uses wildcard CORS, a service-role client, and the legacy one-argument token RPC.
+- The deployed SQL function remains `public.review_verification_request_by_email_token(text)`; it is executable by `service_role` only. The action-bound two-argument version is not present.
+- The old RPC consumes the one-time token and commits the stored action before the Edge Function compares the returned action with the request body's action. A mismatched action can therefore execute the stored decision and then return an error to the caller. This is an integrity and misleading-result defect in the live path.
+- `notify-verification-request`: ACTIVE v11, `verify_jwt=true`. Its deployed source still uses wildcard CORS, a hard-coded recipient, and a fallback preview URL. It does not enforce the reviewed branch's exact origin/body validation or require explicit `MAREE_ADMIN_EMAIL` and `MAREE_APP_URL` configuration.
+- The reviewed branch has a stricter `notify-verification-request` source that requires `RESEND_API_KEY`, `MAREE_FROM_EMAIL`, `MAREE_ADMIN_EMAIL`, and an exact HTTPS `MAREE_APP_URL`, with no hard-coded recipient or preview-domain fallback.
+- The reviewed branch's `review-verification-email-action` requires a Bearer access token, validates it with Supabase Auth `getUser`, checks the verified subject and AAL2 claim, checks the admin allowlist using a user-scoped client, and calls the action-bound two-argument RPC using the same user JWT. The corresponding config sets `verify_jwt=true`.
+- The production migration ledger remains at 45 migrations, latest `20261103220545_admin_managed_delivery_payer`. Neither the action-binding migration nor the AAL2 migration has been applied.
 
-Do not apply migration 20261103170000 while leaving the old Edge Function live: the deployed function will continue calling the removed one-argument RPC and email approvals will fail. The SQL migration and reviewed Edge Function deployment must be treated as one coordinated release step, with a tested fallback to the authenticated admin review route. Production Edge Function deployment has not been performed.
+Do not apply migration `20261103170000` while leaving the old review Edge Function live: it will continue calling the removed one-argument RPC and email approvals will fail. Treat the SQL migration and reviewed review-function deployment as a coordinated cutover, with a tested fallback to the authenticated admin review route. Deploy and verify the reviewed notification function separately as part of the same release preparation; configure its recipient and frontend origin explicitly. No production Edge Function deployment has been performed.
 
 ## Security Advisor and function review
 
@@ -128,7 +131,8 @@ Read-only production query at this inspection:
 - Allowlisted admin count: 1.
 - Verified TOTP factors for allowlisted admins: 0.
 - Unverified TOTP factors for allowlisted admins: 0.
-- Active sessions for allowlisted admins: 2.
+- Unexpired sessions for allowlisted admins: 0.
+- Current read-only snapshot at 2026-11-22 18:24 UTC also shows 0 active email-action tokens, 4 expired/unconsumed tokens, and leaked-password protection disabled.
 
 The security branch now stages an MFA gate plus a backup-factor management panel:
 - Initial TOTP enrollment and verification.
