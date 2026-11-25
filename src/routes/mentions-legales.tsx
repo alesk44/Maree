@@ -11,6 +11,14 @@ export const Route = createFileRoute("/mentions-legales")({
 
 function LegalPage() {
   const { t } = useLanguage();
+  if (import.meta.env["VITE_MAREE_PREVIEW_MODE"] === "true") return <main className="mx-auto grid max-w-4xl gap-8 px-4 py-10">
+    <header className="grid gap-3">
+      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">Marée Jersey</p>
+      <h1 className="font-display text-4xl font-semibold">{t("Informations légales")}</h1>
+      <p className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm">{t("Les mentions légales complètes seront publiées avec les coordonnées professionnelles validées.")}</p>
+    </header>
+    <Link to="/" className="btn w-fit">{t("Retour à l'accueil")}</Link>
+  </main>;
   return <main className="mx-auto grid max-w-4xl gap-8 px-4 py-10">
     <header className="grid gap-3">
       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">Marée Jersey</p>
@@ -42,7 +50,7 @@ function LegalPage() {
       <h2 className="text-2xl font-semibold">{t("3. Tarifs, livraison et facturation")}</h2>
       <p>{t("Le projet prévoit des frais de livraison de 20 % du sous-total des produits pour les commandes livrées. Ces frais sont destinés à Marée Jersey et ne constituent pas un montant dû au pêcheur. Le retrait par le restaurant est prévu sans frais de livraison.")}</p>
       <p>{t("Le projet prévoit une commission de service de 6,5 % du sous-total des produits, payée par le restaurant à Marée Jersey pour chaque achat, que la commande soit livrée ou retirée. Cette commission n’est pas déduite du montant produits dû au pêcheur.")}</p>
-      <p>{t("Le projet prévoit également une option de relevé mensuel entre un restaurant et chaque pêcheur. Les produits vendus par le pêcheur et les frais de service de la plateforme doivent apparaître séparément. Les factures et relevés affichés dans l'application ne doivent pas être considérés comme des factures fiscales tant que le dispositif de facturation n'a pas été validé.")}</p>
+      <p>{t("Les factures des produits sont échangées directement par e-mail entre le restaurant et le pêcheur ; Marée n’encaisse pas le prix des produits. Après acceptation explicite, le restaurant paie à Marée un abonnement de 19,99 £ par mois civil complet, sans prorata, ainsi que les frais de service et de livraison applicables, regroupés sur un relevé mensuel. La résiliation prend effet à la fin du mois civil en cours. Les relevés affichés dans l'application ne sont pas des factures fiscales.")}</p>
       <p>{t("Aucun paiement en ligne ne doit être considéré comme activé tant qu'un prestataire de paiement et son intégration ne sont pas effectivement mis en service.")}</p>
     </section>
 

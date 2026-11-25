@@ -1,19 +1,21 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import type { Catch, Fisher } from "@/lib/store";
+import { previewMarket, type Catch, type Fisher } from "@/lib/store";
 
 type FisherRow = { id:string; display_name:string; boat_name:string|null; home_port:string|null; fishing_method:string|null; bio:string|null; since_year:number|null };
 type CatchRow = { id:string; fisher_id:string; species:string; zone:string; caught_at:string; landed_at:string; remaining_kg:number|string; price_per_kg:number|string; grade:string|null; method:string; storage_instructions:string; status:"available"|"reserved"|"sold_out" };
 const emoji = (method:string) => ({ Casiers:"🦀", Ligne:"🐟", Plongée:"🐚", "Filet maillant":"🐠" } as Record<string,string>)[method] ?? "🐟";
 
 export type MarketData = { catches:Catch[]; fishers:Fisher[]; loading:boolean; error:string|null; refresh:()=>Promise<void> };
+export const IS_PREVIEW_MODE = import.meta.env["VITE_MAREE_PREVIEW_MODE"] === "true";
 
 export function useSharedMarket():MarketData {
-  const [catches,setCatches]=useState<Catch[]>([]);
-  const [fishers,setFishers]=useState<Fisher[]>([]);
-  const [loading,setLoading]=useState(true);
+  const [catches,setCatches]=useState<Catch[]>(IS_PREVIEW_MODE?previewMarket.catches:[]);
+  const [fishers,setFishers]=useState<Fisher[]>(IS_PREVIEW_MODE?previewMarket.fishers:[]);
+  const [loading,setLoading]=useState(!IS_PREVIEW_MODE);
   const [error,setError]=useState<string|null>(null);
   const refresh=useCallback(async()=>{
+    if(IS_PREVIEW_MODE){setCatches(previewMarket.catches);setFishers(previewMarket.fishers);setError(null);setLoading(false);return;}
     setLoading(true);
     try {
       const [{data:lots,error:lotsError},{data:people,error:peopleError}]=await Promise.all([
@@ -30,6 +32,7 @@ export function useSharedMarket():MarketData {
     finally { setLoading(false); }
   },[]);
   useEffect(()=>{
+    if(IS_PREVIEW_MODE)return;
     void refresh();
     const channel=supabase.channel("maree-public-market")
       .on("postgres_changes",{event:"*",schema:"public",table:"catches"},()=>void refresh())
@@ -65,6 +68,43 @@ export async function reserveSharedCatch(input:{catchId:string;qtyKg:number;slot
   const {data,error}=await supabase.rpc("reserve_catch",{p_catch_id:input.catchId,p_quantity_kg:input.qtyKg,p_requested_slot:input.slot,p_fulfilment:input.mode==="livraison"?"delivery":"collection",p_note:input.note||null,p_tip_amount:input.tipAmount??0});
   if(error) throw error;
   return data as string;
+}
+
+export type PublicCatchTraceability = {
+  species: string;
+  zone: string;
+  caughtAt: string;
+  landedAt: string;
+  quantityKg: number;
+  method: string;
+  grade: string | null;
+  storageInstructions: string;
+  fisher: { name: string | null; boat: string | null; homePort: string | null };
+  timeline: Array<{ event: "catch_published" | "landed" | "weighed" | "external_code_scanned"; occurredAt: string; quantityKg: number | null }>;
+};
+
+export async function getMyCatchTraceabilityToken(catchId: string): Promise<string> {
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError) throw authError;
+  if (!user) throw new Error("Connectez-vous avec votre compte pêcheur.");
+  const { data, error } = await supabase.rpc("get_my_catch_traceability_token", { p_catch_id: catchId });
+  if (error) throw error;
+  if (typeof data !== "string") throw new Error("Impossible de créer le lien de traçabilité.");
+  return data;
+}
+
+export async function revokeMyCatchTraceabilityToken(catchId: string): Promise<void> {
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError) throw authError;
+  if (!user) throw new Error("Connectez-vous avec votre compte pêcheur.");
+  const { error } = await supabase.rpc("revoke_my_catch_traceability_token", { p_catch_id: catchId });
+  if (error) throw error;
+}
+
+export async function fetchPublicCatchTraceability(token: string): Promise<PublicCatchTraceability | null> {
+  const { data, error } = await supabase.rpc("get_public_catch_traceability", { p_token: token });
+  if (error) throw error;
+  return data && typeof data === "object" ? data as PublicCatchTraceability : null;
 }
 
 export type SharedOrderRow = {
@@ -129,7 +169,7 @@ export async function confirmFisherInvoicePaid(invoiceId:string,paymentMethod:st
 export type SharedMareeCommissionInvoiceItemRow = { order_id:string; commission_amount:number|string; delivery_amount:number|string; delivery_fee_payer_snapshot:'buyer'|'fisher'; product_subtotal:number|string; fulfilment:"delivery"|"collection"; delivered_at:string };
 export type SharedMareeCommissionInvoiceRow = {
   id:string; restaurant_id:string; period_start:string; period_end:string; due_date:string;
-  commission_total:number|string; delivery_total:number|string; status:"open"|"declared_paid"|"paid"|"void";
+  commission_total:number|string; delivery_total:number|string; subscription_total:number|string; status:"open"|"declared_paid"|"paid"|"void";
   declared_at:string|null; verified_at:string|null; payment_method:string|null; payment_reference:string|null;
   items?:SharedMareeCommissionInvoiceItemRow[];
 };
@@ -139,7 +179,7 @@ export async function fetchMyMareeCommissionInvoices():Promise<SharedMareeCommis
   if(authError) throw authError;
   if(!user) return [];
   const {data,error}=await supabase.from("maree_monthly_commission_invoices")
-    .select("id,restaurant_id,period_start,period_end,due_date,commission_total,delivery_total,status,declared_at,verified_at,payment_method,payment_reference,items:maree_monthly_commission_invoice_items(order_id,commission_amount,delivery_amount,delivery_fee_payer_snapshot,product_subtotal,fulfilment,delivered_at)")
+    .select("id,restaurant_id,period_start,period_end,due_date,commission_total,delivery_total,subscription_total,status,declared_at,verified_at,payment_method,payment_reference,items:maree_monthly_commission_invoice_items(order_id,commission_amount,delivery_amount,delivery_fee_payer_snapshot,product_subtotal,fulfilment,delivered_at)")
     .order("period_start",{ascending:false});
   if(error) throw new Error("Impossible de charger les relevés Marée : schéma Supabase incomplet ou non synchronisé. "+error.message);
   return (data??[]) as SharedMareeCommissionInvoiceRow[];

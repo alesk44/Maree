@@ -2,6 +2,7 @@ import { useLanguage } from "@/lib/i18n";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSharedMarket } from "@/lib/shared-market";
 import { WeatherSeasonPanel } from "@/components/weather-season-panel";
+import { DemoBadge } from "@/components/ui-bits";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -19,6 +20,7 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const { t, gbp, dt } = useLanguage();
+  const previewMode = import.meta.env["VITE_MAREE_PREVIEW_MODE"] === "true";
   const translateLabel = t;
   const { catches, fishers, loading, error } = useSharedMarket();
   const available = catches.filter((c) => c.status === "disponible" && c.qtyKg > 0).length;
@@ -29,19 +31,34 @@ function Index() {
         <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(ellipse_at_78%_18%,rgba(54,190,185,0.24),transparent_48%)]" />
         <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-background/35 via-transparent to-black/10" />
         <div className="relative mx-auto max-w-6xl px-4 py-24 text-foreground md:py-36">
+          {previewMode && <div className="mb-5"><DemoBadge /></div>}
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sand-foreground">{t("Jersey · Îles Anglo-Normandes")}</p>
           <h1 className="mt-4 max-w-2xl text-4xl font-semibold leading-tight md:text-6xl">{t("La pêche de Jersey, directement à votre cuisine")}</h1>
           <p className="mt-4 max-w-xl text-lg opacity-90">{t("Des prises fraîches et traçables, du bateau au restaurant, sans intermédiaire.")}</p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link to="/catalogue" className="btn btn-accent">{t("Voir la pêche du jour")}</Link>
-            <Link to="/espace-pecheur" className="btn btn-ghost border-foreground/40 text-foreground">{t("Je suis pêcheur")}</Link>
+            {previewMode ? <Link to="/pecheurs" className="btn btn-ghost border-foreground/40 text-foreground">{t("Découvrir les pêcheurs")}</Link> : <Link to="/espace-pecheur" className="btn btn-ghost border-foreground/40 text-foreground">{t("Je suis pêcheur")}</Link>}
           </div>
         </div>
       </section>
       <section className="mx-auto -mt-10 grid max-w-6xl gap-4 px-4 sm:grid-cols-2 relative">
-        <Stat n={loading ? "—" : available} label="lots réellement disponibles" />
-        <Stat n={loading ? "—" : fishers.length} label="pêcheurs vérifiés" />
+        <Stat n={loading ? "—" : available} label={previewMode ? "lots de démonstration disponibles" : "lots réellement disponibles"} />
+        <Stat n={loading ? "—" : fishers.length} label={previewMode ? "profils de pêcheurs de démonstration" : "pêcheurs vérifiés"} />
       </section>
+      {previewMode && <section className="mx-auto mt-14 grid max-w-6xl gap-5 px-4" aria-labelledby="demo-spaces-heading">
+        <div><h2 id="demo-spaces-heading" className="font-display text-2xl font-semibold">{t("Explorer les espaces de démonstration")}</h2><p className="mt-2 text-sm text-muted-foreground">{t("Choisissez un parcours pour voir les écrans. Les comptes, documents et actions restent fictifs.")}</p></div>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {([
+            ["/connexion", "Connexion et création de compte", "Aperçu des formulaires et des adresses e-mail de facturation."],
+            ["/espace-pecheur", "Espace pêcheur", "Lots, commandes, factures produits par e-mail et QR de traçabilité."],
+            ["/restaurant", "Espace restaurant", "Réservations d’exemple, factures et relevé mensuel Marée."],
+            ["/admin", "Administration", "Vérifications, indicateurs et paramètres commerciaux de démonstration."],
+            ["/tracabilite", "QR de traçabilité", "Fiche de lot et code QR scannable de démonstration."],
+          ] as const).map(([to, title, description]) => <Link key={to} to={to} className="card grid content-start gap-2 p-5 transition hover:border-accent">
+            <h3 className="font-semibold text-primary">{t(title)}</h3><p className="text-sm text-muted-foreground">{t(description)}</p><span className="mt-2 text-sm font-semibold underline">{t("Ouvrir le parcours")}</span>
+          </Link>)}
+        </div>
+      </section>}
       {error && <p role="alert" className="mx-auto mt-3 max-w-6xl px-4 text-sm text-destructive">{t("Impossible de charger les données du marché.")}</p>}
       {!loading && available === 0 && <p className="mx-auto mt-3 max-w-6xl px-4 text-sm text-muted-foreground">{t("Aucun lot disponible pour le moment. Revenez consulter la pêche du jour.")}</p>}
       <WeatherSeasonPanel />

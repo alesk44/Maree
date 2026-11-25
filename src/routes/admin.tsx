@@ -15,7 +15,7 @@ export const Route = createFileRoute("/admin")({
 });
 
 type AdminOrder = { id: string; catch_id: string; quantity_kg: number; status: string; created_at: string; product_subtotal:number|string|null; maree_fee:number|string|null; delivery_fee:number|string|null; delivery_fee_payer_snapshot:'buyer'|'fisher'; tip_amount:number|string; fisher_payment_status:"unpaid"|"paid"|"waived" };
-type AdminCommissionInvoice = { id:string; restaurant_id:string; period_start:string; period_end:string; due_date:string; commission_total:number|string; delivery_total:number|string; status:"open"|"declared_paid"|"paid"|"void"; declared_at:string|null; payment_method:string|null; payment_reference:string|null };
+type AdminCommissionInvoice = { id:string; restaurant_id:string; period_start:string; period_end:string; due_date:string; commission_total:number|string; delivery_total:number|string; subscription_total:number|string; status:"open"|"declared_paid"|"paid"|"void"; declared_at:string|null; payment_method:string|null; payment_reference:string|null };
 type VerificationDocument = { id:string; request_id:string; original_filename:string; document_type:string; file_path:string; expires_at:string|null; review_status:string; reviewer_note:string|null; signed_url?:string|null };
 
 type VerificationRequest = {
@@ -47,6 +47,7 @@ function Admin() {
   const [mareeFeePercent,setMareeFeePercent]=useState('6.5');
   const [deliveryFeePercent,setDeliveryFeePercent]=useState('20');
   const [deliveryFeePayer,setDeliveryFeePayer]=useState<'buyer'|'fisher'>('buyer');
+  const [monthlySubscriptionFee,setMonthlySubscriptionFee]=useState('19.99');
   const [commercialError,setCommercialError]=useState<string|null>(null);
   const [savingCommercial,setSavingCommercial]=useState(false);
 
@@ -142,7 +143,7 @@ function Admin() {
       }
       const { data: commissionRows, error: commissionError } = await supabase
         .from("maree_monthly_commission_invoices")
-        .select("id,restaurant_id,period_start,period_end,due_date,commission_total,delivery_total,status,declared_at,payment_method,payment_reference")
+        .select("id,restaurant_id,period_start,period_end,due_date,commission_total,delivery_total,subscription_total,status,declared_at,payment_method,payment_reference")
         .order("period_start", { ascending: false });
       if (!commissionError) setCommissionInvoices((commissionRows ?? []) as AdminCommissionInvoice[]);
       if (commissionError) {
@@ -151,7 +152,7 @@ function Admin() {
       }
       const {data:commercialRows,error:commercialLoadError}=await supabase.rpc('get_maree_commercial_settings');
       if(commercialLoadError){setCommercialError(t('Paramètres commerciaux indisponibles.'));console.warn('Commercial settings could not be loaded',commercialLoadError);}
-      else {const commercial=Array.isArray(commercialRows)?commercialRows[0]:commercialRows;if(commercial){setMareeFeePercent((Number(commercial.maree_fee_rate)*100).toString());setDeliveryFeePercent((Number(commercial.delivery_fee_rate)*100).toString());setDeliveryFeePayer(commercial.delivery_fee_payer==='fisher'?'fisher':'buyer');setCommercialError(null);}}
+      else {const commercial=Array.isArray(commercialRows)?commercialRows[0]:commercialRows;if(commercial){setMareeFeePercent((Number(commercial.maree_fee_rate)*100).toString());setDeliveryFeePercent((Number(commercial.delivery_fee_rate)*100).toString());setDeliveryFeePayer(commercial.delivery_fee_payer==='fisher'?'fisher':'buyer');setMonthlySubscriptionFee(Number(commercial.monthly_subscription_fee).toFixed(2));setCommercialError(null);}}
       if (orderError) {
         console.warn("Admin reporting data could not be fully loaded", { orderError });
       }
@@ -165,11 +166,11 @@ function Admin() {
   useEffect(() => { void loadRequests(); }, [loadRequests]);
 
   const saveCommercialSettings = async () => {
-    const commission=Number(mareeFeePercent),delivery=Number(deliveryFeePercent);
-    if(!Number.isFinite(commission)||commission<0||commission>100||!Number.isFinite(delivery)||delivery<0||delivery>100){toast.error(t('Les taux doivent être compris entre 0 et 100 %.'));return;}
+    const commission=Number(mareeFeePercent),delivery=Number(deliveryFeePercent),subscription=Number(monthlySubscriptionFee);
+    if(!Number.isFinite(commission)||commission<0||commission>100||!Number.isFinite(delivery)||delivery<0||delivery>100||!Number.isFinite(subscription)||subscription<0||subscription>10000){toast.error(t('Vérifiez les taux et le tarif mensuel.'));return;}
     setSavingCommercial(true);
     try {
-      const {error:saveError}=await supabase.rpc('update_maree_commercial_settings',{p_maree_fee_percent:commission,p_delivery_fee_percent:delivery,p_delivery_fee_payer:deliveryFeePayer});
+      const {error:saveError}=await supabase.rpc('update_maree_commercial_settings',{p_maree_fee_percent:commission,p_delivery_fee_percent:delivery,p_delivery_fee_payer:deliveryFeePayer,p_monthly_subscription_fee:subscription});
       if(saveError) throw saveError;
       toast.success(t('Paramètres commerciaux enregistrés. Les nouvelles commandes utiliseront ces valeurs.'));
       setCommercialError(null);
@@ -218,11 +219,12 @@ function Admin() {
       </header>
 
       {isAdmin && !loading && <section className="card grid gap-4 p-5">
-        <div><h2 className="font-display text-2xl font-semibold">{t('Paramètres commerciaux')}</h2><p className="text-sm text-muted-foreground">{t('Ces réglages s’appliquent uniquement aux nouvelles réservations. Les commandes existantes conservent leurs taux et leur payeur d’origine.')}</p></div>
+        <div><h2 className="font-display text-2xl font-semibold">{t('Paramètres commerciaux')}</h2><p className="text-sm text-muted-foreground">{t('Les taux s’appliquent aux nouvelles réservations et le tarif abonnement aux nouvelles souscriptions. Chaque commande et chaque abonnement conservent les conditions acceptées à leur création.')}</p></div>
         {commercialError&&<p role="alert" className="text-sm text-destructive">{commercialError}</p>}
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="grid gap-1 text-sm font-medium">{t('Commission Marée (%)')}<input className="field" type="number" min="0" max="100" step="0.01" value={mareeFeePercent} onChange={e=>setMareeFeePercent(e.target.value)}/></label>
           <label className="grid gap-1 text-sm font-medium">{t('Frais de livraison (%)')}<input className="field" type="number" min="0" max="100" step="0.01" value={deliveryFeePercent} onChange={e=>setDeliveryFeePercent(e.target.value)}/></label>
+          <label className="grid gap-1 text-sm font-medium">{t('Abonnement restaurant (£ / mois)')}<input className="field" type="number" min="0" max="10000" step="0.01" value={monthlySubscriptionFee} onChange={e=>setMonthlySubscriptionFee(e.target.value)}/></label>
           <label className="grid gap-1 text-sm font-medium sm:col-span-2">{t('Qui paie les frais de livraison ?')}<select className="field" value={deliveryFeePayer} onChange={e=>setDeliveryFeePayer(e.target.value as 'buyer'|'fisher')}><option value="buyer">{t('Acheteur / restaurant')}</option><option value="fisher">{t('Pêcheur — déduit de son règlement')}</option></select></label>
         </div>
         <p className="text-xs text-muted-foreground">{t('Si le pêcheur paie, les frais sont retenus sur son montant à recevoir et ne sont pas ajoutés au relevé Marée du restaurant. Le choix est figé sur chaque commande.')}</p>
@@ -238,8 +240,10 @@ function Admin() {
         const mareeDeliveryBuyer = deliveredOrders.reduce((sum, order) => sum + (order.delivery_fee_payer_snapshot==='buyer'?Number(order.delivery_fee ?? 0):0), 0);
         const mareeDeliveryFisher = deliveredOrders.reduce((sum, order) => sum + (order.delivery_fee_payer_snapshot==='fisher'?Number(order.delivery_fee ?? 0):0), 0);
         const mareeDelivery = mareeDeliveryBuyer + mareeDeliveryFisher;
-        const mareePaid = commissionInvoices.filter(invoice=>invoice.status==="paid").reduce((sum,invoice)=>sum+Number(invoice.commission_total)+Number(invoice.delivery_total),0);
-        const mareeOutstanding = Math.max(0,mareeCommission+mareeDeliveryBuyer-mareePaid);
+        const mareePaid = commissionInvoices.filter(invoice=>invoice.status==="paid").reduce((sum,invoice)=>sum+Number(invoice.commission_total)+Number(invoice.delivery_total)+Number(invoice.subscription_total??0),0);
+        const mareePaidOrderFees = commissionInvoices.filter(invoice=>invoice.status==="paid").reduce((sum,invoice)=>sum+Number(invoice.commission_total)+Number(invoice.delivery_total),0);
+        const mareeUnpaidSubscriptions = commissionInvoices.filter(invoice=>invoice.status==="open"||invoice.status==="declared_paid").reduce((sum,invoice)=>sum+Number(invoice.subscription_total??0),0);
+        const mareeOutstanding = Math.max(0,mareeCommission+mareeDeliveryBuyer-mareePaidOrderFees)+mareeUnpaidSubscriptions;
         const fmt = (value: number) => new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(value);
         return <section className="grid gap-4">
           <div><h2 className="font-display text-2xl font-semibold">{t("Vue d’ensemble de la plateforme")}</h2><p className="text-sm text-muted-foreground">{t("Montants calculés à partir des snapshots de commande ; aucun encaissement réel n’est activé.")}</p></div>
@@ -262,11 +266,11 @@ function Admin() {
         </section>;
       })()}
       {isAdmin && !loading && <section className="card grid gap-3 p-5">
-        <div><h2 className="font-display text-2xl font-semibold">{t("Commissions Marée à vérifier")}</h2><p className="text-sm text-muted-foreground">{t("Les restaurants déclarent leurs règlements hors plateforme. Seule cette validation administrative marque le relevé comme payé.")}</p></div>
+        <div><h2 className="font-display text-2xl font-semibold">{t("Relevés Marée à vérifier")}</h2><p className="text-sm text-muted-foreground">{t("Les restaurants déclarent leurs règlements hors plateforme. Seule cette validation administrative marque le relevé comme payé.")}</p></div>
         {commissionInvoices.length===0 ? <p className="text-sm text-muted-foreground">{t("Aucun relevé mensuel de commission généré.")}</p> :
           <ul className="grid gap-2">{commissionInvoices.map((invoice)=><li key={invoice.id} className="rounded-xl border border-border p-4">
-            <div className="flex flex-wrap justify-between gap-2"><strong>{t("Restaurant")} · {invoice.restaurant_id.slice(0,8).toUpperCase()} · {invoice.period_start} — {invoice.period_end}</strong><strong>{new Intl.NumberFormat("en-GB",{style:"currency",currency:"GBP"}).format(Number(invoice.commission_total)+Number(invoice.delivery_total))}</strong></div>
-            <p className="text-xs text-muted-foreground">{t("Commission Marée")} : {new Intl.NumberFormat("en-GB",{style:"currency",currency:"GBP"}).format(Number(invoice.commission_total))} · {t("Livraison facturée au restaurant")} : {new Intl.NumberFormat("en-GB",{style:"currency",currency:"GBP"}).format(Number(invoice.delivery_total))}</p>
+            <div className="flex flex-wrap justify-between gap-2"><strong>{t("Restaurant")} · {invoice.restaurant_id.slice(0,8).toUpperCase()} · {invoice.period_start} — {invoice.period_end}</strong><strong>{new Intl.NumberFormat("en-GB",{style:"currency",currency:"GBP"}).format(Number(invoice.commission_total)+Number(invoice.delivery_total)+Number(invoice.subscription_total??0))}</strong></div>
+            <p className="text-xs text-muted-foreground">{t("Abonnement Marée")} : {new Intl.NumberFormat("en-GB",{style:"currency",currency:"GBP"}).format(Number(invoice.subscription_total??0))} · {t("Frais des commandes Marée")} : {new Intl.NumberFormat("en-GB",{style:"currency",currency:"GBP"}).format(Number(invoice.commission_total))} · {t("Livraison facturée au restaurant")} : {new Intl.NumberFormat("en-GB",{style:"currency",currency:"GBP"}).format(Number(invoice.delivery_total))}</p>
             <p className="text-sm text-muted-foreground">{t("Échéance")} : {invoice.due_date} · {invoice.status==="paid"?t("Vérifié / payé"):invoice.status==="declared_paid"?t("Déclaré — à vérifier"):invoice.status==="void"?t("Annulé"):t("Ouvert — non déclaré")}</p>
             {invoice.payment_method&&<p className="text-xs text-muted-foreground">{invoice.payment_method} {invoice.payment_reference?("· "+invoice.payment_reference):""}</p>}
             {invoice.status==="declared_paid"&&<button type="button" className="btn btn-accent mt-3" disabled={busyId!==null} onClick={()=>void verifyCommissionPayment(invoice.id)}>{t("Vérifier le paiement reçu")}</button>}

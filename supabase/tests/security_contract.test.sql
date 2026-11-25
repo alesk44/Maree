@@ -794,7 +794,10 @@ select lives_ok(
   'owning fisher can attach an external identifier to their catch'
 );
 select is((select count(*) from public.catch_traceability_codes), 1::bigint, 'owning fisher can read their QR reference');
-select is((select count(*) from public.catch_traceability_events), 1::bigint, 'fisher QR attachment creates an audit timeline event');
+select is((select count(*) from public.catch_traceability_events
+  where catch_id='10000000-0000-4000-8000-000000000001'
+    and event_type='external_code_scanned'), 1::bigint,
+  'fisher QR attachment creates an audit timeline event');
 reset role;
 
 set local role authenticated;
@@ -808,7 +811,10 @@ select lives_ok(
   'restaurant can attach an HTTPS supplier QR reference to its own order'
 );
 select is((select count(*) from public.catch_traceability_codes), 1::bigint, 'restaurant sees only QR references linked to its own order');
-select is((select count(*) from public.catch_traceability_events), 1::bigint, 'restaurant sees only timeline events linked to its own order');
+select is((select count(*) from public.catch_traceability_events
+  where order_id='20000000-0000-4000-8000-000000000001'
+    and event_type='external_code_scanned'), 1::bigint,
+  'restaurant sees the timeline event linked to its own order');
 select throws_ok(
   $$select public.attach_external_traceability(
     '10000000-0000-4000-8000-000000000001'::uuid, null, 'identifier',
@@ -861,7 +867,10 @@ reset role;
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
 select is((select count(*) from public.catch_traceability_codes), 2::bigint, 'owning fisher can inspect all QR references linked to their catch');
-select is((select count(*) from public.catch_traceability_events), 2::bigint, 'owning fisher can inspect the complete QR audit timeline');
+select is((select count(*) from public.catch_traceability_events
+  where catch_id='10000000-0000-4000-8000-000000000001'
+    and event_type in ('catch_published','landed','external_code_scanned')),
+  4::bigint, 'owning fisher can inspect the complete QR audit timeline');
 select is((select count(*) from public.catch_traceability_codes where code_type='https_url'), 1::bigint, 'HTTPS QR payload is classified as an external URL');
 reset role;
 

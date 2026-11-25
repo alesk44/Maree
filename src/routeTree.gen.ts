@@ -26,6 +26,7 @@ import { Route as ApiMarineRouteImport } from './routes/api.marine'
 import { Route as ApiWeatherRouteImport } from './routes/api.weather'
 import { Route as PecheursIndexRouteImport } from './routes/pecheurs.index'
 import { Route as PecheursIdRouteImport } from './routes/pecheurs.$id'
+import { Route as TracabiliteTokenRouteImport } from './routes/tracabilite.$token'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -112,6 +113,11 @@ const PecheursIdRoute = PecheursIdRouteImport.update({
   path: '/pecheurs/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TracabiliteTokenRoute = TracabiliteTokenRouteImport.update({
+  id: '/$token',
+  path: '/$token',
+  getParentRoute: () => TracabiliteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -124,12 +130,13 @@ export interface FileRoutesByFullPath {
   '/mentions-legales': typeof MentionsLegalesRoute
   '/recettes': typeof RecettesRoute
   '/restaurant': typeof RestaurantRoute
-  '/tracabilite': typeof TracabiliteRoute
+  '/tracabilite': typeof TracabiliteRouteWithChildren
   '/verification': typeof VerificationRoute
   '/admin/email-review': typeof AdminEmailReviewRoute
   '/api/marine': typeof ApiMarineRoute
   '/api/weather': typeof ApiWeatherRoute
   '/pecheurs/$id': typeof PecheursIdRoute
+  '/tracabilite/$token': typeof TracabiliteTokenRoute
   '/pecheurs/': typeof PecheursIndexRoute
 }
 export interface FileRoutesByTo {
@@ -143,12 +150,13 @@ export interface FileRoutesByTo {
   '/mentions-legales': typeof MentionsLegalesRoute
   '/recettes': typeof RecettesRoute
   '/restaurant': typeof RestaurantRoute
-  '/tracabilite': typeof TracabiliteRoute
+  '/tracabilite': typeof TracabiliteRouteWithChildren
   '/verification': typeof VerificationRoute
   '/admin/email-review': typeof AdminEmailReviewRoute
   '/api/marine': typeof ApiMarineRoute
   '/api/weather': typeof ApiWeatherRoute
   '/pecheurs/$id': typeof PecheursIdRoute
+  '/tracabilite/$token': typeof TracabiliteTokenRoute
   '/pecheurs': typeof PecheursIndexRoute
 }
 export interface FileRoutesById {
@@ -163,12 +171,13 @@ export interface FileRoutesById {
   '/mentions-legales': typeof MentionsLegalesRoute
   '/recettes': typeof RecettesRoute
   '/restaurant': typeof RestaurantRoute
-  '/tracabilite': typeof TracabiliteRoute
+  '/tracabilite': typeof TracabiliteRouteWithChildren
   '/verification': typeof VerificationRoute
   '/admin_/email-review': typeof AdminEmailReviewRoute
   '/api/marine': typeof ApiMarineRoute
   '/api/weather': typeof ApiWeatherRoute
   '/pecheurs/$id': typeof PecheursIdRoute
+  '/tracabilite/$token': typeof TracabiliteTokenRoute
   '/pecheurs/': typeof PecheursIndexRoute
 }
 export interface FileRouteTypes {
@@ -190,6 +199,7 @@ export interface FileRouteTypes {
     | '/api/marine'
     | '/api/weather'
     | '/pecheurs/$id'
+    | '/tracabilite/$token'
     | '/pecheurs/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -209,6 +219,7 @@ export interface FileRouteTypes {
     | '/api/marine'
     | '/api/weather'
     | '/pecheurs/$id'
+    | '/tracabilite/$token'
     | '/pecheurs'
   id:
     | '__root__'
@@ -228,6 +239,7 @@ export interface FileRouteTypes {
     | '/api/marine'
     | '/api/weather'
     | '/pecheurs/$id'
+    | '/tracabilite/$token'
     | '/pecheurs/'
   fileRoutesById: FileRoutesById
 }
@@ -242,7 +254,7 @@ export interface RootRouteChildren {
   MentionsLegalesRoute: typeof MentionsLegalesRoute
   RecettesRoute: typeof RecettesRoute
   RestaurantRoute: typeof RestaurantRoute
-  TracabiliteRoute: typeof TracabiliteRoute
+  TracabiliteRoute: typeof TracabiliteRouteWithChildren
   VerificationRoute: typeof VerificationRoute
   AdminEmailReviewRoute: typeof AdminEmailReviewRoute
   ApiMarineRoute: typeof ApiMarineRoute
@@ -372,8 +384,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PecheursIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tracabilite/$token': {
+      id: '/tracabilite/$token'
+      path: '/$token'
+      fullPath: '/tracabilite/$token'
+      preLoaderRoute: typeof TracabiliteTokenRouteImport
+      parentRoute: typeof TracabiliteRoute
+    }
   }
 }
+
+interface TracabiliteRouteChildren {
+  TracabiliteTokenRoute: typeof TracabiliteTokenRoute
+}
+
+const TracabiliteRouteChildren: TracabiliteRouteChildren = {
+  TracabiliteTokenRoute: TracabiliteTokenRoute,
+}
+
+const TracabiliteRouteWithChildren = TracabiliteRoute._addFileChildren(
+  TracabiliteRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -386,7 +417,7 @@ const rootRouteChildren: RootRouteChildren = {
   MentionsLegalesRoute: MentionsLegalesRoute,
   RecettesRoute: RecettesRoute,
   RestaurantRoute: RestaurantRoute,
-  TracabiliteRoute: TracabiliteRoute,
+  TracabiliteRoute: TracabiliteRouteWithChildren,
   VerificationRoute: VerificationRoute,
   AdminEmailReviewRoute: AdminEmailReviewRoute,
   ApiMarineRoute: ApiMarineRoute,

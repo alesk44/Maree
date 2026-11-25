@@ -20,3 +20,6 @@ jwt_expiry = 3600
 
 [storage]
 enabled = true
+
+[analytics]
+enabled = false
