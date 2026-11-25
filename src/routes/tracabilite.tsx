@@ -15,6 +15,12 @@ export const Route = createFileRoute("/tracabilite")({
 });
 
 type ScanResult = { raw: string; kind: "url" | "gs1" | "identifier" };
+type SeafoodCandidate = {
+  common_name_fr: string; common_name_en: string; scientific_name: string;
+  group: "fish" | "crustacean" | "mollusc" | "other" | "unknown";
+  confidence: "high" | "medium" | "low"; visual_reason: string;
+};
+type SeafoodRecognition = { is_seafood: boolean; candidates: SeafoodCandidate[]; image_notes: string; requires_human_confirmation: true; stored: false };
 type Detector = { detect: (source: ImageBitmapSource) => Promise<Array<{ rawValue?: string }>> };
 type DetectorWindow = typeof window & { BarcodeDetector?: new (options?: { formats?: string[] }) => Detector };
 
@@ -60,6 +66,10 @@ function TraceabilityScanner() {
     privacy: fr ? "La caméra fonctionne sur votre appareil. Marée n'enregistre pas de vidéo. Aucun site tiers n'est ouvert automatiquement." : ro ? "Camera funcționează pe dispozitiv. Marée nu înregistrează video. Site-urile externe nu se deschid automat." : "Camera runs on your device. Marée does not record video. External websites are never opened automatically.",
     association: fr ? "Association au lot Marée : étape suivante" : ro ? "Asociere la lotul Marée: pasul următor" : "Link to a Marée batch: next step",
     unsupported: fr ? "Ce navigateur ne prend pas en charge la lecture QR par caméra. Utilisez une photo ou collez le contenu." : ro ? "Browserul nu acceptă scanarea QR cu camera. Folosiți o fotografie sau lipiți conținutul." : "This browser does not support camera QR scanning. Use a photo or paste the code.",
+    identifyPhoto: fr ? "Identifier une espèce depuis une photo" : ro ? "Identificați specia din fotografie" : "Identify a species from a photo",
+    identifying: fr ? "Analyse de l'image…" : ro ? "Imaginea este analizată…" : "Analysing image…",
+    privacyAi: fr ? "La photo est envoyée temporairement au service d'identification IA pour analyse et n'est pas enregistrée par Marée." : ro ? "Fotografia este trimisă temporar serviciului IA pentru analiză și nu este salvată de Marée." : "The photo is sent temporarily to the AI identification service for analysis and is not stored by Marée.",
+
   };
   const [input, setInput] = useState("");
   const [result, setResult] = useState<ScanResult | null>(null);
@@ -78,6 +88,10 @@ function TraceabilityScanner() {
   const [saving, setSaving] = useState(false);
   const [traceError, setTraceError] = useState("");
   const [traceNotice, setTraceNotice] = useState("");
+  const [recognition, setRecognition] = useState<SeafoodRecognition | null>(null);
+  const [recognitionBusy, setRecognitionBusy] = useState(false);
+  const [recognitionError, setRecognitionError] = useState("");
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<number | null>(null);
@@ -177,6 +191,51 @@ function TraceabilityScanner() {
       setError(fr ? "Impossible de lire cette image." : ro ? "Imaginea nu poate fi citită." : "Could not read this image.");
     }
   };
+
+  const identifySeafoodPhoto = async (file?: File) => {
+    if (!file) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setRecognitionError(fr ? "Utilisez une photo JPG, PNG ou WEBP." : ro ? "Folosiți o fotografie JPG, PNG sau WEBP." : "Use a JPG, PNG or WEBP photo.");
+      return;
+    }
+    setRecognitionBusy(true);
+    setRecognitionError("");
+    setRecognition(null);
+    try {
+      const bitmap = await createImageBitmap(file);
+      const scale = Math.min(1, 1280 / Math.max(bitmap.width, bitmap.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+      canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+      const context = canvas.getContext("2d");
+      if (!context) throw new Error("Image processing is unavailable.");
+      context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      bitmap.close();
+      const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((value) => value ? resolve(value) : reject(new Error("Image conversion failed.")), "image/jpeg", 0.82));
+      if (blob.size > 4 * 1024 * 1024) throw new Error(fr ? "La photo reste trop volumineuse. Choisissez une image plus légère." : ro ? "Fotografia este prea mare. Alegeți o imagine mai mică." : "The photo is still too large. Choose a smaller image.");
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+      let binary = "";
+      for (let offset = 0; offset < bytes.length; offset += 0x8000) {
+        binary += String.fromCharCode(...bytes.subarray(offset, Math.min(offset + 0x8000, bytes.length)));
+      }
+      const imageBase64 = btoa(binary);
+      const { data, error: invokeError } = await supabase.functions.invoke("identify-seafood", {
+        body: { imageBase64, mimeType: "image/jpeg" },
+      });
+      if (invokeError) throw invokeError;
+      if (!data || typeof data.is_seafood !== "boolean" || !Array.isArray(data.candidates)) {
+        throw new Error(fr ? "Réponse de reconnaissance invalide." : ro ? "Răspuns de identificare invalid." : "Invalid recognition response.");
+      }
+      setRecognition(data as SeafoodRecognition);
+      if (!data.is_seafood || data.candidates.length === 0) {
+        setRecognitionError(fr ? "Aucune espèce de produit de la mer n'a pu être identifiée avec suffisamment d'indices." : ro ? "Nu a putut fi identificată o specie de produs marin." : "No seafood species could be identified with enough visual evidence.");
+      }
+    } catch (cause) {
+      setRecognitionError(cause instanceof Error ? cause.message : (fr ? "L'identification a échoué." : ro ? "Identificarea a eșuat." : "Identification failed."));
+    } finally {
+      setRecognitionBusy(false);
+    }
+  };
   let externalUrl: string | null = null;
   if (result && /^https:\/\//i.test(result.raw)) {
     try { externalUrl = safeExternalUrl(result.raw); } catch { /* Display as untrusted text only. */ }
@@ -226,6 +285,29 @@ function TraceabilityScanner() {
         <button type="button" className="btn btn-accent" onClick={() => void startCamera()} disabled={scanning}>{words.camera}</button>
         {scanning && <button type="button" className="btn" onClick={stopCamera}>{words.stop}</button>}
         <label className="btn cursor-pointer">{words.upload}<input className="sr-only" type="file" accept="image/*" capture="environment" onChange={(e) => void readPhoto(e.target.files?.[0])} /></label>
+      </div>
+      <div className="grid gap-2 rounded-xl border border-border p-4">
+        <label className="text-sm font-semibold" htmlFor="seafood-photo">{words.identifyPhoto}</label>
+        <input id="seafood-photo" className="block w-full text-sm" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onChange={(event) => void identifySeafoodPhoto(event.target.files?.[0])} disabled={recognitionBusy} />
+        {recognitionBusy && <p role="status" className="text-sm text-muted-foreground">{words.identifying}</p>}
+        {recognitionError && <p role="alert" className="text-sm text-destructive">{recognitionError}</p>}
+        {recognition?.is_seafood && recognition.candidates.length > 0 && (
+          <div className="grid gap-2" aria-live="polite">
+            <p className="text-sm font-semibold">{fr ? "Espèces possibles — confirmation obligatoire" : ro ? "Specii posibile — confirmare obligatorie" : "Possible species — confirmation required"}</p>
+            {recognition.candidates.map((candidate, index) => (
+              <div key={candidate.scientific_name + index} className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-secondary p-3">
+                <div className="min-w-0">
+                  <p className="font-semibold">{fr ? candidate.common_name_fr : candidate.common_name_en} <span className="text-xs font-normal text-muted-foreground">({candidate.confidence})</span></p>
+                  <p className="text-xs italic text-muted-foreground">{candidate.scientific_name}</p>
+                  <p className="text-xs text-muted-foreground">{candidate.visual_reason}</p>
+                </div>
+                <button type="button" className="btn btn-accent" onClick={() => setSpecies(candidate.common_name_fr)}>{fr ? "Utiliser cette espèce" : ro ? "Folosiți această specie" : "Use this species"}</button>
+              </div>
+            ))}
+            <p className="text-xs text-amber-700 dark:text-amber-400">{fr ? "Identification visuelle indicative uniquement : vérifiez l'espèce avant de l'enregistrer." : ro ? "Identificare vizuală orientativă: verificați specia înainte de salvare." : "Visual identification is advisory only: verify the species before saving."}</p>
+          </div>
+        )}
+        <p className="text-xs text-muted-foreground">{words.privacyAi}</p>
       </div>
       <video ref={videoRef} className={scanning ? "w-full rounded-xl bg-black" : "hidden"} playsInline muted aria-label={words.camera} />
       {cameraError && <p role="status" className="rounded-lg bg-secondary p-3 text-sm">{cameraError}</p>}
