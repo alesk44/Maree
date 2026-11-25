@@ -114,7 +114,7 @@ function FisherPreview() {
         <Info label={t("Frais Marée — exemple")} value={gbp(5.07)}/>
         <Info label={t("Abonnement restaurant — exemple")} value={gbp(19.99) + t(" / mois")}/>
         <p className="text-sm text-muted-foreground">{t("Les règlements sont suivis hors plateforme. Aucun prélèvement ni paiement en ligne n’est actif.")}</p>
-        <Link to="/tracabilite/demo-bar-001" className="btn w-fit">{t("Voir le QR de traçabilité")}</Link>
+        <Link to="/tracabilite/$token" params={{ token: "demo-bar-001" }} className="btn w-fit">{t("Voir le QR de traçabilité")}</Link>
       </section>
     </div>
   </PreviewPage>;
@@ -165,9 +165,9 @@ function TraceabilityPreview() {
       </section>
       <section className="card grid justify-items-center gap-3 p-5 text-center">
         <h2 className="text-xl font-semibold">{t("Scanner le QR")}</h2>
-        {url ? <QRCodeSVG value={url} size={220} level="M" marginSize={4} title={t("QR de traçabilité du lot de démonstration")}/> : <div className="h-[220px] w-[220px] animate-pulse rounded-xl bg-secondary" aria-label={t("Préparation du QR")}/>} 
+        {url ? <QRCodeSVG value={url} size={220} level="M" marginSize={4} title={t("QR de traçabilité du lot de démonstration")}/> : <div className="h-[220px] w-[220px] animate-pulse rounded-xl bg-secondary" aria-label={t("Préparation du QR")}/>}
         <p className="max-w-sm break-all text-xs text-muted-foreground">{url}</p>
-        <Link to="/tracabilite/demo-bar-001" className="text-sm font-semibold underline">{t("Ouvrir la fiche de lot")}</Link>
+        <Link to="/tracabilite/$token" params={{ token: "demo-bar-001" }} className="text-sm font-semibold underline">{t("Ouvrir la fiche de lot")}</Link>
       </section>
     </div>
   </PreviewPage>;
