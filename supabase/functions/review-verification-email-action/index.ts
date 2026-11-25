@@ -44,6 +44,20 @@ const hashToken = async (token: string) => {
   return Array.from(digest, (b) => b.toString(16).padStart(2, "0")).join("");
 };
 
+const decodeJwtPayload = (jwt: string): Record<string, unknown> => {
+  const segment = jwt.split(".")[1];
+  if (!segment) throw new Error("Invalid access token");
+  const base64 = segment.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+  const binary = atob(padded);
+  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  const payload: unknown = JSON.parse(new TextDecoder().decode(bytes));
+  if (typeof payload !== "object" || payload === null || Array.isArray(payload)) {
+    throw new Error("Invalid access token claims");
+  }
+  return payload as Record<string, unknown>;
+};
+
 Deno.serve(async (req: Request) => {
   const { allowed, headers } = corsHeaders(req);
   if (!allowed) return json(req, { error: "Origin not allowed" }, 403);
@@ -73,10 +87,46 @@ Deno.serve(async (req: Request) => {
   }
   const payload = body as { token: string; action: "approved" | "rejected" };
 
+  const authorization = req.headers.get("Authorization") ?? "";
+  const bearer = /^Bearer\s+([^\s]+)$/i.exec(authorization);
+  if (!bearer) {
+    return json(req, { error: "Sign in with the administrator account and complete MFA before confirming." }, 401);
+  }
+
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const admin = createClient(supabaseUrl, serviceKey);
-  const { data, error } = await admin.rpc("review_verification_request_by_email_token", {
+  const accessToken = bearer[1];
+
+  // Verify the token cryptographically before trusting its AAL claim.
+  const admin = createClient(supabaseUrl, serviceKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data: userData, error: userError } = await admin.auth.getUser(accessToken);
+  if (userError || !userData.user) {
+    return json(req, { error: "Administrator session is invalid or expired. Please sign in again." }, 401);
+  }
+
+  let claims: Record<string, unknown>;
+  try {
+    claims = decodeJwtPayload(accessToken);
+  } catch {
+    return json(req, { error: "Administrator session is invalid. Please sign in again." }, 401);
+  }
+  if (claims.sub !== userData.user.id || claims.aal !== "aal2") {
+    return json(req, { error: "A verified MFA session is required before confirming this decision." }, 403);
+  }
+
+  const userClient = createClient(supabaseUrl, anonKey, {
+    global: { headers: { Authorization: `Bearer ${accessToken}` } },
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data: isAdmin, error: adminCheckError } = await userClient.rpc("is_current_user_admin");
+  if (adminCheckError || isAdmin !== true) {
+    return json(req, { error: "Administrator access required." }, 403);
+  }
+
+  const { data, error } = await userClient.rpc("review_verification_request_by_email_token", {
     p_token_hash: await hashToken(payload.token),
     p_expected_action: payload.action,
   });

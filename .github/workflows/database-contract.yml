@@ -14,6 +14,6 @@ jobs:
       - uses: supabase/setup-cli@v1
         with:
           version: 3.0.0
-      - run: supabase start -x studio,edge-runtime,logflare,vector,imgproxy
+      - run: supabase start -x studio,edge-runtime,logflare,vector,imgproxy,inbucket
       - run: supabase db reset --local
       - run: supabase test db --local

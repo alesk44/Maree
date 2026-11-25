@@ -76,12 +76,13 @@ function Restaurant() {
   const openMonthlyOrderIds = new Set(monthlyUnpaid.flatMap(i=>i.items?.map(item=>item.order_id)??[]));
   const monthlyUnbilled = deliveredOrders.filter(o=>o.billing_mode==="monthly"&&o.fisher_payment_status==="unpaid"&&!openMonthlyOrderIds.has(o.id));
   const fisherDebt = immediateUnpaid.reduce((sum,o)=>sum+Number(o.product_subtotal??0)+Number(o.tip_amount??0)-(o.delivery_fee_payer_snapshot==='fisher'?Number(o.delivery_fee??0):0),0)
-    + monthlyUnpaid.reduce((sum,i)=>sum+Number(i.subtotal)+Number(i.tip_total??0)-Number(i.delivery_deduction_total??0),0)
+    + monthlyUnpaid.reduce((sum,i)=>sum+Number(i.subtotal)+Number(i.tip_total??0)-Number(i.delivery_deduction_total??0)+Number(i.cancellation_indemnity_total??0),0)
     + monthlyUnbilled.reduce((sum,o)=>sum+Number(o.product_subtotal??0)+Number(o.tip_amount??0)-(o.delivery_fee_payer_snapshot==='fisher'?Number(o.delivery_fee??0):0),0);
   const fisherTipDebt = immediateUnpaid.reduce((sum,o)=>sum+Number(o.tip_amount??0),0)
     + monthlyUnpaid.reduce((sum,i)=>sum+Number(i.tip_total??0),0)
     + monthlyUnbilled.reduce((sum,o)=>sum+Number(o.tip_amount??0),0);
-  const fisherPaid = deliveredOrders.filter(o=>o.fisher_payment_status==="paid").reduce((sum,o)=>sum+Number(o.product_subtotal??0)+Number(o.tip_amount??0)-(o.delivery_fee_payer_snapshot==='fisher'?Number(o.delivery_fee??0):0),0);
+  const fisherPaid = deliveredOrders.filter(o=>o.fisher_payment_status==="paid").reduce((sum,o)=>sum+Number(o.product_subtotal??0)+Number(o.tip_amount??0)-(o.delivery_fee_payer_snapshot==='fisher'?Number(o.delivery_fee??0):0),0)
+    + monthlyInvoices.filter(i=>i.status==="paid").reduce((sum,i)=>sum+(i.cancellation_indemnities??[]).filter(item=>item.status==="paid").reduce((lineTotal,item)=>lineTotal+Number(item.amount),0),0);
   const mareeAccrued = deliveredOrders.reduce((sum,o)=>sum+Number(o.maree_fee??0)+(o.delivery_fee_payer_snapshot==='buyer'?Number(o.delivery_fee??0):0),0);
   const mareeSettled = mareeInvoices.filter(i=>i.status==="paid").reduce((sum,i)=>sum+Number(i.commission_total)+Number(i.delivery_total),0);
   const mareeOutstanding = Math.max(0,mareeAccrued-mareeSettled);
@@ -151,7 +152,7 @@ function Restaurant() {
       <div><h2 className="text-xl font-semibold">{t("Facturation et relevés")}</h2><p className="text-sm text-muted-foreground">{t("Historique des commandes livrées. Les montants reprennent les prix et frais figés à la réservation ; aucun paiement n'est encaissé dans cette version.")}</p></div>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         <Metric label={t("Commandes livrées")} value={deliveredOrders.length} detail={t("Historique")}/>
-        <Metric label={t("Dette pêcheurs")} value={gbp(fisherDebt)} detail={t("Produits et pourboires non réglés")}/>
+        <Metric label={t("Dette pêcheurs")} value={gbp(fisherDebt)} detail={t("Produits, pourboires et indemnités non réglés")}/>
         <Metric label={t("Pourboires à reverser")} value={gbp(fisherTipDebt)} detail={t("100 % destinés aux pêcheurs")}/>
         <Metric label={t("Paiements pêcheurs confirmés")} value={gbp(fisherPaid)} detail={t("Règlements enregistrés")}/>
         <Metric label={t("Dette Marée à régler")} value={gbp(mareeOutstanding)} detail={t("Relevés ouverts ou en vérification")}/>
