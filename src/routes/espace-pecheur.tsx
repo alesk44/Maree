@@ -162,124 +162,166 @@ function FisherSpace() {
   const saveCatch = async (id:string,patch:{qtyKg?:number;priceKg?:number;status?:Status}) => {
     try {
       await updateMyCatch(id,{
--ıó[h‘éì¶»§q«^t^pêYH\ˆŠ_Hˆİ
-Ë™[]™\WÙ™YWÜ^Y\—ÜÛ˜\ÚİOOIÙš\Ú\‰ÏÉÕ›İ\È
-0êYZ]HH›İ™H°êÛ[Y[
-IÎ‰ÛH™\İ]\˜[	Ê_H0­ÈÙØœ
-[X™\ŠË™[]™\WÙ™YOÏÌ
-J_OÜÙ]Z[Ï‚ˆÛOŸJ_Oİ[ŸBˆÜÙXİ[ÛŸBˆØXØÛİ[XOOHœ›Ùš[Hˆ	‰ˆ›Ü›HÛ”İX›Z]^ÜØ]™Qš\Ú\”›Ùš[_HÛ\ÜÓ˜[YOH˜Ø\™X‹NÜšYØ\MMH‚ˆ]ˆÛ\ÜÓ˜[YOH^^›Û\Ù[ZX›Ûİ
-“[Ûˆ›Ùš[›Ù™\ÜÚ[Û›™[Š_OÚÛ\ÜÓ˜[YOH^\ÛH^[]]YY›Ü™YÜ›İ[™İ
-ÛÛ\0ê]^ˆ\È[™›Ü›X][ÛœÈH›İ™H˜]X]H]H›İ™HXİ]š]0êH\°êÈ˜[Y][ÛˆHÛÛ\KˆŠ_OÜÙ]‚ˆ]ˆÛ\ÜÓ˜[YOH™ÜšYØ\LÈÛN™ÜšYXÛÛËLˆ‚ˆ^İ
-“›ÛHH˜]X]HŠ_O[œ]Û\ÜÓ˜[YOH™šY[ˆX^[™İ^ÌLŒH˜[YO^Ùš\Ú\”›Ùš[K˜›Ø]Û˜[Y_HÛÚ[™ÙO^ÙOOœÙ]š\Ú\”›Ùš[JOŠË‹‹œ›Ø]Û˜[YN™K\™Ù]˜[Y_JJ_KÏÓ‚ˆ^İ
-”Ü8 &X]XÚHŠ_O[œ]Û\ÜÓ˜[YOH™šY[ˆX^[™İ^ÌLŒH˜[YO^Ùš\Ú\”›Ùš[KšÛYWÜÜHÛÚ[™ÙO^ÙOOœÙ]š\Ú\”›Ùš[JOŠË‹‹œÛYWÜÜ™K\™Ù]˜[Y_JJ_KÏÓ‚ˆ^İ
-•\HH˜]X]HŠ_O[œ]Û\ÜÓ˜[YOH™šY[ˆX^[™İ^ÌLŒH˜[YO^Ùš\Ú\”›Ùš[K™\ÜÙ[İ\_HÛÚ[™ÙO^ÙOOœÙ]š\Ú\”›Ùš[JOŠË‹‹œ™\ÜÙ[İ\N™K\™Ù]˜[Y_JJ_HXÙZÛ\^İ
-‘^ˆÚ[]Y\‹™Y]KÜ[ˆ›Ø]Š_KÏÓ‚ˆ^İ
-“pê]ÙHH0ê˜ÚHŠ_O[œ]Û\ÜÓ˜[YOH™šY[ˆX^[™İ^ÌLH˜[YO^Ùš\Ú\”›Ùš[K™š\Ú[™×ÛY]ÙHÛÚ[™ÙO^ÙOOœÙ]š\Ú\”›Ùš[JOŠË‹‹œš\Ú[™×ÛY]Ù™K\™Ù]˜[Y_JJ_KÏÓ‚ˆ^İ
-“›ÛXœ™H8 &pê\]Z\Y\œÈŠ_O[œ]Û\ÜÓ˜[YOH™šY[ˆ\OH›[X™\ˆˆZ[^Ì_HX^^ÌLHİ\^Ì_H˜[YO^Ùš\Ú\”›Ùš[K˜Ü™]×ÜÚ^™_HÛÚ[™ÙO^ÙOOœÙ]š\Ú\”›Ùš[JOŠË‹‹œÜ™]×ÜÚ^™N™K\™Ù]˜[Y_JJ_KÏÓ‚ˆ^İ
-[›°êYHH0êX]8 &XXİ]š]0êHŠ_O[œ]Û\ÜÓ˜[YOH™šY[ˆ\OH›[X™\ˆˆZ[^ÌNLHX^^ÌŒLH˜[YO^Ùš\Ú\”›Ùš[KœÚ[˜ÙWŞYX\ŸHÛÚ[™ÙO^ÙOOœÙ]š\Ú\”›Ùš[JOŠË‹‹œÚ[˜ÙWŞYX\™K\™Ù]˜[Y_JJ_KÏÓ‚ˆ^İ
-“[pê\›ÈHXÙ[˜ÙHH0ê˜ÚHŠ_O[œ]Û\ÜÓ˜[YOH™šY[ˆX^[™İ^ÌLŒH˜[YO^Ùš\Ú\”›Ùš[K™š\Ú[™×ÛXÙ[˜ÙWÛ[X™\ŸHÛÚ[™ÙO^ÙOOœÙ]š\Ú\”›Ùš[JOŠË‹‹œš\Ú[™×ÛXÙ[˜ÙWÛ[X™\™K\™Ù]˜[Y_JJ_KÏÓ‚ˆÙ]‚ˆ^İ
-”°ê\Ù[][ÛˆH›İ™HXİ]š]0êHŠ_O^\™XHÛ\ÜÓ˜[YOH™šY[ˆ›İÜÏ^ÍHX^[™İ^ÌŒH˜[YO^Ùš\Ú\”›Ùš[K˜š[ßHÛÚ[™ÙO^ÙOOœÙ]š\Ú\”›Ùš[JOŠË‹‹œš[Î™K\™Ù]˜[Y_JJ_KÏÓ‚ˆ]ÛˆÛ\ÜÓ˜[YOH˜ˆ‹XXØÙ[ËYš]ˆ\ØX›Y^ÜØ]š[™Ô›Ùš[_OÜØ]š[™Ô›Ùš[Oİ
-‘[œ™YÚ\İ™[Y[8 )ˆŠN
-‘[œ™YÚ\İ™\ˆ[Ûˆ›Ùš[›Ù™\ÜÚ[Û›™[Š_OØ]Û‚ˆÙ›Ü›OŸB‚ˆØXØÛİ[XOOH˜Xİ]š]Hˆ	‰ˆ‚ˆÙXİ[Ûˆ\šXK[X™[^İ
-•YH	Ù[œÙ[X›HŠ_HÛ\ÜÓ˜[YOH›X‹NÜšYØ\LÈÛN™ÜšYXÛÛËLˆ™ÜšYXÛÛËM‚ˆY]šXÈX™[^İ
-“İÈX›pê\ÈŠ_H˜[YO^ÛZ[™K›[™İH]Z[^İ
-•İ]\È›ÜÈš\Ù\ÈŠ_KÏ‚ˆY]šXÈX™[^İ
-”İØÚÈ\ÜÛšX›HŠ_H˜[YO^ÛZ[™K™š[\Š
-ÊOO˜Ëœİ]\ÏOOH™\ÜÛšX›HŠKœ™YXÙJ
-‹ÊOO›ŠØËœ]RÙË
-KÓØØ[Tİš[™Ê™œ‹Q”ˆŠJÈˆÙÈŸH]Z[^İ
-”]X[]0êHXİY[[Y[[ˆ™[HŠ_KÏ‚ˆY]šXÈX™[^İ
-‘[X[™\È™péİY\ÈŠ_H˜[YO^Û^SÜ™\œË›[™İH]Z[^İ
-”°ê\Ù\˜][ÛœÈH™\İ]\˜[ÈŠ_KÏ‚ˆY]šXÈX™[^İ
-°à˜Z]\ˆŠ_H˜[YO^Û^SÜ™\œË™š[\Š
-ÊOO›Ëœİ]\ÏOOHœİX›Z]YŠK›[™İH]Z[^İ
-“›İ]™[\È[X[™\ÈŠ_KÏ‚ˆÜÙXİ[Û‚ˆÙXİ[ÛˆÛ\ÜÓ˜[YOH˜Ø\™X‹NMHÛNœMˆ‚ˆ]ˆÛ\ÜÓ˜[YOH›X‹MH›^›^]Ü˜\][\ËY[™\İYKX™]ÙY[ˆØ\Lˆ‚ˆ]ˆÛ\ÜÓ˜[YOH^[È›Û\Ù[ZX›Ûİ
-Xİ]š]0êH\È0êX˜\œ]Y[Y[ÈŠ_OÚÛ\ÜÓ˜[YOH^^È^[]]YY›Ü™YÜ›İ[™İ
-“›ÛXœ™HHİÈ0êX˜\œ]pê\Èİ\ˆ\ÈÙ\\›šY\œÈ›İ\œÈŠ_OÜÙ]‚ˆÜ[ˆÛ\ÜÓ˜[YOHœ›İ[™YY[™Ë\ÙXÛÛ™\HLÈKLH^^È^[]]YY›Ü™YÜ›İ[™İ
-È\›šY\œÈ›İ\œÈŠ_OÜÜ[‚ˆÙ]‚ˆ]ˆÛ\ÜÓ˜[YOH™ÜšYÜšYXÛÛËMÈ][\ËY[™Ø\Lˆˆ›ÛOHš[YÈˆ\šXK[X™[^İÙYZÛPXİ]š]K›X\
+        ...(patch.qtyKg!==undefined?{remainingKg:patch.qtyKg}:{}),
+        ...(patch.priceKg!==undefined?{priceKg:patch.priceKg}:{}),
+        ...(patch.status!==undefined?{status:({disponible:"available",rÃ©servÃ©:"reserved",Ã©puisÃ©:"sold_out"} as const)[patch.status]}:{})
+      });
+      toast.success(t("Lot mis Ã  jour."));
+      await refresh();
+    } catch(e) { toast.error(e instanceof Error && !("code" in e) ? t(e.message) : t("Impossible de modifier ce lot.")); }
+  };
 
-^JOO™^K›X™[
-ÈˆŠÙ^K˜Ûİ[
-Kš›Ú[Š‹Š_O‚ˆİÙYZÛPXİ]š]K›X\
+  const confirmInvoicePayment = async (invoiceId:string) => {
+    const method=window.prompt(t("Mode de rÃ¨glement reÃ§u (ex. virement bancaire) :"));
+    if(method===null) return;
+    const reference=window.prompt(t("RÃ©fÃ©rence du rÃ¨glement (facultatif) :"));
+    if(reference===null) return;
+    try {
+      await confirmFisherInvoicePaid(invoiceId,method.trim()||null,reference.trim()||null);
+      toast.success(t("RÃ¨glement confirmÃ© et enregistrÃ©."));
+      setMonthlyInvoices(await fetchMyMonthlyInvoices());
+      setOrders(await fetchMyOrders());
+    } catch(e) { toast.error(e instanceof Error && !("code" in e) ? t(e.message) : t("Impossible de confirmer ce rÃ¨glement.")); }
+  };
 
-^JOO]ˆÙ^O^Ù^KšÙ^_HÛ\ÜÓ˜[YOH™›^Z[‹]ËL›^XÛÛ][\ËXÙ[\ˆØ\Lˆ‚ˆÜ[ˆÛ\ÜÓ˜[YOH^^È›Û\Ù[ZX›ÛX[\‹[[\È^[]]YY›Ü™YÜ›İ[™Ù^K˜Ûİ[OÜÜ[‚ˆ]ˆÛ\ÜÓ˜[YOH™›^LËY[][\ËY[™›İ[™Y[È™Ë\ÙXÛÛ™\HLH]ˆÛ\ÜÓ˜[YOHËY[›İ[™Y[Y™ËXXØÙ[ˆİ[O^ŞÚZYÚŠ^K˜Ûİ[ÛX^Z[PXİ]š]JŒL
-JÈ‰HŸ_HÏÙ]‚ˆÜ[ˆÛ\ÜÓ˜[YOH^VÌLHØ\][^™H^[]]YY›Ü™YÜ›İ[™Ù^K›X™[OÜÜ[‚ˆÙ]Š_BˆÙ]‚ˆÛZ[™K›[™İOOL	‰Û\ÜÓ˜[YOH›]LÈ^^È^[]]YY›Ü™YÜ›İ[™İ
-“HÜ˜\\]YH\\˜pë˜H0êÈHX›XØ][ÛˆH›ÜÈ™[Zpê™\Èš\Ù\ËˆŠ_OÜŸBˆÜÙXİ[Û‚ˆÙ\œ›Ü‰‰›ÛOH˜[\ˆÛ\ÜÓ˜[YOH›X‹M^\ÛH^Y\İXİ]™HÙ\œ›ÜŸOÜŸBˆ]ˆÛ\ÜÓ˜[YOH™ÜšYØ\NÎ™ÜšYXÛÛËLˆ‚ˆ›Ü›HÛ”İX›Z]^ÜX›\ÚHÛ\ÜÓ˜[YOH˜Ø\™ÜšYØ\LÈMˆ‚ˆˆÛ\ÜÓ˜[YOH^^›Û\Ù[ZX›Ûİ
-”X›Y\ˆ[™Hš\ÙHH›İ\ˆŠ_OÚ‚ˆ]ˆÛ\ÜÓ˜[YOH™ÜšYØ\LÈÛN™ÜšYXÛÛËLˆ‚ˆ^İ
-‘\Ü0êÙHŠ_O[œ]™\]Z\™YÛ\ÜÓ˜[YOH™šY[ˆ˜[YO^Ù›Ü›KœÜXÚY\ßHÛÚ[™ÙO^ÊJOO\
-œÜXÚY\È‹K\™Ù]˜[YJ_HXÙZÛ\^İ
-™^ˆX\]Y\™X]HŠ_KÏÓ‚ˆ^İ
-–›Û™HŠ_O[œ]™\]Z\™YÛ\ÜÓ˜[YOH™šY[ˆ˜[YO^Ù›Ü›K›Û™_HÛÚ[™ÙO^ÊJOO\
-›Û™H‹K\™Ù]˜[YJ_HXÙZÛ\^İ
-™^ˆ˜ZYHHİİY[ˆŠ_KÏÓ‚ˆ^İ
-Ø\\™HŠ_O[œ]™\]Z\™YÛ\ÜÓ˜[YOH™šY[ˆ\OH™]][YK[ØØ[ˆ˜[YO^Ù›Ü›K˜Ø]YÚ]HÛÚ[™ÙO^ÊJOO\
-˜Ø]YÚ]‹K\™Ù]˜[YJ_KÏÓ‚ˆ^İ
-‘0êX˜\œ]Y[Y[Š_O[œ]™\]Z\™YÛ\ÜÓ˜[YOH™šY[ˆ\OH™]][YK[ØØ[ˆ˜[YO^Ù›Ü›K›[™Y]HÛÚ[™ÙO^ÊJOO\
-›[™Y]‹K\™Ù]˜[YJ_KÏÓ‚ˆ^İ
-”]X[]0êH
-ÙÊHŠ_O[œ]™\]Z\™YÛ\ÜÓ˜[YOH™šY[ˆ\OH›[X™\ˆˆZ[^Ì_Hİ\^Ì_H˜[YO^Ù›Ü›Kœ]RÙßHÛÚ[™ÙO^ÊJOO\
-œ]RÙÈ‹
-ÙK\™Ù]˜[YJ_KÏÓ‚ˆ^İ
-”š^
-0¨ËÚÙÊHŠ_O[œ]™\]Z\™YÛ\ÜÓ˜[YOH™šY[ˆ\OH›[X™\ˆˆZ[^ÌHİ\^Ì_H˜[YO^Ù›Ü›KœšXÙRÙßHÛÚ[™ÙO^ÊJOO\
-œšXÙRÙÈ‹
-ÙK\™Ù]˜[YJ_KÏÓ‚ˆ^İ
-Ø[Xœ™HÈ]X[]0êHŠ_O[œ]Û\ÜÓ˜[YOH™šY[ˆ˜[YO^Ù›Ü›K™Ü˜Y_HÛÚ[™ÙO^ÊJOO\
-™Ü˜YH‹K\™Ù]˜[YJ_KÏÓ‚ˆ^İ
-“pê]ÙHŠ_O[œ]Û\ÜÓ˜[YOH™šY[ˆ˜[YO^ÛYK›Y]Ùİ
-YK›Y]Ù
-N
-°à™[œÙZYÛ™\ˆ[œÈ[Ûˆ›Ùš[›Ù™\ÜÚ[Û›™[Š_H\ØX›YÏÓ‚ˆÙ]‚ˆ^İ
-ÛÛœÙZ[ÈHÛÛœÙ\˜][ÛˆŠ_O[œ]Û\ÜÓ˜[YOH™šY[ˆ˜[YO^Ù›Ü›KœİÜ˜YÙ_HÛÚ[™ÙO^ÊJOO\
-œİÜ˜YÙH‹K\™Ù]˜[YJ_KÏÓ‚ˆ]ÛˆÛ\ÜÓ˜[YOH˜ˆİ
-”X›Y\ˆŠ_OØ]Û‚ˆÙ›Ü›O‚ˆÙXİ[Û‚ˆˆÛ\ÜÓ˜[YOH›X‹LÈ^^›Û\Ù[ZX›Ûİ
-“Y\ÈİÈŠ_OÚ‚ˆÛZ[™K›[™İOOLÏ[\Oİ
-]Xİ[ˆİX›pêKˆŠ_OÑ[\O[Û\ÜÓ˜[YOH™ÜšYØ\LÈÛZ[™K›X\
+  const confirmOrderPayment = async (orderId:string) => {
+    const method=window.prompt(t("Mode de rÃ¨glement reÃ§u (ex. virement bancaire) :"));
+    if(method===null) return;
+    const reference=window.prompt(t("RÃ©fÃ©rence du rÃ¨glement (facultatif) :"));
+    if(reference===null) return;
+    try {
+      await markFisherOrderPaid(orderId,method.trim()||null,reference.trim()||null);
+      toast.success(t("RÃ¨glement confirmÃ© et enregistrÃ©."));
+      setOrders(await fetchMyOrders());
+    } catch(e) { toast.error(e instanceof Error && !("code" in e) ? t(e.message) : t("Impossible de confirmer ce rÃ¨glement.")); }
+  };
 
-ÊOOHÙ^O^ØËšYHÛ\ÜÓ˜[YOH˜Ø\™M‚ˆ]ˆÛ\ÜÓ˜[YOH™›^][\ËXÙ[\ˆ\İYKX™]ÙY[ˆİ›Û™ÏØË™[[Úš_Hİ
-ËœÜXÚY\Ê_OÜİ›Û™Ïİ]\Ô[Ï^ØËœİ]\ßKÏÙ]‚ˆÛ\ÜÓ˜[YOH^^È^[]]YY›Ü™YÜ›İ[™İ
-‘0êX˜\œ]pêHŠ_HÙ
-Ë›[™Y]
-_OÜ‚ˆ]ˆÛ\ÜÓ˜[YOH›]LÈÜšYÜšYXÛÛËLˆØ\Lˆ‚ˆX™[Û\ÜÓ˜[YOH™ÜšYØ\LH^^Èİ
-”]X[]0êHÙÈŠ_O[œ]Û\ÜÓ˜[YOH™šY[ˆ\OH›[X™\ˆˆZ[^ÌHİ\^Ì_HY˜][˜[YO^ØËœ]RÙßHÛ›\^ÊJOOØÛÛœİS[X™\ŠK\™Ù]˜[YJNÚYŠ[X™\‹š\Ñš[š]JŠI‰›L	‰›ˆOOXËœ]RÙÊ]›ÚYØ]™PØ]Ú
-ËšYÜ]RÙÎ›‹İ]\Î›OOLÈ°ê\Z\ğêHˆ™\ÜÛšX›HŸJNß_KÏÛX™[‚ˆX™[Û\ÜÓ˜[YOH™ÜšYØ\LH^^Èİ
-”š^0¨ËÚÙÈŠ_O[œ]Û\ÜÓ˜[YOH™šY[ˆ\OH›[X™\ˆˆZ[^ÌHİ\^Ì_HY˜][˜[YO^ØËœšXÙRÙßHÛ›\^ÊJOOØÛÛœİS[X™\ŠK\™Ù]˜[YJNÚYŠ[X™\‹š\Ñš[š]JŠI‰›L	‰›ˆOOXËœšXÙRÙÊ]›ÚYØ]™PØ]Ú
-ËšYÜšXÙRÙÎ›ŸJNß_KÏÛX™[‚ˆÙ]‚ˆØËœİ]\ÈOOH°ê\Z\ğêH‰‰]Ûˆ\OH˜]ÛˆˆÛ\ÜÓ˜[YOH›]Lˆ^\ÛH›Û\Ù[ZX›Û^Y\İXİ]™HˆÛÛXÚÏ^Ê
-OO›ÚYØ]™PØ]Ú
-ËšYÜ]RÙÎŒİ]\Îˆ°ê\Z\ğêHŸJ_Oİ
-“X\œ]Y\ˆ0ê\Z\ğêHŠ_OØ]ÛŸBˆÛOŠ_Oİ[ŸBˆˆÛ\ÜÓ˜[YOH›]NX‹LÈ^^›Û\Ù[ZX›Ûİ
-‘[X[™\È™péİY\ÈŠ_OÚ‚ˆÛ^SÜ™\œË›[™İOOLÏ[\Oİ
-]Xİ[™H[X[™H™péİYKˆŠ_OÑ[\O[Û\ÜÓ˜[YOH™ÜšYØ\LÈÛ^SÜ™\œË›X\
+  const decideOrder = async (order:SharedOrderRow,status:"confirmed"|"cancelled") => {
+    try {
+      await updateMyOrderStatus(order.id,status);
+      toast.success(status==="confirmed"?t("Commande acceptÃ©e."):t("Commande refusÃ©e."));
+      setOrders(await fetchMyOrders());
+    } catch(e) { toast.error(e instanceof Error && !("code" in e) ? t(e.message) : t("Une erreur technique est survenue. RÃ©essayez.")); }
+  };
 
-ÊOOÂˆÛÛœİÏXØ]Ú\Ë™š[™
+  const decideLateCancellation = async (order:SharedOrderRow,approve:boolean) => {
+    let penalty=0;
+    if(approve){
+      const raw=window.prompt(t("PÃ©nalitÃ© Ã  appliquer en GBP (0 si aucune pÃ©nalitÃ©) :"),"0");
+      if(raw===null)return;
+      penalty=Number(raw);
+      if(!Number.isFinite(penalty)||penalty<0){toast.error(t("Montant de pÃ©nalitÃ© invalide."));return;}
+    }
+    try{
+      const {error}=await supabase.rpc("decide_order_cancellation",{p_order_id:order.id,p_approve:approve,p_penalty:penalty});
+      if(error)throw error;
+      toast.success(approve?t("Offre dâ€™annulation et pÃ©nalitÃ© envoyÃ©es au restaurant."):t("Annulation refusÃ©e."));
+      setOrders(await fetchMyOrders());
+      await refresh();
+    }catch(e){toast.error(e instanceof Error && !("code" in e) ? t(e.message) : t("Impossible de traiter cette demande."));}
+  };
 
-
-OOšYOO[Ë˜Ø]ÚÚY
-NÂˆ™]\›ˆHÙ^O^ÛËšYHÛ\ÜÓ˜[YOH˜Ø\™M‚ˆİ›Û™ÏØÏË™[[Úš_HÓ[X™\ŠËœ]X[]WÚÙÊ_HÙÈİ
-ÏËœÜXÚY\ÏÏÈ”›ÙZ]Š_OÜİ›Û™Ï‚ˆÛ\ÜÓ˜[YOH›X‹Lˆ^\ÛH^[]]YY›Ü™YÜ›İ[™İ
-Ë™[š[Y[OOH™[]™\HÈ“]œ˜Z\ÛÛˆˆ”™]˜Z]Š_H0­ÈÙ
-Ëœ™\]Y\İYÜÛİ
-_HÛË››İI‰ˆ°­ÈŠÛË››İ_OÜ‚ˆÛËœİ]\ÏOOH˜Ø[˜Ù[YÏÜ[ˆÛ\ÜÓ˜[YOHš[›[™KY›^›İ[™YY[™ËY\İXİ]™KÌMHL‹HKLH^^È›Û\Ù[ZX›Û^Y\İXİ]™Hİ
-”™Y\ğêYHÈ[›[0êYHŠ_OÜÜ[Ó[X™\ŠË˜Ø[˜Ù[][Û—Ü[˜[OÏÌ
-OŒ	‰Û\ÜÓ˜[YOH›]Lˆ^\ÛHİ
-”0ê[˜[]0êHš^0êYHŠ_Hˆİ›Û™ÏÙØœ
-[X™\ŠË˜Ø[˜Ù[][Û—Ü[˜[JJ_OÜİ›Û™ÏÜŸOÏÜ™\”İ\ÈÏ^ÛX™[İ]\ÖÛËœİ]\È\ÈÙ^[Ùˆ\[ÙˆX™[İ]\×_KÏŸ^ÛË˜Ø[˜Ù[][Û—Ü™\]Y\İÜİ]\ÏOOHœ™Z™XİY‰‰Û\ÜÓ˜[YOH›]Lˆ^\ÛH^[]]YY›Ü™YÜ›İ[™İ
-[›[][Ûˆ\™]™H™Y\ğêYH\ˆH0ê˜Ú]\‹ˆŠ_OÜŸBˆÛË˜Ø[˜Ù[][Û—Ü™\]Y\İÜİ]\ÏOOH›Ù™™\™Y‰‰Û\ÜÓ˜[YOH›]LÈ›İ[™Y[È™Ë\ÙXÛÛ™\HLÈ^\ÛHİ
-“Ù™œ™H[›ŞpêYH]H™\İ]\˜[ˆŠ_Hİ›Û™ÏÙØœ
-[X™\ŠË˜Ø[˜Ù[][Û—Ü[˜[OÏÌ
-J_OÜİ›Û™Ï‹ˆİ
-‘[ˆ][HHÛÛˆXØÛÜ™ˆŠ_OÜŸBˆÛË˜Ø[˜Ù[][Û—Ü™\]Y\İÜİ]\ÏOOHœ[™[™È‰‰]ˆÛ\ÜÓ˜[YOH›]LÈ›İ[™Y[È›Ü™\ˆ›Ü™\‹X›Ü™\ˆLÈÛ\ÜÓ˜[YOH^\ÛH›Û\Ù[ZX›Ûİ
-‘[X[™H8 &X[›[][Ûˆ\™]™HŠ_OÜÛ\ÜÓ˜[YOH›X‹Lˆ^^È^[]]YY›Ü™YÜ›İ[™İ
-•›İ\È0êXÚY^ˆ8 &XXØÙ\\ˆİHH™Y\Ù\‹ˆ[ˆØ\È8 &XXØÙ\][Û‹›İ\Èš^^ˆH0ê[˜[]0êH[ˆĞ”
-\İ]]Üš\ğêJKˆŠ_OÜ]ˆÛ\ÜÓ˜[YOH™›^›^XÛÛØ\LˆÛN™›^\›İÈ]Ûˆ\OH˜]ÛˆˆÛ\ÜÓ˜[YOH˜ˆ‹XXØÙ[^\ÛHˆÛÛXÚÏ^Ê
-OO›ÚYXÚYS]PØ[˜Ù[][ÛŠËYJ_Oİ
-XØÙ\\ˆ]š^\ˆH0ê[˜[]0êHŠ_OØ]Û]Ûˆ\OH˜]ÛˆˆÛ\ÜÓ˜[YOH˜ˆ^\ÛH^Y\İXİ]™HˆÛÛXÚÏ^Ê
-OO›ÚYXÚYS]PØ[˜Ù[][ÛŠË˜[ÙJ_Oİ
-”™Y\Ù\ˆ8 &X[›[][ÛˆŠ_OØ]ÛÙ]Ù]ŸBˆÛËœİ]\ÏOOHœİX›Z]Y‰‰›Ë˜Ø[˜Ù[][Û—Ü™\]Y\İÜİ]\ÈOOHœ[™[™È‰‰›Ë˜Ø[˜Ù[][Û—Ü™\]Y\İÜİ]\ÈOOH›Ù™™\™Y‰‰]ˆÛ\ÜÓ˜[YOH›]LÈ›^›^XÛÛØ\LˆÛN™›^\›İÈ]Ûˆ\OH˜]ÛˆˆÛ\ÜÓ˜[YOH˜ˆ‹XXØÙ[ËY[\İYKXÙ[\ˆ^\ÛHÛNËX]]ÈˆÛÛXÚÏ^Ê
-OO›ÚYXÚYSÜ™\ŠË˜ÛÛ™š\›YYŠ_Oİ
-XØÙ\\ˆHÛÛ[X[™HŠ_OØ]Û]Ûˆ\OH˜]ÛˆˆÛ\ÜÓ˜[YOH˜ˆËY[\İYKXÙ[\ˆ›Ü™\ˆ›Ü™\‹Y\İXİ]™KÍ^\ÛH^Y\İXİ]™HÛNËX]]ÈˆÛÛXÚÏ^Ê
-OO›ÚYXÚYSÜ™\ŠË˜Ø[˜Ù[YŠ_Oİ
-”™Y\Ù\ˆŠ_OØ]ÛÙ]ŸBˆÛËœİ]\È[ˆ™^İ]\É‰›Ë˜Ø[˜Ù[][Û—Ü™\]Y\İÜİ]\ÈOOHœ[™[™È‰‰›Ë˜Ø[˜Ù[][Û—Ü™\]Y\İÜİ]\ÈOOH›Ù™™\™Y‰‰]Ûˆ\OH˜]ÛˆˆÛ\ÜÓ˜[YOH˜ˆ‹XXØÙ[]LÈ^\ÛHˆÛÛXÚÏ^Ê
-OO›ÚYY˜[˜ÙJÊ_Oİ
-”\ÜÙ\ˆ0è	ğê]\HİZ]˜[HŠ_OØ]ÛŸBˆÛOÂˆJ_Oİ[ŸBˆÜÙXİ[Û‚ˆÙ]‚ˆÏŸBˆÙ]ÂŸB‚™[˜İ[ÛˆY]šXÊÛX™[˜[YK]Z[NÛX™[œİš[™Îİ˜[YNœİš[™ß[X™\Ù]Z[œİš[™ßJ^Ü™]\›ˆ]ˆÛ\ÜÓ˜[YOH˜Ø\™›İ[™YL›Ü™\ˆ›Ü™\‹X›Ü™\ˆMHÛ\ÜÓ˜[YOH^^È›Û\Ù[ZX›Û\\˜Ø\ÙH˜XÚÚ[™Ë]ÚY\ˆ^[]]YY›Ü™YÜ›İ[™ÛX™[OÜÛ\ÜÓ˜[YOH›]Lˆ›ÛY\Ü^H^LŞ›Û\Ù[ZX›Û^Y›Ü™YÜ›İ[™İ˜[Y_OÜÛ\ÜÓ˜[YOH›]LH^^È^[]]YY›Ü™YÜ›İ[™Ù]Z[OÜÙ]ßB‚™[˜İ[Ûˆ
-İÚ[™[ŸNİœİš[™ÎØÚ[™[”™XXİ”™XXİ›Ù_J^Ü™]\›ˆX™[Û\ÜÓ˜[YOH™ÜšYØ\LH^\ÛH›Û[YY][Hİ^ØÚ[™[ŸOÛX™[ßB
+  const advance = async (order:SharedOrderRow) => {
+    const target=nextStatus[order.status as keyof typeof nextStatus];
+ â€¦1455 tokens truncatedâ€¦der-t border-border pt-2 text-xs">{i.items.map(item=><li key={item.order_id} className="flex flex-wrap justify-between gap-2"><span>Commande {item.order_id.slice(0,8).toUpperCase()} Â· {Number(item.quantity_kg)} kg Ã— {gbp(Number(item.unit_price))}/kg Â· {t("Pourboire")} {gbp(Number(item.tip_amount??0))} Â· {t("Livraison dÃ©duite")} {gbp(Number(item.delivery_deduction??0))}</span><strong>{gbp(Number(item.product_subtotal)+Number(item.tip_amount??0)-Number(item.delivery_deduction??0))}</strong></li>)}</ul> : null}
+            {i.cancellation_indemnities?.length ? <ul className="mt-2 grid gap-1 border-t border-border pt-2 text-xs">{i.cancellation_indemnities.map(item=><li key={item.id} className="flex justify-between gap-2"><span>{t("IndemnitÃ© dâ€™annulation")} Â· {item.order_id.slice(0,8).toUpperCase()} Â· {item.status==="paid"?t("RÃ©glÃ©e"):t("Ã€ rÃ©gler")}</span><strong>{gbp(Number(item.amount))}</strong></li>)}</ul> : null}
+            {i.paid_at&&<p className="text-xs text-muted-foreground">{t("RÃ¨glement reÃ§u")} : {dt(i.paid_at)} {i.payment_method||""} {i.payment_reference||""}</p>}
+            {i.status==="open"&&<button type="button" className="btn btn-accent mt-3" onClick={()=>void confirmInvoicePayment(i.id)}>{t("Confirmer que le restaurant a rÃ©glÃ©")}</button>}
+          </li>)}</ul>}
+      </div>
+      {myOrders.filter(o=>o.status==="delivered").length===0?<Empty>{t("Aucune vente livrÃ©e pour le moment.")}</Empty>:
+        <ul className="grid gap-2">{myOrders.filter(o=>o.status==="delivered").map(o=>{const lot=mine.find(c=>c.id===o.catch_id);const total=Number(o.product_subtotal??0);const deliveryDeduction=o.delivery_fee_payer_snapshot==='fisher'?Number(o.delivery_fee??0):0;const fisherNet=total+Number(o.tip_amount??0)-deliveryDeduction;return <li key={o.id} className="rounded-xl border border-border p-4">
+          <div className="flex flex-wrap justify-between gap-2"><strong>{lot?.emoji} {t(lot?.species??"Produit")} Â· {Number(o.quantity_kg)} kg</strong><strong>{gbp(fisherNet)}</strong></div>
+          <p className="text-xs text-muted-foreground">{t("LivrÃ©e")} Â· {dt(o.delivered_at??o.requested_slot)} Â· RÃ©f. {o.id.slice(0,8).toUpperCase()}</p>
+          <p className="mt-1 text-sm font-medium">{t("Votre montant produits")} : <strong>{gbp(total)}</strong> Â· {t("Livraison dÃ©duite")} : <strong>{gbp(deliveryDeduction)}</strong> Â· {t("Pourboire")} : <strong>{gbp(Number(o.tip_amount??0))}</strong></p>
+          {o.billing_mode==="immediate"&&o.fisher_payment_status==="unpaid"&&<button type="button" className="btn btn-accent mt-3" onClick={()=>void confirmOrderPayment(o.id)}>{t("Confirmer le rÃ¨glement reÃ§u")}</button>}
+          {o.fisher_payment_status==="paid"&&<p className="mt-2 text-xs text-muted-foreground">{t("RÃ©glÃ©")} Â· {o.fisher_paid_at?dt(o.fisher_paid_at):""} {o.fisher_payment_method??""} {o.fisher_payment_reference??""}</p>}
+          <details className="mt-2 text-xs text-muted-foreground"><summary className="cursor-pointer">{t("DÃ©tails complÃ©mentaires")}</summary><p className="mt-1">{t("Commission MarÃ©e (payÃ©e par le restaurant)")} : {gbp(Number(o.maree_fee??0))} Â· {t("Livraison payÃ©e par")} : {t(o.delivery_fee_payer_snapshot==='fisher'?'Vous (dÃ©duite de votre rÃ¨glement)':'le restaurant')} Â· {gbp(Number(o.delivery_fee??0))}</p></details>
+        </li>})}</ul>}
+    </section>}
+    {accountTab==="profile" && <form onSubmit={saveFisherProfile} className="card mb-8 grid gap-4 p-5">
+      <div><h2 className="text-xl font-semibold">{t("Mon profil professionnel")}</h2><p className="text-sm text-muted-foreground">{t("ComplÃ©tez les informations de votre bateau et de votre activitÃ© aprÃ¨s validation du compte.")}</p></div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <L t={t("Nom du bateau")}><input className="field" maxLength={120} value={fisherProfile.boat_name} onChange={e=>setFisherProfile(p=>({...p,boat_name:e.target.value}))}/></L>
+        <L t={t("Port dâ€™attache")}><input className="field" maxLength={120} value={fisherProfile.home_port} onChange={e=>setFisherProfile(p=>({...p,home_port:e.target.value}))}/></L>
+        <L t={t("Type de bateau")}><input className="field" maxLength={120} value={fisherProfile.vessel_type} onChange={e=>setFisherProfile(p=>({...p,vessel_type:e.target.value}))} placeholder={t("Ex. chalutier, vedette, open boat")}/></L>
+        <L t={t("MÃ©thode de pÃªche")}><input className="field" maxLength={100} value={fisherProfile.fishing_method} onChange={e=>setFisherProfile(p=>({...p,fishing_method:e.target.value}))}/></L>
+        <L t={t("Nombre dâ€™Ã©quipiers")}><input className="field" type="number" min={1} max={100} step={1} value={fisherProfile.crew_size} onChange={e=>setFisherProfile(p=>({...p,crew_size:e.target.value}))}/></L>
+        <L t={t("AnnÃ©e de dÃ©but dâ€™activitÃ©")}><input className="field" type="number" min={1900} max={2100} value={fisherProfile.since_year} onChange={e=>setFisherProfile(p=>({...p,since_year:e.target.value}))}/></L>
+        <L t={t("NumÃ©ro de licence de pÃªche")}><input className="field" maxLength={120} value={fisherProfile.fishing_licence_number} onChange={e=>setFisherProfile(p=>({...p,fishing_licence_number:e.target.value}))}/></L>
+      </div>
+      <L t={t("PrÃ©sentation de votre activitÃ©")}><textarea className="field" rows={4} maxLength={2000} value={fisherProfile.bio} onChange={e=>setFisherProfile(p=>({...p,bio:e.target.value}))}/></L>
+      <button className="btn btn-accent w-fit" disabled={savingProfile}>{savingProfile?t("Enregistrementâ€¦"):t("Enregistrer mon profil professionnel")}</button>
+    </form>}
+
+    {accountTab==="activity" && <>
+    <section aria-label={t("Vue d'ensemble")} className="mb-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <Metric label={t("Lots publiÃ©s")} value={mine.length} detail={t("Toutes vos prises")}/>
+      <Metric label={t("Stock disponible")} value={mine.filter((c)=>c.status==="disponible").reduce((n,c)=>n+c.qtyKg,0).toLocaleString("fr-FR")+" kg"} detail={t("QuantitÃ© actuellement en vente")}/>
+      <Metric label={t("Demandes reÃ§ues")} value={myOrders.length} detail={t("RÃ©servations de restaurants")}/>
+      <Metric label={t("Ã€ traiter")} value={myOrders.filter((o)=>o.status==="submitted").length} detail={t("Nouvelles demandes")}/>
+    </section>
+    <section className="card mb-8 p-5 sm:p-6">
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-2">
+        <div><h2 className="text-lg font-semibold">{t("ActivitÃ© des dÃ©barquements")}</h2><p className="text-xs text-muted-foreground">{t("Nombre de lots dÃ©barquÃ©s sur les sept derniers jours")}</p></div>
+        <span className="rounded-full bg-secondary px-3 py-1 text-xs text-muted-foreground">{t("7 derniers jours")}</span>
+      </div>
+      <div className="grid grid-cols-7 items-end gap-2" role="img" aria-label={weeklyActivity.map((day)=>day.label+": "+day.count).join(", ")}>
+        {weeklyActivity.map((day)=><div key={day.key} className="flex min-w-0 flex-col items-center gap-2">
+          <span className="text-xs font-semibold tabular-nums text-muted-foreground">{day.count}</span>
+          <div className="flex h-24 w-full items-end rounded-lg bg-secondary p-1"><div className="w-full rounded-md bg-accent" style={{height:(day.count/maxDailyActivity*100)+"%"}} /></div>
+          <span className="text-[10px] capitalize text-muted-foreground">{day.label}</span>
+        </div>)}
+      </div>
+      {mine.length===0&&<p className="mt-3 text-xs text-muted-foreground">{t("Le graphique apparaÃ®tra dÃ¨s la publication de vos premiÃ¨res prises.")}</p>}
+    </section>
+    {error&&<p role="alert" className="mb-4 text-sm text-destructive">{error}</p>}
+    <div className="grid gap-8 lg:grid-cols-2">
+      <form onSubmit={publish} className="card grid gap-3 p-6">
+        <h2 className="text-xl font-semibold">{t("Publier une prise du jour")}</h2>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <L t={t("EspÃ¨ce")}><input required className="field" value={form.species} onChange={(e)=>up("species",e.target.value)} placeholder={t("ex. Maquereau")}/></L>
+          <L t={t("Zone")}><input required className="field" value={form.zone} onChange={(e)=>up("zone",e.target.value)} placeholder={t("ex. Baie de St Ouen")}/></L>
+          <L t={t("Capture")}><input required className="field" type="datetime-local" value={form.caughtAt} onChange={(e)=>up("caughtAt",e.target.value)}/></L>
+          <L t={t("DÃ©barquement")}><input required className="field" type="datetime-local" value={form.landedAt} onChange={(e)=>up("landedAt",e.target.value)}/></L>
+          <L t={t("QuantitÃ© (kg)")}><input required className="field" type="number" min={0.5} step={0.5} value={form.qtyKg} onChange={(e)=>up("qtyKg",+e.target.value)}/></L>
+          <L t={t("Prix (Â£/kg)")}><input required className="field" type="number" min={0} step={0.5} value={form.priceKg} onChange={(e)=>up("priceKg",+e.target.value)}/></L>
+          <L t={t("Calibre / qualitÃ©")}><input className="field" value={form.grade} onChange={(e)=>up("grade",e.target.value)}/></L>
+          <L t={t("MÃ©thode")}><input className="field" value={me.method?t(me.method):t("Ã€ renseigner dans Mon profil professionnel")} disabled/></L>
+        </div>
+        <L t={t("Conseils de conservation")}><input className="field" value={form.storage} onChange={(e)=>up("storage",e.target.value)}/></L>
+        <button className="btn">{t("Publier")}</button>
+      </form>
+      <section>
+        <h2 className="mb-3 text-xl font-semibold">{t("Mes lots")}</h2>
+        {mine.length===0?<Empty>{t("Aucun lot publiÃ©.")}</Empty>:<ul className="grid gap-3">{mine.map((c)=><li key={c.id} className="card p-4">
+          <div className="flex items-center justify-between"><strong>{c.emoji} {t(c.species)}</strong><StatusPill s={c.status}/></div>
+          <p className="text-xs text-muted-foreground">{t("DÃ©barquÃ©")} {dt(c.landedAt)}</p>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <label className="grid gap-1 text-xs">{t("QuantitÃ© kg")}<input className="field" type="number" min={0} step={0.5} defaultValue={c.qtyKg} onBlur={(e)=>{const n=Number(e.target.value);if(Number.isFinite(n)&&n>=0&&n!==c.qtyKg)void saveCatch(c.id,{qtyKg:n,status:n===0?"Ã©puisÃ©":"disponible"});}}/></label>
+            <label className="grid gap-1 text-xs">{t("Prix Â£/kg")}<input className="field" type="number" min={0} step={0.5} defaultValue={c.priceKg} onBlur={(e)=>{const n=Number(e.target.value);if(Number.isFinite(n)&&n>=0&&n!==c.priceKg)void saveCatch(c.id,{priceKg:n});}}/></label>
+          </div>
+          {c.status!=="Ã©puisÃ©"&&<button type="button" className="mt-2 text-sm font-semibold text-destructive" onClick={()=>void saveCatch(c.id,{qtyKg:0,status:"Ã©puisÃ©"})}>{t("Marquer Ã©puisÃ©")}</button>}
+        </li>)}</ul>}
+        <h2 className="mt-8 mb-3 text-xl font-semibold">{t("Demandes reÃ§ues")}</h2>
+        {myOrders.length===0?<Empty>{t("Aucune demande reÃ§ue.")}</Empty>:<ul className="grid gap-3">{myOrders.map((o)=>{
+          const c=catches.find((x)=>x.id===o.catch_id);
+          return <li key={o.id} className="card p-4">
+            <strong>{c?.emoji} {Number(o.quantity_kg)} kg {t(c?.species??"Produit")}</strong>
+            <p className="mb-2 text-sm text-muted-foreground">{t(o.fulfilment==="delivery"?"Livraison":"Retrait")} Â· {dt(o.requested_slot)} {o.note&&"Â· "+o.note}</p>
+            {o.status==="cancelled"?<><span className="inline-flex rounded-full bg-destructive/15 px-2.5 py-1 text-xs font-semibold text-destructive">{t("RefusÃ©e / annulÃ©e")}</span>{Number(o.cancellation_penalty??0)>0&&<p className="mt-2 text-sm">{t("PÃ©nalitÃ© fixÃ©e")} : <strong>{gbp(Number(o.cancellation_penalty))}</strong></p>}</>:<OrderSteps s={labelStatus[o.status as keyof typeof labelStatus]}/>}{o.cancellation_request_status==="rejected"&&<p className="mt-2 text-sm text-muted-foreground">{t("Annulation tardive refusÃ©e par le pÃªcheur.")}</p>}
+            {o.cancellation_request_status==="offered"&&<p className="mt-3 rounded-lg bg-secondary p-3 text-sm">{t("Offre envoyÃ©e au restaurant :")} <strong>{gbp(Number(o.cancellation_penalty??0))}</strong>. {t("En attente de son accord.")}</p>}
+            {o.cancellation_request_status==="pending"&&<div className="mt-3 rounded-lg border border-border p-3"><p className="text-sm font-semibold">{t("Demande dâ€™annulation tardive")}</p><p className="mb-2 text-xs text-muted-foreground">{t("Vous dÃ©cidez dâ€™accepter ou de refuser. En cas dâ€™acceptation, vous fixez la pÃ©nalitÃ© en GBP (0 est autorisÃ©).")}</p><div className="flex flex-col gap-2 sm:flex-row"><button type="button" className="btn btn-accent text-sm" onClick={()=>void decideLateCancellation(o,true)}>{t("Accepter et fixer la pÃ©nalitÃ©")}</button><button type="button" className="btn text-sm text-destructive" onClick={()=>void decideLateCancellation(o,false)}>{t("Refuser lâ€™annulation")}</button></div></div>}
+            {o.status==="submitted"&&o.cancellation_request_status!=="pending"&&o.cancellation_request_status!=="offered"&&<div className="mt-3 flex flex-col gap-2 sm:flex-row"><button type="button" className="btn btn-accent w-full justify-center text-sm sm:w-auto" onClick={()=>void decideOrder(o,"confirmed")}>{t("Accepter la commande")}</button><button type="button" className="btn w-full justify-center border border-destructive/40 text-sm text-destructive sm:w-auto" onClick={()=>void decideOrder(o,"cancelled")}>{t("Refuser")}</button></div>}
+            {o.status in nextStatus&&o.cancellation_request_status!=="pending"&&o.cancellation_request_status!=="offered"&&<button type="button" className="btn btn-accent mt-3 text-sm" onClick={()=>void advance(o)}>{t("Passer Ã  l'Ã©tape suivante")}</button>}
+          </li>;
+        })}</ul>}
+      </section>
+    </div>
+    </>}
+  </div>;
+}
+
+function Metric({label,value,detail}:{label:string;value:string|number;detail:string}){return <div className="card rounded-2xl border border-border p-5"><p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</p><p className="mt-2 font-display text-3xl font-semibold text-foreground">{value}</p><p className="mt-1 text-xs text-muted-foreground">{detail}</p></div>;}
+
+function L({t,children}:{t:string;children:React.ReactNode}){return <label className="grid gap-1 text-sm font-medium">{t}{children}</label>;}
