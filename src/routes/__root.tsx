@@ -1,7 +1,7 @@
 import { useLanguage } from "@/lib/i18n";
 import { LanguageProvider } from "@/lib/language-provider";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Outlet, Link, createRootRouteWithContext, useRouter, HeadContent, Scripts, type ErrorComponentProps } from "@tanstack/react-router";
+import { Outlet, Link, createRootRouteWithContext, useRouter, useRouterState, HeadContent, Scripts, type ErrorComponentProps } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import appCss from "../styles.css?url";
@@ -50,7 +50,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: appCss },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Manrope:wght@400;500;600;700&display=swap" },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/maree-jersey-logo.png", type: "image/png" },
     ],
   }),
   shellComponent: RootShell,
@@ -89,13 +89,17 @@ function RootComponent() {
 function RootContent() {
   const { t, language, setLanguage } = useLanguage();
   const { queryClient } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   const [open, setOpen] = useState(false);
+  const previewMode = import.meta.env["VITE_MAREE_PREVIEW_MODE"] === "true";
+  const previewRestricted = previewMode && ["/connexion", "/compte", "/verification", "/espace-pecheur", "/admin", "/tracabilite"].some((path) => pathname === path || pathname.startsWith(path + "/"));
   useEffect(() => {
     document.title = t("Marée Jersey — marché local de produits de la mer");
     document.querySelector('meta[name="description"]')?.setAttribute("content", t("Des produits de la mer frais de Jersey, directement des pêcheurs aux cuisines professionnelles."));
   }, [language, t]);
   const [account, setAccount] = useState<{ email: string; avatarUrl: string | null } | null>(null);
   useEffect(() => {
+    if (previewMode) { setAccount(null); return; }
     let active = true;
     const loadAccount = async (user: { id: string; email?: string }) => {
       const { data } = await supabase.from("profiles").select("avatar_url").eq("id", user.id).maybeSingle();
@@ -109,15 +113,16 @@ function RootContent() {
       if (session?.user) void loadAccount(session.user); else setAccount(null);
     });
     return () => { active = false; listener.subscription.unsubscribe(); };
-  }, []);
-  const links = NAV.map((n, i) => ({ ...n, icon: ["◈", "♧", "▣", "↗", "♙", "✓", "⌂", "⚙", "i", "🍽", "⌗"][i] }));
+  }, [previewMode]);
+  const visibleNav = previewMode ? NAV.filter((item) => ["/catalogue", "/pecheurs", "/restaurant", "/guide", "/recettes"].includes(item.to)) : NAV;
+  const links = visibleNav.map((n) => ({ ...n, icon: (NAV.findIndex((item) => item.to === n.to) >= 0 ? ["◈", "♧", "▣", "↗", "♙", "✓", "⌂", "⚙", "i", "🍽", "⌗"][NAV.findIndex((item) => item.to === n.to)] : "◈") }));
   return (
     <QueryClientProvider client={queryClient}>
       <a href="#main" className="sr-only focus:not-sr-only">{t("Aller au contenu")}</a>
       <div className="min-h-screen bg-background lg:flex">
         <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-border bg-card/95 px-4 py-5 backdrop-blur lg:flex">
           <Link to="/" className="mb-9 flex items-center gap-3 px-2 font-display text-xl font-semibold text-foreground">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-xl text-accent-foreground">≈</span>
+            <img src="/maree-jersey-logo.png" alt="" className="h-12 w-12 rounded-xl bg-black object-cover shadow-sm ring-1 ring-white/15" />
             <span>Marée <span className="text-accent">Jersey</span></span>
           </Link>
           <p className="mb-3 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">{t("Marché local")}</p>
@@ -143,11 +148,11 @@ function RootContent() {
                 <p className="hidden text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground lg:block">{t("Marché de la mer · Jersey")}</p>
               </div>
               <div className="flex items-center gap-2">
-                <NotificationCenter />
-                <Link to="/compte" className="flex items-center gap-2 rounded-full border border-border bg-card py-1 pl-1 pr-3 text-xs font-semibold text-foreground transition hover:border-accent" aria-label={t("Mon compte")}>
+                {!previewMode && <NotificationCenter />}
+                {!previewMode && <Link to="/compte" className="flex items-center gap-2 rounded-full border border-border bg-card py-1 pl-1 pr-3 text-xs font-semibold text-foreground transition hover:border-accent" aria-label={t("Mon compte")}>
                   <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-secondary text-accent">{account?.avatarUrl ? <img src={account.avatarUrl} alt="" className="h-full w-full object-cover" /> : "♙"}</span>
                   <span className="hidden sm:inline">{t("Mon compte")}</span>
-                </Link>
+                </Link>}
                 <span className="hidden text-xs text-muted-foreground sm:inline">{t("Marché de la mer · Jersey")}</span>
                 <div role="group" aria-label={t("Langue")} className="inline-flex shrink-0 items-center rounded-lg border border-border bg-card p-1">
                   {([{ code: "fr", label: "FR" }, { code: "en", label: "EN" }, { code: "ro", label: "RO" }] as const).map((item) => (
@@ -160,17 +165,20 @@ function RootContent() {
               {links.map((n) => <Link key={n.to} to={n.to} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-3 font-medium text-muted-foreground" activeProps={{ className: "bg-secondary text-accent" }}>{n.to === "/compte" ? <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-secondary text-accent">{account?.avatarUrl ? <img src={account.avatarUrl} alt="" className="h-full w-full object-cover" /> : "♙"}</span> : <span aria-hidden="true">{n.icon}</span>}{t(n.label)}</Link>)}
             </nav>}
           </header>
+          {previewMode && <div role="status" className="border-b border-amber-500/40 bg-amber-500/10 px-4 py-2 text-center text-sm font-medium text-amber-900 dark:text-amber-200">
+            {language === "fr" ? "Prévisualisation isolée : données, comptes et commandes partagés désactivés. Aucun paiement n’est actif." : language === "ro" ? "Previzualizare izolată: datele, conturile și comenzile partajate sunt dezactivate. Nicio plată nu este activă." : "Isolated preview: shared data, accounts and orders are disabled. No payments are active."}
+          </div>}
           <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-border bg-card/95 px-2 py-2 shadow-2xl backdrop-blur lg:hidden" aria-label={t("Navigation rapide")}>
-            {([{to:"/",label:"Accueil",icon:"⌂"},{to:"/catalogue",label:"Pêche du jour",icon:"♧"},{to:"/restaurant",label:"Restaurant",icon:"▣"},{to:"/espace-pecheur",label:"Pêcheur",icon:"≈"}] as const).map((item)=>(
+            {(previewMode ? [{to:"/",label:"Accueil",icon:"⌂"},{to:"/catalogue",label:"Pêche du jour",icon:"♧"},{to:"/restaurant",label:"Restaurant",icon:"▣"},{to:"/pecheurs",label:"Pêcheurs",icon:"♙"}] as const : [{to:"/",label:"Accueil",icon:"⌂"},{to:"/catalogue",label:"Pêche du jour",icon:"♧"},{to:"/restaurant",label:"Restaurant",icon:"▣"},{to:"/espace-pecheur",label:"Pêcheur",icon:"≈"}] as const).map((item)=>(
               <Link key={item.to} to={item.to} className="flex min-w-0 flex-col items-center gap-1 rounded-lg px-1 py-1 text-[10px] font-semibold text-muted-foreground" activeProps={{className:"text-accent"}}>
                 <span className="text-lg leading-none" aria-hidden="true">{item.icon}</span><span className="truncate">{t(item.label)}</span>
               </Link>
             ))}
           </nav>
-      <main id="main" className="min-h-[70vh] pb-24 lg:pb-8"><Outlet /></main>
+      <main id="main" className="min-h-[70vh] pb-24 lg:pb-8">{previewRestricted ? <PreviewAccessGate /> : <Outlet />}</main>
       <footer className="mt-12 border-t border-border bg-card text-card-foreground">
         <div className="mx-auto max-w-7xl px-4 py-8 text-sm text-muted-foreground lg:px-8">
-          <p className="font-display text-lg">Marée Jersey</p>
+          <div className="flex items-center gap-3"><img src="/maree-jersey-logo.png" alt="" className="h-10 w-10 rounded-lg bg-black object-cover" /><p className="font-display text-lg">Marée Jersey</p></div>
           <p className="mt-1">{t("Les disponibilités et commandes affichées proviennent du marché partagé. Les réservations sont des demandes : aucun paiement en ligne n’est activé dans cette version.")}</p>
           <div className="mt-4 flex flex-wrap gap-4 text-xs"><Link to="/mentions-legales" className="underline hover:text-foreground">{t("Informations légales & confidentialité")}</Link><a href="tel:07700343725" className="underline hover:text-foreground">Alexandre Cosqueric · 07700343725</a></div>
         </div>
@@ -180,4 +188,13 @@ function RootContent() {
       <Toaster />
     </QueryClientProvider>
   );
+}
+
+function PreviewAccessGate() {
+  const { t } = useLanguage();
+  return <section className="mx-auto grid max-w-2xl gap-4 px-4 py-20 text-center">
+    <h1 className="font-display text-3xl font-semibold">{t("Espace non disponible dans cette maquette")}</h1>
+    <p className="text-muted-foreground">{t("Cette prévisualisation présente uniquement le parcours public avec des données fictives. Aucun compte ni aucune action réelle ne sont disponibles.")}</p>
+    <Link className="btn btn-accent mx-auto" to="/catalogue">{t("Voir la pêche du jour")}</Link>
+  </section>;
 }

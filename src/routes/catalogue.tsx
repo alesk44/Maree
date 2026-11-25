@@ -2,7 +2,7 @@ import { useLanguage } from "@/lib/i18n";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import type { Catch } from "@/lib/store";
-import { useSharedMarket } from "@/lib/shared-market";
+import { IS_PREVIEW_MODE, useSharedMarket } from "@/lib/shared-market";
 import { DemoBadge, Empty, PageHeader, StatusPill } from "@/components/ui-bits";
 
 export const Route = createFileRoute("/catalogue")({
@@ -42,6 +42,7 @@ function Catalogue() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
       <PageHeader title={t("Pêche du jour")} sub={t("Lots publiés par les pêcheurs partenaires.")} />
+      {IS_PREVIEW_MODE && <div className="mb-4"><DemoBadge /></div>}
       {loading && <p role="status" className="mb-4 text-sm text-muted-foreground">{t("Chargement des prises partagées…")}</p>}
       {error && <p role="alert" className="mb-4 rounded-lg border border-destructive/40 p-3 text-sm">{t("Catalogue indisponible :")} {error}</p>}
       {!loading && !error && catches.length === 0 && <p className="mb-4 text-sm text-muted-foreground">{t("Aucune prise réelle publiée pour le moment.")}</p>}
@@ -97,7 +98,7 @@ function CatchCard({ c, fisher, boat }: { c: Catch; fisher: string; boat: string
         </dl>
         <p className="mt-3 rounded-md bg-muted p-2 text-xs">❄️ {t(c.storage)}</p>
         {c.status === "disponible" && c.qtyKg > 0 && (
-          <Link to="/restaurant" search={{ produit: c.id }} className="btn mt-4 w-full">{t("Réserver")}</Link>
+          <Link to="/restaurant" search={{ produit: c.id }} className="btn mt-4 w-full">{t(IS_PREVIEW_MODE ? "Voir l’exemple de commande" : "Réserver")}</Link>
         )}
       </div>
     </article>

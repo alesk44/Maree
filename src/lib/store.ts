@@ -47,6 +47,11 @@ const seed = (): State => ({
   ],
 });
 
+export const previewMarket = (() => {
+  const demo = seed();
+  return { fishers: demo.fishers, catches: demo.catches };
+})();
+
 const KEY = "maree-jersey-v1";
 let state: State = seed();
 let loaded = false;

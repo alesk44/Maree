@@ -1,4 +1,4 @@
-name: Deploy private preview to Cloudflare Workers
+name: Deploy isolated preview to Cloudflare Workers
 
 # Preview deployment is deliberately manual. CI never publishes a Worker.
 on:
@@ -31,8 +31,12 @@ jobs:
           bun-version: 1.4.5
       - name: Install dependencies (frozen lockfile)
         run: bun install --frozen-lockfile
-      - name: Build application
+      - name: Build isolated preview (local data backend only)
         run: bun run build
+        env:
+          VITE_MAREE_PREVIEW_MODE: "true"
+          VITE_SUPABASE_URL: http://127.0.0.1:54321
+          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_preview_unconfigured
       - name: Deploy isolated preview Worker
         run: bunx wrangler deploy --name maree-jersey-preview
         env:

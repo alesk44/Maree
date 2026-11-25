@@ -4,7 +4,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { fetchMyOrders, fetchMyMonthlyInvoices, fetchMyMareeCommissionInvoices, declareMareeCommissionInvoicePaid, reserveSharedCatch, requestMyOrderCancellation, respondMyOrderCancellation, setRestaurantFisherBillingMode, useSharedMarket, type SharedOrderRow, type SharedMonthlyInvoiceRow, type SharedMareeCommissionInvoiceRow } from "@/lib/shared-market";
 import { supabase } from "@/lib/supabase";
-import { Empty, OrderSteps, PageHeader } from "@/components/ui-bits";
+import { DemoBadge, Empty, OrderSteps, PageHeader } from "@/components/ui-bits";
+
+type RestaurantSubscriptionRow = { id:string; monthly_fee:number|string; started_at:string; ends_at:string|null; accepted_at:string };
 
 export const Route = createFileRoute("/restaurant")({
   validateSearch: (s: Record<string, unknown>) => ({ produit: typeof s["produit"] === "string" ? s["produit"] : undefined }),
@@ -20,6 +22,58 @@ export const Route = createFileRoute("/restaurant")({
 });
 
 function Restaurant() {
+  return import.meta.env["VITE_MAREE_PREVIEW_MODE"] === "true" ? <RestaurantPreview /> : <RestaurantDashboard />;
+}
+
+function RestaurantPreview() {
+  const { t, gbp, dt } = useLanguage();
+  const { produit } = Route.useSearch();
+  const { catches, fishers } = useSharedMarket();
+  const selectedCatch = catches.find((item) => item.id === produit) ?? catches.find((item) => item.id === "c3") ?? catches[0];
+  const sampleQuantity = selectedCatch ? Math.min(3, selectedCatch.qtyKg) : 0;
+  const productSubtotal = selectedCatch ? Math.round(sampleQuantity * selectedCatch.priceKg * 100) / 100 : 0;
+  const orderFee = Math.round(productSubtotal * 0.065 * 100) / 100;
+  const deliveryFee = Math.round(productSubtotal * 0.2 * 100) / 100;
+  return <div className="mx-auto grid max-w-6xl gap-6 px-4 py-10">
+    <div><PageHeader title={t("Espace restaurant")} sub={t("Parcours de commande et de facturation présenté en mode démonstration.")} /><DemoBadge /></div>
+    <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+      <article className="card overflow-hidden">
+        <div className="bg-sea p-6 text-white sm:p-8">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/75">{t("Exemple de commande")}</p>
+          <h2 className="mt-2 font-display text-3xl font-semibold">{selectedCatch ? t(selectedCatch.species) : t("Pêche de Jersey")}</h2>
+          {selectedCatch && <p className="mt-2 text-sm text-white/80">{fishers.find((fisher) => fisher.id === selectedCatch.fisherId)?.name} · {selectedCatch.zone} · {dt(selectedCatch.landedAt)}</p>}
+        </div>
+        <div className="grid gap-3 p-6 sm:grid-cols-2">
+          <div className="rounded-xl bg-secondary/60 p-4"><p className="text-xs text-muted-foreground">{t("Quantité d’exemple")}</p><p className="mt-1 text-xl font-semibold">{sampleQuantity} kg</p></div>
+          <div className="rounded-xl bg-secondary/60 p-4"><p className="text-xs text-muted-foreground">{t("Prix produits indicatif")}</p><p className="mt-1 text-xl font-semibold">{gbp(productSubtotal)}</p></div>
+        </div>
+        <p className="px-6 pb-6 text-sm text-muted-foreground">{t("Le restaurant et le pêcheur échangent leur facture de produits directement par e-mail. Cette maquette ne crée ni commande ni facture réelle.")}</p>
+      </article>
+      <article className="card grid content-start gap-4 p-6">
+        <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">{t("Facturation Marée")}</p><h2 className="mt-2 font-display text-2xl font-semibold">{t("Un relevé mensuel clair")}</h2></div>
+        <div className="grid gap-3 text-sm">
+          <BillLine label={t("Abonnement restaurant")} value={gbp(19.99)+t(" / mois")} />
+          <BillLine label={t("Frais Marée de cet exemple (6,5 %)")} value={gbp(orderFee)} />
+          <BillLine label={t("Livraison de cet exemple (20 %)")} value={gbp(deliveryFee)} />
+          <div className="border-t border-border pt-3"><BillLine label={t("Total Marée estimé ce mois")} value={gbp(19.99+orderFee+deliveryFee)} strong /></div>
+        </div>
+        <p className="rounded-lg bg-secondary/60 p-3 text-xs leading-relaxed text-muted-foreground">{t("Tarifs illustratifs : les frais des commandes sont regroupés avec l’abonnement de 19,99 £. Aucun paiement en ligne n’est actif et rien ne sera prélevé dans cette maquette.")}</p>
+        <button type="button" className="btn btn-accent w-full" disabled>{t("Réservation désactivée dans la maquette")}</button>
+      </article>
+    </section>
+    <section className="card grid gap-3 p-6 sm:grid-cols-3">
+      <div><p className="text-xs uppercase tracking-wider text-muted-foreground">{t("Paiement des produits")}</p><p className="mt-1 font-semibold">{t("Facture e-mail pêcheur → restaurant")}</p></div>
+      <div><p className="text-xs uppercase tracking-wider text-muted-foreground">{t("Abonnement de l’application")}</p><p className="mt-1 font-semibold">{gbp(19.99)}{t(" / mois")}</p></div>
+      <div><p className="text-xs uppercase tracking-wider text-muted-foreground">{t("Frais de commandes")}</p><p className="mt-1 font-semibold">{t("6,5 % regroupés sur le relevé Marée")}</p></div>
+    </section>
+  </div>;
+}
+
+function BillLine({ label, value, strong = false }: { label:string; value:string; strong?:boolean }) {
+  return <div className="flex items-center justify-between gap-4"><span className={strong?"font-semibold":"text-muted-foreground"}>{label}</span><span className={strong?"font-display text-xl font-semibold":"font-semibold"}>{value}</span></div>;
+}
+
+function RestaurantDashboard() {
   const { t, gbp, dt } = useLanguage();
   const tRef = useRef(t);
   useEffect(() => { tRef.current = t; }, [t]);
@@ -42,6 +96,10 @@ function Restaurant() {
   const [mareeFeeRate,setMareeFeeRate]=useState(0.065);
   const [deliveryFeeRate,setDeliveryFeeRate]=useState(0.20);
   const [deliveryFeePayer,setDeliveryFeePayer]=useState<'buyer'|'fisher'>('buyer');
+  const [monthlySubscriptionFee,setMonthlySubscriptionFee]=useState(19.99);
+  const [subscriptions,setSubscriptions]=useState<RestaurantSubscriptionRow[]>([]);
+  const [subscriptionConsent,setSubscriptionConsent]=useState(false);
+  const [subscriptionBusy,setSubscriptionBusy]=useState(false);
 
   const loadOrders = useCallback(async () => {
     setOrdersLoading(true);
@@ -52,10 +110,13 @@ function Restaurant() {
         const {data:commercialRows,error:commercialError}=await supabase.rpc('get_maree_commercial_settings');
         if(commercialError) throw commercialError;
         const commercial=Array.isArray(commercialRows)?commercialRows[0]:commercialRows;
-        if(commercial){setMareeFeeRate(Number(commercial.maree_fee_rate));setDeliveryFeeRate(Number(commercial.delivery_fee_rate));setDeliveryFeePayer(commercial.delivery_fee_payer==='fisher'?'fisher':'buyer');}
+        if(commercial){setMareeFeeRate(Number(commercial.maree_fee_rate));setDeliveryFeeRate(Number(commercial.delivery_fee_rate));setDeliveryFeePayer(commercial.delivery_fee_payer==='fisher'?'fisher':'buyer');setMonthlySubscriptionFee(Number(commercial.monthly_subscription_fee));}
+        const {data:subscriptionRows,error:subscriptionError}=await supabase.from("maree_restaurant_subscriptions").select("id,monthly_fee,started_at,ends_at,accepted_at").order("started_at",{ascending:false});
+        if(subscriptionError) throw subscriptionError;
+        setSubscriptions((subscriptionRows??[]) as RestaurantSubscriptionRow[]);
         const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", auth.user.id).maybeSingle();
         setProfileName(profile?.display_name ?? "");
-      }
+      } else setSubscriptions([]);
       const [nextOrders,nextInvoices,nextMareeInvoices] = await Promise.all([fetchMyOrders(),fetchMyMonthlyInvoices(),fetchMyMareeCommissionInvoices()]);
       setOrders(nextOrders);
       setMonthlyInvoices(nextInvoices);
@@ -85,8 +146,36 @@ function Restaurant() {
     + monthlyUnbilled.reduce((sum,o)=>sum+Number(o.tip_amount??0),0);
   const fisherPaid = deliveredOrders.filter(o=>o.fisher_payment_status==="paid").reduce((sum,o)=>sum+Number(o.product_subtotal??0)+Number(o.tip_amount??0)-(o.delivery_fee_payer_snapshot==='fisher'?Number(o.delivery_fee??0):0),0);
   const mareeAccrued = deliveredOrders.reduce((sum,o)=>sum+Number(o.maree_fee??0)+(o.delivery_fee_payer_snapshot==='buyer'?Number(o.delivery_fee??0):0),0);
-  const mareeSettled = mareeInvoices.filter(i=>i.status==="paid").reduce((sum,i)=>sum+Number(i.commission_total)+Number(i.delivery_total),0);
-  const mareeOutstanding = Math.max(0,mareeAccrued-mareeSettled);
+  const mareeSettled = mareeInvoices.filter(i=>i.status==="paid").reduce((sum,i)=>sum+Number(i.commission_total)+Number(i.delivery_total)+Number(i.subscription_total??0),0);
+  const mareePaidOrderFees = mareeInvoices.filter(i=>i.status==="paid").reduce((sum,i)=>sum+Number(i.commission_total)+Number(i.delivery_total),0);
+  const mareeOutstanding = Math.max(0,mareeAccrued-mareePaidOrderFees)+mareeInvoices.filter(i=>i.status==="open"||i.status==="declared_paid").reduce((sum,i)=>sum+Number(i.subscription_total??0),0);
+  const now=Date.now();
+  const activeSubscription=subscriptions.find(s=>new Date(s.started_at).getTime()<=now&&(!s.ends_at||new Date(s.ends_at).getTime()>now));
+
+  const startSubscription=async()=>{
+    if(!subscriptionConsent)return;
+    setSubscriptionBusy(true);
+    try{
+      const {error:startError}=await supabase.rpc("start_maree_restaurant_subscription",{p_accept_terms:true});
+      if(startError)throw startError;
+      setSubscriptionConsent(false);
+      toast.success(t("Abonnement Marée activé."));
+      await loadOrders();
+    }catch(error){toast.error(error instanceof Error?t(error.message):t("Impossible d’activer l’abonnement."));}
+    finally{setSubscriptionBusy(false);}
+  };
+
+  const cancelSubscription=async()=>{
+    if(!window.confirm(t("La résiliation prendra effet à la fin du mois civil en cours. Continuer ?")))return;
+    setSubscriptionBusy(true);
+    try{
+      const {error:cancelError}=await supabase.rpc("cancel_maree_restaurant_subscription");
+      if(cancelError)throw cancelError;
+      toast.success(t("Résiliation programmée pour la fin du mois."));
+      await loadOrders();
+    }catch(error){toast.error(error instanceof Error?t(error.message):t("Impossible de résilier l’abonnement."));}
+    finally{setSubscriptionBusy(false);}
+  };
 
   useEffect(() => { void loadOrders(); }, [loadOrders]);
   useEffect(() => {
@@ -152,6 +241,17 @@ function Restaurant() {
     </section>
     {accountTab==="billing" && <section className="card mb-8 grid gap-4 p-5">
       <div><h2 className="text-xl font-semibold">{t("Facturation et relevés")}</h2><p className="text-sm text-muted-foreground">{t("Historique des commandes livrées. Les montants reprennent les prix et frais figés à la réservation ; aucun paiement n'est encaissé dans cette version.")}</p></div>
+      <section className="rounded-xl border border-border p-4" aria-labelledby="maree-subscription-heading">
+        <h3 id="maree-subscription-heading" className="font-semibold">{t("Abonnement Marée")}</h3>
+        <p className="mt-1 text-sm text-muted-foreground">{t("L’abonnement coûte {amount} par mois civil complet, sans prorata. Il est facturé dans le même relevé mensuel que les frais des commandes Marée. Les factures des produits restent échangées directement entre restaurant et pêcheur par e-mail. Aucun paiement en ligne n’est actif.",{amount:gbp(Number(activeSubscription?.monthly_fee??monthlySubscriptionFee))})}</p>
+        {activeSubscription ? <div className="mt-3 grid gap-2 text-sm">
+          <p>{activeSubscription.ends_at?t("Résiliation prévue le {date}",{date:dt(activeSubscription.ends_at)}):t("Abonnement actif depuis le {date}",{date:dt(activeSubscription.started_at)})}</p>
+          {!activeSubscription.ends_at&&<button type="button" className="btn w-fit" disabled={subscriptionBusy} onClick={()=>void cancelSubscription()}>{subscriptionBusy?t("Traitement…"):t("Résilier à la fin du mois")}</button>}
+        </div> : <div className="mt-3 grid gap-3">
+          <label className="flex items-start gap-2 text-sm"><input className="mt-1" type="checkbox" checked={subscriptionConsent} onChange={e=>setSubscriptionConsent(e.target.checked)}/><span>{t("J’accepte l’abonnement Marée à {amount} par mois civil complet, sans prorata, à compter de son activation. La résiliation prendra effet à la fin du mois en cours. Les frais de commande Marée restent facturés en plus.",{amount:gbp(monthlySubscriptionFee)})}</span></label>
+          <button type="button" className="btn btn-accent w-fit" disabled={!subscriptionConsent||subscriptionBusy} onClick={()=>void startSubscription()}>{subscriptionBusy?t("Traitement…"):t("Activer l’abonnement")}</button>
+        </div>}
+      </section>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         <Metric label={t("Commandes livrées")} value={deliveredOrders.length} detail={t("Historique")}/>
         <Metric label={t("Dette pêcheurs")} value={gbp(fisherDebt)} detail={t("Produits et pourboires non réglés")}/>
@@ -161,12 +261,12 @@ function Restaurant() {
         <Metric label={t("Paiements Marée vérifiés")} value={gbp(mareeSettled)} detail={t("Relevés réglés")}/>
       </div>
       <div className="grid gap-2">
-        <h3 className="font-semibold">{t("Relevés mensuels de commission Marée")}</h3>
-        <p className="text-xs text-muted-foreground">{t("Ces relevés regroupent la commission Marée et les frais de livraison imputés au restaurant selon les tarifs figés à chaque réservation. Ils sont distincts des factures produits dues aux pêcheurs. Une déclaration de paiement reste à vérifier par l’administration.")}</p>
+        <h3 className="font-semibold">{t("Relevés mensuels Marée")}</h3>
+        <p className="text-xs text-muted-foreground">{t("Ces relevés regroupent l’abonnement accepté, les frais Marée et la livraison due par le restaurant. Ils sont distincts des factures produits dues directement aux pêcheurs. Une déclaration de paiement reste à vérifier par l’administration.")}</p>
         {mareeInvoices.length===0 ? <Empty>{t("Aucun relevé mensuel de commission pour le moment.")}</Empty> :
           <ul className="grid gap-2">{mareeInvoices.map(i=><li key={i.id} className="rounded-xl border border-border p-4">
-            <div className="flex flex-wrap justify-between gap-2"><strong>{t("Période")} {i.period_start} — {i.period_end}</strong><strong>{gbp(Number(i.commission_total)+Number(i.delivery_total))}</strong></div>
-            <p className="text-xs text-muted-foreground">{t("Commission Marée")} : {gbp(Number(i.commission_total))} · {t("Livraison facturée au restaurant")} : {gbp(Number(i.delivery_total))}</p>
+            <div className="flex flex-wrap justify-between gap-2"><strong>{t("Période")} {i.period_start} — {i.period_end}</strong><strong>{gbp(Number(i.commission_total)+Number(i.delivery_total)+Number(i.subscription_total??0))}</strong></div>
+            <p className="text-xs text-muted-foreground">{t("Abonnement Marée")} : {gbp(Number(i.subscription_total??0))} · {t("Frais des commandes Marée")} : {gbp(Number(i.commission_total))} · {t("Livraison facturée au restaurant")} : {gbp(Number(i.delivery_total))}</p>
             <p className="text-sm text-muted-foreground">{t("Échéance")} : {i.due_date} · {i.status==="paid"?t("Paiement vérifié par Marée"):i.status==="declared_paid"?t("Paiement déclaré — vérification Marée en attente"):i.status==="void"?t("Annulé"):t("À régler à Marée")}</p>
             {i.items?.length ? <ul className="mt-2 grid gap-1 border-t border-border pt-2 text-xs">{i.items.map(item=><li key={item.order_id} className="flex flex-wrap justify-between gap-2"><span>Commande {item.order_id.slice(0,8).toUpperCase()} · {item.fulfilment==="delivery"?t("Livraison"):t("Retrait")} · {gbp(Number(item.product_subtotal))} {t("produits")}</span><strong>{t("Commission")} : {gbp(Number(item.commission_amount))} · {t("Livraison")} : {gbp(Number(item.delivery_amount))} · {t(item.delivery_fee_payer_snapshot==='buyer'?'Payée par le restaurant':'Déduite du pêcheur')}</strong></li>)}</ul> : null}
             {i.payment_method&&<p className="text-xs text-muted-foreground">{t("Mode")} : {i.payment_method} {i.payment_reference?("· "+t("Référence")+" : "+i.payment_reference):""}</p>}
