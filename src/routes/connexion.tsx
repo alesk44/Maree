@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import type { AuthError } from "@supabase/supabase-js";
 import { toast } from "sonner";
@@ -26,6 +26,8 @@ export const Route = createFileRoute("/connexion")({
 
 function AuthPage() {
   const { t } = useLanguage();
+  const tRef = useRef(t);
+  useEffect(() => { tRef.current = t; }, [t]);
   // Build redirects from the current app origin so preview and production both work.
   // Supabase Auth must allowlist each deployed origin in its URL configuration.
   const getAuthRedirectUrl = () => `${window.location.origin}/connexion`;
@@ -51,7 +53,7 @@ function AuthPage() {
         const { data: roleData } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
         if (active) setAccountRole(roleData?.role ?? null);
         const { data: rawProfile, error: profileError } = await supabase.rpc("get_my_business_profile").maybeSingle();
-        if (profileError) toast.error(t("Impossible de charger les coordonnées professionnelles."));
+        if (profileError) toast.error(tRef.current("Impossible de charger les coordonnées professionnelles."));
         const profile = rawProfile as MyBusinessProfile | null;
         if (active && profile) {
           setProfileName(profile.display_name ?? "");
@@ -65,7 +67,7 @@ function AuthPage() {
         void supabase.from("profiles").select("role").eq("id", session.user.id).maybeSingle()
           .then(({ data }) => setAccountRole(data?.role ?? null));
         void supabase.rpc("get_my_business_profile").maybeSingle()
-          .then(({ data: rawProfile, error }) => { if (error) { toast.error(t("Impossible de charger les coordonnées professionnelles.")); return; } const data = rawProfile as MyBusinessProfile | null; if (data) {
+          .then(({ data: rawProfile, error }) => { if (error) { toast.error(tRef.current("Impossible de charger les coordonnées professionnelles.")); return; } const data = rawProfile as MyBusinessProfile | null; if (data) {
             setProfileName(data.display_name ?? "");
             setBusinessProfile({ phone: data.phone ?? "", business_address: data.business_address ?? "", business_postcode: data.business_postcode ?? "", business_city: data.business_city ?? "", business_email: data.business_email ?? session.user.email ?? "" });
           } });

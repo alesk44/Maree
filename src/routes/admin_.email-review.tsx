@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { useLanguage } from "@/lib/i18n";
 
-export const Route = createFileRoute("/admin/email-review")({
+export const Route = createFileRoute("/admin_/email-review")({
   validateSearch: (search: Record<string, unknown>) => ({
     token: typeof search["token"] === "string" ? search["token"] : "",
     action: search["action"] === "approved" || search["action"] === "rejected" ? search["action"] : "",

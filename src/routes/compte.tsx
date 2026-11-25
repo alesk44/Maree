@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
@@ -11,6 +11,8 @@ export const Route = createFileRoute("/compte")({
 
 function AccountPage() {
   const { t } = useLanguage();
+  const tRef = useRef(t);
+  useEffect(() => { tRef.current = t; }, [t]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -36,7 +38,7 @@ function AccountPage() {
         .select("display_name, avatar_url, role").eq("id", data.user.id).maybeSingle();
       const { data: privateProfile } = await supabase.rpc("get_my_business_profile").maybeSingle();
       if (!active) return;
-      if (profileError) toast.error(t("Une erreur technique est survenue. Réessayez."));
+      if (profileError) toast.error(tRef.current("Une erreur technique est survenue. Réessayez."));
       setName(profile?.["display_name"] ?? String(data.user.user_metadata?.["display_name"] ?? ""));
       setRole(profile?.role ?? "");
       const privateDetails = privateProfile as { phone?: string | null; business_address?: string | null; business_postcode?: string | null; business_city?: string | null; business_email?: string | null } | null;

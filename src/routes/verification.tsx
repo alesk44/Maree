@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { useLanguage } from "@/lib/i18n";
@@ -12,11 +12,12 @@ const initial:Details = { fisher_category:"independent",vessel_name:"",home_port
 
 function VerificationPage() {
  const {t,language}=useLanguage(); const [email,setEmail]=useState<string|null>(null); const [userId,setUserId]=useState<string|null>(null);
+ const tRef=useRef(t); useEffect(()=>{tRef.current=t;},[t]);
  const [rows,setRows]=useState<RequestRow[]>([]); const [busy,setBusy]=useState(false); const [details,setDetails]=useState<Details>(initial); const [documentType,setDocumentType]=useState("fishing_licence"); const [documents,setDocuments]=useState<File[]>([]); const [expiresAt,setExpiresAt]=useState("");
  const [form,setForm]=useState({requested_role:"fisher" as "fisher"|"restaurant",business_name:"",contact_name:"",phone:"",registration_number:"",evidence_note:""});
  useEffect(()=>{supabase.auth.getUser().then(({data})=>{setEmail(data.user?.email??null);setUserId(data.user?.id??null);});},[]);
- const loadRows=async()=>{if(!userId)return;const {data,error}=await supabase.from("verification_requests").select("id,requested_role,business_name,status,created_at,reviewer_note").order("created_at",{ascending:false});if(error)toast.error(t("Une erreur technique est survenue. Réessayez."));else setRows((data??[]) as RequestRow[]);};
- useEffect(()=>{void loadRows();},[userId]);
+ const loadRows=useCallback(async()=>{if(!userId)return;const {data,error}=await supabase.from("verification_requests").select("id,requested_role,business_name,status,created_at,reviewer_note").order("created_at",{ascending:false});if(error)toast.error(tRef.current("Une erreur technique est survenue. Réessayez."));else setRows((data??[]) as RequestRow[]);},[userId]);
+ useEffect(()=>{void loadRows();},[loadRows]);
  const updateDetail=(key:keyof Details,value:string|boolean)=>setDetails(old=>({...old,[key]:value}));
  const submit=async(e:React.FormEvent)=>{e.preventDefault();if(!userId){toast.error(t("Connectez-vous avant de demander une vérification."));return;}setBusy(true);
  const {data:inserted,error}=await supabase.from("verification_requests").insert({user_id:userId,...form,business_name:form.business_name.trim(),contact_name:form.contact_name.trim(),phone:form.phone.trim(),registration_number:form.registration_number.trim()||null,evidence_note:form.evidence_note.trim(),fisher_category:form.requested_role==="fisher"?details.fisher_category:null,compliance_details:form.requested_role==="fisher"?details:{}}).select("id").single();

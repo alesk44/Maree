@@ -1,6 +1,6 @@
 import { useLanguage } from "@/lib/i18n";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { fetchMyOrders, fetchMyMonthlyInvoices, fetchMyMareeCommissionInvoices, declareMareeCommissionInvoicePaid, reserveSharedCatch, requestMyOrderCancellation, respondMyOrderCancellation, setRestaurantFisherBillingMode, useSharedMarket, type SharedOrderRow, type SharedMonthlyInvoiceRow, type SharedMareeCommissionInvoiceRow } from "@/lib/shared-market";
 import { supabase } from "@/lib/supabase";
@@ -21,6 +21,8 @@ export const Route = createFileRoute("/restaurant")({
 
 function Restaurant() {
   const { t, gbp, dt } = useLanguage();
+  const tRef = useRef(t);
+  useEffect(() => { tRef.current = t; }, [t]);
   const { produit } = Route.useSearch();
   const { catches, fishers, loading, error, refresh } = useSharedMarket();
   const [orders, setOrders] = useState<SharedOrderRow[]>([]);
@@ -41,7 +43,7 @@ function Restaurant() {
   const [deliveryFeeRate,setDeliveryFeeRate]=useState(0.20);
   const [deliveryFeePayer,setDeliveryFeePayer]=useState<'buyer'|'fisher'>('buyer');
 
-  const loadOrders = async () => {
+  const loadOrders = useCallback(async () => {
     setOrdersLoading(true);
     try {
       const { data: auth } = await supabase.auth.getUser();
@@ -59,9 +61,9 @@ function Restaurant() {
       setMonthlyInvoices(nextInvoices);
       setMareeInvoices(nextMareeInvoices);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : t("Impossible de charger les commandes."));
+      toast.error(e instanceof Error ? e.message : tRef.current("Impossible de charger les commandes."));
     } finally { setOrdersLoading(false); }
-  };
+  }, []);
 
   const avail = catches.filter((c) => c.status === "disponible" && c.qtyKg > 0);
   const sel = catches.find((c) => c.id === catchId);
@@ -86,7 +88,7 @@ function Restaurant() {
   const mareeSettled = mareeInvoices.filter(i=>i.status==="paid").reduce((sum,i)=>sum+Number(i.commission_total)+Number(i.delivery_total),0);
   const mareeOutstanding = Math.max(0,mareeAccrued-mareeSettled);
 
-  useEffect(() => { void loadOrders(); }, []);
+  useEffect(() => { void loadOrders(); }, [loadOrders]);
   useEffect(() => {
     if (!signedIn) return;
     let active = true;
@@ -107,21 +109,22 @@ function Restaurant() {
       active = false;
       if (channel) void supabase.removeChannel(channel);
     };
-  }, [signedIn]);
+  }, [signedIn, loadOrders]);
 
   useEffect(() => { if (!catchId && catches.length) setCatchId(produit ?? catches[0]?.id ?? ""); }, [catches, catchId, produit]);
+  const selectedFisherId = sel?.fisherId;
   useEffect(() => {
     let active = true;
     const loadMode = async () => {
-      if (!signedIn || !sel) { setBillingMode("immediate"); return; }
+      if (!signedIn || !selectedFisherId) { setBillingMode("immediate"); return; }
       const { data: auth } = await supabase.auth.getUser();
       if (!auth.user) return;
-      const { data } = await supabase.from("restaurant_fisher_billing_settings").select("billing_mode").eq("restaurant_id", auth.user.id).eq("fisher_id", sel.fisherId).maybeSingle();
+      const { data } = await supabase.from("restaurant_fisher_billing_settings").select("billing_mode").eq("restaurant_id", auth.user.id).eq("fisher_id", selectedFisherId).maybeSingle();
       if (active) setBillingMode(data?.billing_mode === "monthly" ? "monthly" : "immediate");
     };
     void loadMode();
     return () => { active = false; };
-  }, [signedIn, sel?.fisherId]);
+  }, [signedIn, selectedFisherId]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();

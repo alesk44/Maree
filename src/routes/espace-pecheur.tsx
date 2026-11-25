@@ -1,6 +1,6 @@
 import { useLanguage } from "@/lib/i18n";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { createSharedCatch, fetchMyOrders, fetchMyMonthlyInvoices, confirmFisherInvoicePaid, markFisherOrderPaid, updateMyCatch, updateMyOrderStatus, useSharedMarket, type SharedOrderRow, type SharedMonthlyInvoiceRow } from "@/lib/shared-market";
 import { supabase } from "@/lib/supabase";
@@ -25,6 +25,8 @@ const labelStatus = { submitted:"envoyée", confirmed:"confirmée", ready:"prêt
 
 function FisherSpace() {
   const { t, gbp, dt } = useLanguage();
+  const tRef = useRef(t);
+  useEffect(() => { tRef.current = t; }, [t]);
   const { fishers, catches, loading, error, refresh } = useSharedMarket();
   const [userId,setUserId] = useState<string|null>(null);
   const [profileLoading,setProfileLoading] = useState(true);
@@ -63,7 +65,7 @@ function FisherSpace() {
   const paymentsReceived=deliveredOrders.filter(o=>o.fisher_payment_status==="paid").reduce((sum,o)=>sum+Number(o.product_subtotal??0)+Number(o.tip_amount??0)-(o.delivery_fee_payer_snapshot==='fisher'?Number(o.delivery_fee??0):0),0)
     +monthlyInvoices.filter(i=>i.status==="paid").reduce((sum,i)=>sum+(i.cancellation_indemnities??[]).filter(item=>item.status==="paid").reduce((lineTotal,item)=>lineTotal+Number(item.amount),0),0);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setProfileLoading(true);
     try {
       const {data:{user},error:authError}=await supabase.auth.getUser();
@@ -97,10 +99,10 @@ function FisherSpace() {
           setMonthlyInvoices(nextInvoices);
         }
       }
-    } catch(e) { toast.error(e instanceof Error && !("code" in e) ? t(e.message) : t("Impossible de charger le profil.")); return; }
+    } catch(e) { toast.error(e instanceof Error && !("code" in e) ? tRef.current(e.message) : tRef.current("Impossible de charger le profil.")); return; }
     finally { setProfileLoading(false); }
-  };
-  useEffect(()=>{void load();},[]);
+  }, []);
+  useEffect(()=>{void load();},[load]);
   useEffect(()=>{
     if(!userId || !me) return;
     let active=true;
