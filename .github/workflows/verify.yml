@@ -10,7 +10,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.5
       - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.9.8
       - run: bun install --frozen-lockfile
       - run: deno check supabase/functions/notify-verification-request/index.ts supabase/functions/review-verification-email-action/index.ts
       - run: bun run build
