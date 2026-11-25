@@ -160,7 +160,7 @@ function Admin() {
     } finally {
       setLoading(false);
     }
-  }, [language]);
+  }, [t]);
 
   useEffect(() => { void loadRequests(); }, [loadRequests]);
 
@@ -187,64 +187,7 @@ function Admin() {
     setBusyId(null);
     if (verifyError) { toast.error(t("Une erreur technique est survenue. Réessayez.")); return; }
     toast.success(t("Paiement Marée vérifié et enregistré."));
-    setCommissionInvoices((current) => current.map((invoice) => invoice.id === invoiceId ? { ...invoice, status: "paid" } : invoice));
-  };
-
-  const review = async (requestId: string, status: "approved" | "rejected") => {
-    setBusyId(requestId);
-    const { error: reviewError } = await supabase.rpc("review_verification_request", {
-      p_request_id: requestId,
-      p_status: status,
-      p_reviewer_note: notes[requestId]?.trim() || null,
-    });
-    setBusyId(null);
-    if (reviewError) {
-      toast.error(t("Une erreur technique est survenue. Réessayez."));
-      return;
-    }
-    toast.success(status === "approved" ? t("Demande approuvée. Le rôle professionnel a été attribué.") : t("Demande refusée."));
-    setRequests((current) => current.filter((request) => request.id !== requestId));
-  };
-
-  return (
-    <main className="mx-auto grid max-w-5xl gap-6 px-4 py-10">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-accent">Marée Jersey · {t("Admin")}</p>
-          <h1 className="mt-2 font-display text-3xl font-semibold">{t("Vérifications professionnelles")}</h1>
-          <p className="mt-2 text-sm text-muted-foreground">{t("Examinez les demandes avant d’accorder les droits pêcheur ou restaurant.")}</p>
-        </div>
-        <button className="btn" type="button" onClick={() => void loadRequests()} disabled={loading}>{t("Actualiser")}</button>
-      </header>
-
-      {isAdmin && !loading && <section className="card grid gap-4 p-5">
-        <div><h2 className="font-display text-2xl font-semibold">{t('Paramètres commerciaux')}</h2><p className="text-sm text-muted-foreground">{t('Ces réglages s’appliquent uniquement aux nouvelles réservations. Les commandes existantes conservent leurs taux et leur payeur d’origine.')}</p></div>
-        {commercialError&&<p role="alert" className="text-sm text-destructive">{commercialError}</p>}
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="grid gap-1 text-sm font-medium">{t('Commission Marée (%)')}<input className="field" type="number" min="0" max="100" step="0.01" value={mareeFeePercent} onChange={e=>setMareeFeePercent(e.target.value)}/></label>
-          <label className="grid gap-1 text-sm font-medium">{t('Frais de livraison (%)')}<input className="field" type="number" min="0" max="100" step="0.01" value={deliveryFeePercent} onChange={e=>setDeliveryFeePercent(e.target.value)}/></label>
-          <label className="grid gap-1 text-sm font-medium sm:col-span-2">{t('Qui paie les frais de livraison ?')}<select className="field" value={deliveryFeePayer} onChange={e=>setDeliveryFeePayer(e.target.value as 'buyer'|'fisher')}><option value="buyer">{t('Acheteur / restaurant')}</option><option value="fisher">{t('Pêcheur — déduit de son règlement')}</option></select></label>
-        </div>
-        <p className="text-xs text-muted-foreground">{t('Si le pêcheur paie, les frais sont retenus sur son montant à recevoir et ne sont pas ajoutés au relevé Marée du restaurant. Le choix est figé sur chaque commande.')}</p>
-        <button type="button" className="btn btn-accent w-fit" disabled={savingCommercial||Boolean(commercialError)} onClick={()=>void saveCommercialSettings()}>{savingCommercial?t('Enregistrement…'):t('Enregistrer les paramètres')}</button>
-      </section>}
-      {isAdmin && !loading && (() => {
-        const deliveredOrders = allOrders.filter((order) => order.status === "delivered");
-        const deliveredBase = deliveredOrders.reduce((sum, order) => sum + Number(order.product_subtotal ?? 0), 0);
-        const tips = deliveredOrders.reduce((sum,order)=>sum+Number(order.tip_amount??0),0);
-        const fisherDue = deliveredOrders.filter(order=>order.fisher_payment_status==="unpaid").reduce((sum,order)=>sum+Number(order.product_subtotal??0)+Number(order.tip_amount??0)-(order.delivery_fee_payer_snapshot==='fisher'?Number(order.delivery_fee??0):0),0);
-        const fisherPaid = deliveredOrders.filter(order=>order.fisher_payment_status==="paid").reduce((sum,order)=>sum+Number(order.product_subtotal??0)+Number(order.tip_amount??0)-(order.delivery_fee_payer_snapshot==='fisher'?Number(order.delivery_fee??0):0),0);
-        const mareeCommission = deliveredOrders.reduce((sum, order) => sum + Number(order.maree_fee ?? 0), 0);
-        const mareeDeliveryBuyer = deliveredOrders.reduce((sum, order) => sum + (order.delivery_fee_payer_snapshot==='buyer'?Number(order.delivery_fee ?? 0):0), 0);
-        const mareeDeliveryFisher = deliveredOrders.reduce((sum, order) => sum + (order.delivery_fee_payer_snapshot==='fisher'?Number(order.delivery_fee ?? 0):0), 0);
-        const mareeDelivery = mareeDeliveryBuyer + mareeDeliveryFisher;
-        const mareePaid = commissionInvoices.filter(invoice=>invoice.status==="paid").reduce((sum,invoice)=>sum+Number(invoice.commission_total)+Number(invoice.delivery_total),0);
-        const mareeOutstanding = Math.max(0,mareeCommission+mareeDeliveryBuyer-mareePaid);
-        const fmt = (value: number) => new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(value);
-        return <section className="grid gap-4">
-          <div><h2 className="font-display text-2xl font-semibold">{t("Vue d’ensemble de la plateforme")}</h2><p className="text-sm text-muted-foreground">{t("Montants calculés à partir des snapshots de commande ; aucun encaissement réel n’est activé.")}</p></div>
-          {reportingError&&<p role="alert" className="text-sm text-destructive">{reportingError}</p>}
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+    seu����G����ƭy�-cols-3">
             <div className="card p-4"><p className="text-xs text-muted-foreground">{t("Commandes totales")}</p><p className="mt-1 text-2xl font-semibold">{allOrders.length}</p></div>
             <div className="card p-4"><p className="text-xs text-muted-foreground">{t("Volume livré (base)")}</p><p className="mt-1 text-2xl font-semibold">{fmt(deliveredBase)}</p></div>
             <div className="card p-4"><p className="text-xs text-muted-foreground">{t("Pourboires")}</p><p className="mt-1 text-2xl font-semibold">{fmt(tips)}</p></div>
