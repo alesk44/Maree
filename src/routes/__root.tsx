@@ -5,6 +5,7 @@ import { Outlet, Link, createRootRouteWithContext, useRouter, useRouterState, He
 import { useEffect, useState, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import appCss from "../styles.css?url";
+import { PreviewWorkspace } from "@/components/preview-workspaces";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { supabase } from "@/lib/supabase";
 import { NotificationCenter } from "@/components/notification-center";
@@ -114,13 +115,13 @@ function RootContent() {
     });
     return () => { active = false; listener.subscription.unsubscribe(); };
   }, [previewMode]);
-  const visibleNav = previewMode ? NAV.filter((item) => ["/catalogue", "/pecheurs", "/restaurant", "/guide", "/recettes"].includes(item.to)) : NAV;
+  const visibleNav = previewMode ? NAV.filter((item) => ["/catalogue", "/pecheurs", "/restaurant", "/connexion", "/compte", "/verification", "/espace-pecheur", "/admin", "/guide", "/recettes", "/tracabilite"].includes(item.to)) : NAV;
   const links = visibleNav.map((n) => ({ ...n, icon: (NAV.findIndex((item) => item.to === n.to) >= 0 ? ["◈", "♧", "▣", "↗", "♙", "✓", "⌂", "⚙", "i", "🍽", "⌗"][NAV.findIndex((item) => item.to === n.to)] : "◈") }));
   return (
     <QueryClientProvider client={queryClient}>
       <a href="#main" className="sr-only focus:not-sr-only">{t("Aller au contenu")}</a>
       <div className="min-h-screen bg-background lg:flex">
-        <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-border bg-card/95 px-4 py-5 backdrop-blur lg:flex">
+        <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col overflow-y-auto border-r border-border bg-card/95 px-4 py-5 backdrop-blur lg:flex">
           <Link to="/" className="mb-9 flex items-center gap-3 px-2 font-display text-xl font-semibold text-foreground">
             <img src="/maree-jersey-logo.png" alt="" className="h-12 w-12 rounded-xl bg-black object-cover shadow-sm ring-1 ring-white/15" />
             <span>Marée <span className="text-accent">Jersey</span></span>
@@ -168,14 +169,14 @@ function RootContent() {
           {previewMode && <div role="status" className="border-b border-amber-500/40 bg-amber-500/10 px-4 py-2 text-center text-sm font-medium text-amber-900 dark:text-amber-200">
             {language === "fr" ? "Prévisualisation isolée : données, comptes et commandes partagés désactivés. Aucun paiement n’est actif." : language === "ro" ? "Previzualizare izolată: datele, conturile și comenzile partajate sunt dezactivate. Nicio plată nu este activă." : "Isolated preview: shared data, accounts and orders are disabled. No payments are active."}
           </div>}
-          <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-border bg-card/95 px-2 py-2 shadow-2xl backdrop-blur lg:hidden" aria-label={t("Navigation rapide")}>
-            {(previewMode ? [{to:"/",label:"Accueil",icon:"⌂"},{to:"/catalogue",label:"Pêche du jour",icon:"♧"},{to:"/restaurant",label:"Restaurant",icon:"▣"},{to:"/pecheurs",label:"Pêcheurs",icon:"♙"}] as const : [{to:"/",label:"Accueil",icon:"⌂"},{to:"/catalogue",label:"Pêche du jour",icon:"♧"},{to:"/restaurant",label:"Restaurant",icon:"▣"},{to:"/espace-pecheur",label:"Pêcheur",icon:"≈"}] as const).map((item)=>(
+          <nav className={"fixed inset-x-0 bottom-0 z-30 grid border-t border-border bg-card/95 px-2 py-2 shadow-2xl backdrop-blur lg:hidden " + (previewMode ? "grid-cols-5" : "grid-cols-4")} aria-label={t("Navigation rapide")}>
+            {(previewMode ? [{to:"/",label:"Accueil",icon:"⌂"},{to:"/catalogue",label:"Pêche du jour",icon:"♧"},{to:"/restaurant",label:"Restaurant",icon:"▣"},{to:"/pecheurs",label:"Pêcheurs",icon:"♙"},{to:"/connexion",label:"Connexion",icon:"↗"}] as const : [{to:"/",label:"Accueil",icon:"⌂"},{to:"/catalogue",label:"Pêche du jour",icon:"♧"},{to:"/restaurant",label:"Restaurant",icon:"▣"},{to:"/espace-pecheur",label:"Pêcheur",icon:"≈"}] as const).map((item)=>(
               <Link key={item.to} to={item.to} className="flex min-w-0 flex-col items-center gap-1 rounded-lg px-1 py-1 text-[10px] font-semibold text-muted-foreground" activeProps={{className:"text-accent"}}>
                 <span className="text-lg leading-none" aria-hidden="true">{item.icon}</span><span className="truncate">{t(item.label)}</span>
               </Link>
             ))}
           </nav>
-      <main id="main" className="min-h-[70vh] pb-24 lg:pb-8">{previewRestricted ? <PreviewAccessGate /> : <Outlet />}</main>
+      <main id="main" className="min-h-[70vh] pb-24 lg:pb-8">{previewRestricted ? <PreviewWorkspace path={pathname} /> : <Outlet />}</main>
       <footer className="mt-12 border-t border-border bg-card text-card-foreground">
         <div className="mx-auto max-w-7xl px-4 py-8 text-sm text-muted-foreground lg:px-8">
           <div className="flex items-center gap-3"><img src="/maree-jersey-logo.png" alt="" className="h-10 w-10 rounded-lg bg-black object-cover" /><p className="font-display text-lg">Marée Jersey</p></div>
@@ -188,13 +189,4 @@ function RootContent() {
       <Toaster />
     </QueryClientProvider>
   );
-}
-
-function PreviewAccessGate() {
-  const { t } = useLanguage();
-  return <section className="mx-auto grid max-w-2xl gap-4 px-4 py-20 text-center">
-    <h1 className="font-display text-3xl font-semibold">{t("Espace non disponible dans cette maquette")}</h1>
-    <p className="text-muted-foreground">{t("Cette prévisualisation présente uniquement le parcours public avec des données fictives. Aucun compte ni aucune action réelle ne sont disponibles.")}</p>
-    <Link className="btn btn-accent mx-auto" to="/catalogue">{t("Voir la pêche du jour")}</Link>
-  </section>;
 }

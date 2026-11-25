@@ -34,6 +34,7 @@ function RestaurantPreview() {
   const productSubtotal = selectedCatch ? Math.round(sampleQuantity * selectedCatch.priceKg * 100) / 100 : 0;
   const orderFee = Math.round(productSubtotal * 0.065 * 100) / 100;
   const deliveryFee = Math.round(productSubtotal * 0.2 * 100) / 100;
+  const fisherInvoiceEmail = `mailto:pecheur@example.test?subject=${encodeURIComponent("Facture produit — exemple Marée Jersey")}&body=${encodeURIComponent("Bonjour, voici la facture de démonstration correspondant à votre commande. Les prix et coordonnées sont fictifs.")}`;
   return <div className="mx-auto grid max-w-6xl gap-6 px-4 py-10">
     <div><PageHeader title={t("Espace restaurant")} sub={t("Parcours de commande et de facturation présenté en mode démonstration.")} /><DemoBadge /></div>
     <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
@@ -47,7 +48,12 @@ function RestaurantPreview() {
           <div className="rounded-xl bg-secondary/60 p-4"><p className="text-xs text-muted-foreground">{t("Quantité d’exemple")}</p><p className="mt-1 text-xl font-semibold">{sampleQuantity} kg</p></div>
           <div className="rounded-xl bg-secondary/60 p-4"><p className="text-xs text-muted-foreground">{t("Prix produits indicatif")}</p><p className="mt-1 text-xl font-semibold">{gbp(productSubtotal)}</p></div>
         </div>
-        <p className="px-6 pb-6 text-sm text-muted-foreground">{t("Le restaurant et le pêcheur échangent leur facture de produits directement par e-mail. Cette maquette ne crée ni commande ni facture réelle.")}</p>
+        <div className="grid gap-3 px-6 pb-6">
+          <p className="text-sm text-muted-foreground">{t("Le restaurant et le pêcheur échangent leur facture de produits directement par e-mail. Cette maquette ne crée ni commande ni facture réelle.")}</p>
+          <p className="text-xs text-muted-foreground">{t("E-mail du pêcheur pour cet exemple :")} <strong>pecheur@example.test</strong></p>
+          <a className="btn w-fit" href={fisherInvoiceEmail}>{t("Préparer un e-mail au pêcheur")}</a>
+          <p className="text-xs text-muted-foreground">{t("Ce lien ouvre un brouillon avec une adresse fictive ; il n’envoie aucun e-mail.")}</p>
+        </div>
       </article>
       <article className="card grid content-start gap-4 p-6">
         <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">{t("Facturation Marée")}</p><h2 className="mt-2 font-display text-2xl font-semibold">{t("Un relevé mensuel clair")}</h2></div>

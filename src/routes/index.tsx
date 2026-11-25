@@ -45,6 +45,20 @@ function Index() {
         <Stat n={loading ? "—" : available} label={previewMode ? "lots de démonstration disponibles" : "lots réellement disponibles"} />
         <Stat n={loading ? "—" : fishers.length} label={previewMode ? "profils de pêcheurs de démonstration" : "pêcheurs vérifiés"} />
       </section>
+      {previewMode && <section className="mx-auto mt-14 grid max-w-6xl gap-5 px-4" aria-labelledby="demo-spaces-heading">
+        <div><h2 id="demo-spaces-heading" className="font-display text-2xl font-semibold">{t("Explorer les espaces de démonstration")}</h2><p className="mt-2 text-sm text-muted-foreground">{t("Choisissez un parcours pour voir les écrans. Les comptes, documents et actions restent fictifs.")}</p></div>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {([
+            ["/connexion", "Connexion et création de compte", "Aperçu des formulaires et des adresses e-mail de facturation."],
+            ["/espace-pecheur", "Espace pêcheur", "Lots, commandes, factures produits par e-mail et QR de traçabilité."],
+            ["/restaurant", "Espace restaurant", "Réservations d’exemple, factures et relevé mensuel Marée."],
+            ["/admin", "Administration", "Vérifications, indicateurs et paramètres commerciaux de démonstration."],
+            ["/tracabilite", "QR de traçabilité", "Fiche de lot et code QR scannable de démonstration."],
+          ] as const).map(([to, title, description]) => <Link key={to} to={to} className="card grid content-start gap-2 p-5 transition hover:border-accent">
+            <h3 className="font-semibold text-primary">{t(title)}</h3><p className="text-sm text-muted-foreground">{t(description)}</p><span className="mt-2 text-sm font-semibold underline">{t("Ouvrir le parcours")}</span>
+          </Link>)}
+        </div>
+      </section>}
       {error && <p role="alert" className="mx-auto mt-3 max-w-6xl px-4 text-sm text-destructive">{t("Impossible de charger les données du marché.")}</p>}
       {!loading && available === 0 && <p className="mx-auto mt-3 max-w-6xl px-4 text-sm text-muted-foreground">{t("Aucun lot disponible pour le moment. Revenez consulter la pêche du jour.")}</p>}
       <WeatherSeasonPanel />
