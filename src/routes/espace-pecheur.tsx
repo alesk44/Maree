@@ -223,7 +223,53 @@ function FisherSpace() {
 
   const advance = async (order:SharedOrderRow) => {
     const target=nextStatus[order.status as keyof typeof nextStatus];
- …1455 tokens truncated…der-t border-border pt-2 text-xs">{i.items.map(item=><li key={item.order_id} className="flex flex-wrap justify-between gap-2"><span>Commande {item.order_id.slice(0,8).toUpperCase()} · {Number(item.quantity_kg)} kg × {gbp(Number(item.unit_price))}/kg · {t("Pourboire")} {gbp(Number(item.tip_amount??0))} · {t("Livraison déduite")} {gbp(Number(item.delivery_deduction??0))}</span><strong>{gbp(Number(item.product_subtotal)+Number(item.tip_amount??0)-Number(item.delivery_deduction??0))}</strong></li>)}</ul> : null}
+    if(!target) return;
+    try {
+      await updateMyOrderStatus(order.id,target);
+      toast.success(t("Statut de commande mis à jour."));
+      setOrders(await fetchMyOrders());
+    } catch(e) { toast.error(e instanceof Error && !("code" in e) ? t(e.message) : t("Impossible de modifier la commande.")); }
+  };
+
+  if(profileLoading||loading) return <div className="mx-auto max-w-6xl px-4 py-10"><p role="status">{t("Chargement de votre espace pêcheur…")}</p></div>;
+  if(!userId) return <div className="mx-auto max-w-3xl px-4 py-10"><PageHeader title={t("Espace pêcheur")} sub={t("Connectez-vous pour commencer votre demande de compte pêcheur.")}/><p className="card p-5"><a className="underline" href="/connexion">{t("Se connecter")}</a></p></div>;
+  if(!me) return <main className="mx-auto grid max-w-3xl gap-5 px-4 py-10">
+    <PageHeader title={t("Demande de compte pêcheur")} sub={t("L’accès professionnel est activé uniquement après validation manuelle de votre activité.")}/>
+    <section className="card grid gap-3 p-6">
+      <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold w-fit">{verificationStatus==="pending"?t("Demande en attente"):verificationStatus==="rejected"?t("Demande refusée"):t("Aucune demande validée")}</span>
+      <h2 className="text-xl font-semibold">{verificationStatus==="pending"?t("Votre dossier est en cours d’examen"):verificationStatus==="rejected"?t("Votre demande nécessite des corrections"):t("Commencez par faire vérifier votre activité")}</h2>
+      <p className="text-sm text-muted-foreground">{verificationStatus==="pending"?t("Vous pourrez compléter votre bateau, votre méthode de pêche et les informations de votre équipage dès que l’équipe aura approuvé votre demande."):t("Avant toute publication de pêche, envoyez les informations de votre activité et attendez la validation de l’équipe Marée Jersey.")}</p>
+      {verificationNote&&<p className="rounded-lg bg-secondary p-3 text-sm">{verificationNote}</p>}
+      <a className="btn btn-accent w-fit" href="/verification">{verificationStatus==="pending"?t("Voir ma demande"):t("Envoyer / corriger ma demande")}</a>
+    </section>
+  </main>;
+
+  return <div className="mx-auto max-w-6xl px-4 py-10">
+    <PageHeader title={t("Espace pêcheur")} sub={t("Connecté en tant que {name} — {boat}",{name:me.name,boat:me.boat})}/>
+    <Link to="/tracabilite" className="btn btn-accent mb-4 inline-flex">{t("Scanner QR")}</Link>
+    <section className="mb-6 grid gap-2 sm:grid-cols-3" aria-label={t("Navigation espace pêcheur")}>
+      <button type="button" className={"btn "+(accountTab==="activity"?"btn-accent":"")} onClick={()=>setAccountTab("activity")}>{t("Activité & commandes")}</button>
+      <button type="button" className={"btn "+(accountTab==="sales"?"btn-accent":"")} onClick={()=>setAccountTab("sales")}>{t("Ventes & relevés")}</button>
+      <button type="button" className={"btn "+(accountTab==="profile"?"btn-accent":"")} onClick={()=>setAccountTab("profile")}>{t("Mon profil professionnel")}</button>
+    </section>
+    {accountTab==="sales" && <section className="card mb-8 grid gap-4 p-5">
+      <div><h2 className="text-xl font-semibold">{t("Mes ventes et relevés")}</h2><p className="text-sm text-muted-foreground">{t("Synthèse calculée sur les commandes livrées. Aucun paiement en ligne n'est encaissé ; vous pouvez confirmer un règlement reçu hors plateforme.")}</p></div>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <Metric label={t("Ventes livrées")} value={deliveredOrders.length} detail={t("Commandes terminées")}/>
+        <Metric label={t("Produits vendus")} value={gbp(deliveredOrders.reduce((sum,o)=>sum+Number(o.product_subtotal??0),0))} detail={t("Montant produits brut")}/>
+        <Metric label={t("Pourboires reçus")} value={gbp(tipsEarned)} detail={t("100 % pour vous, sans commission")}/>
+        <Metric label={t("À recevoir")} value={gbp(receivableTotal)} detail={t("Commandes et relevés non réglés")}/>
+        <Metric label={t("Paiements reçus")} value={gbp(paymentsReceived)} detail={t("Règlements confirmés")}/>
+        <Metric label={t("En attente")} value={myOrders.filter(o=>o.status!=="delivered"&&o.status!=="cancelled").length} detail={t("Commandes à traiter")}/>
+      </div>
+      <div className="grid gap-2">
+        <h3 className="font-semibold">{t("Mes factures mensuelles et règlements")}</h3>
+        {monthlyInvoices.length===0?<Empty>{t("Aucun relevé mensuel généré pour le moment.")}</Empty>:
+          <ul className="grid gap-2">{monthlyInvoices.map(i=><li key={i.id} className="rounded-xl border border-border p-4">
+            <div className="flex flex-wrap justify-between gap-2"><strong>{t("Période")} {i.period_start} — {i.period_end}</strong><strong>{gbp(Number(i.subtotal)+Number(i.tip_total??0)-Number(i.delivery_deduction_total??0)+Number(i.cancellation_indemnity_total??0))}</strong></div>
+            <p className="text-xs text-muted-foreground">{t("Produits")} : {gbp(Number(i.subtotal))} · {t("Pourboires")} : {gbp(Number(i.tip_total??0))} · {t("Livraison déduite")} : {gbp(Number(i.delivery_deduction_total??0))} · {t("Indemnités d’annulation")} : {gbp(Number(i.cancellation_indemnity_total??0))}</p>
+            <p className="text-sm text-muted-foreground">{t("Échéance")} : {i.due_date} · {i.status==="paid"?t("Réglée"):i.status==="void"?t("Annulée"):t("En attente de règlement")}</p>
+            {i.items?.length ? <ul className="mt-2 grid gap-1 border-t border-border pt-2 text-xs">{i.items.map(item=><li key={item.order_id} className="flex flex-wrap justify-between gap-2"><span>Commande {item.order_id.slice(0,8).toUpperCase()} · {Number(item.quantity_kg)} kg × {gbp(Number(item.unit_price))}/kg · {t("Pourboire")} {gbp(Number(item.tip_amount??0))} · {t("Livraison déduite")} {gbp(Number(item.delivery_deduction??0))}</span><strong>{gbp(Number(item.product_subtotal)+Number(item.tip_amount??0)-Number(item.delivery_deduction??0))}</strong></li>)}</ul> : null}
             {i.cancellation_indemnities?.length ? <ul className="mt-2 grid gap-1 border-t border-border pt-2 text-xs">{i.cancellation_indemnities.map(item=><li key={item.id} className="flex justify-between gap-2"><span>{t("Indemnité d’annulation")} · {item.order_id.slice(0,8).toUpperCase()} · {item.status==="paid"?t("Réglée"):t("À régler")}</span><strong>{gbp(Number(item.amount))}</strong></li>)}</ul> : null}
             {i.paid_at&&<p className="text-xs text-muted-foreground">{t("Règlement reçu")} : {dt(i.paid_at)} {i.payment_method||""} {i.payment_reference||""}</p>}
             {i.status==="open"&&<button type="button" className="btn btn-accent mt-3" onClick={()=>void confirmInvoicePayment(i.id)}>{t("Confirmer que le restaurant a réglé")}</button>}
