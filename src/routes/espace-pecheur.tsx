@@ -382,25 +382,28 @@ function FisherSpace() {
       </form>
       <section>
         <h2 className="mb-3 text-xl font-semibold">{t("Mes lots")}</h2>
-        {mine.length===0?<Empty>{t("Aucun lot publié.")}</Empty>:<ul className="grid gap-3">{mine.map((c)=><li key={c.id} className="card p-4">
+        {mine.length===0?<Empty>{t("Aucun lot publié.")}</Empty>:<ul className="grid gap-3">{mine.map((c)=>{
+          const traceabilityUrl = traceabilityUrls[c.id];
+          return <li key={c.id} className="card p-4">
           <div className="flex items-center justify-between"><strong>{c.emoji} {t(c.species)}</strong><StatusPill s={c.status}/></div>
           <p className="text-xs text-muted-foreground">{t("Débarqué")} {dt(c.landedAt)}</p>
           <div className="mt-3 grid grid-cols-2 gap-2">
             <label className="grid gap-1 text-xs">{t("Quantité kg")}<input className="field" type="number" min={0} step={0.5} defaultValue={c.qtyKg} onBlur={(e)=>{const n=Number(e.target.value);if(Number.isFinite(n)&&n>=0&&n!==c.qtyKg)void saveCatch(c.id,{qtyKg:n,status:n===0?"épuisé":"disponible"});}}/></label>
             <label className="grid gap-1 text-xs">{t("Prix £/kg")}<input className="field" type="number" min={0} step={0.5} defaultValue={c.priceKg} onBlur={(e)=>{const n=Number(e.target.value);if(Number.isFinite(n)&&n>=0&&n!==c.priceKg)void saveCatch(c.id,{priceKg:n});}}/></label>
           </div>
-          {traceabilityUrls[c.id] ? <div className="mt-4 grid justify-items-start gap-3 rounded-xl border border-border p-3">
+          {traceabilityUrl ? <div className="mt-4 grid justify-items-start gap-3 rounded-xl border border-border p-3">
             <p className="text-sm font-semibold">{t("Lien public de traçabilité")}</p>
             <p className="text-xs leading-relaxed text-muted-foreground">{t("Données déclarées par le pêcheur. Ce QR n'est ni une certification officielle ni une validation de légalité, de fraîcheur ou de sécurité sanitaire.")}</p>
-            <QRCodeSVG value={traceabilityUrls[c.id]} size={176} level="M" marginSize={4} title={t("Lien public de traçabilité")} />
-            <a className="break-all text-sm underline" href={traceabilityUrls[c.id]} target="_blank" rel="noopener noreferrer">{traceabilityUrls[c.id]}</a>
+            <QRCodeSVG value={traceabilityUrl} size={176} level="M" marginSize={4} title={t("Lien public de traçabilité")} />
+            <a className="break-all text-sm underline" href={traceabilityUrl} target="_blank" rel="noopener noreferrer">{traceabilityUrl}</a>
             <div className="flex flex-wrap gap-2">
-              <button type="button" className="btn text-sm" onClick={()=>void copyTraceabilityLink(traceabilityUrls[c.id])}>{t("Copier le lien")}</button>
+              <button type="button" className="btn text-sm" onClick={()=>void copyTraceabilityLink(traceabilityUrl)}>{t("Copier le lien")}</button>
               <button type="button" className="btn text-sm text-destructive" disabled={traceabilityBusyId===c.id} onClick={()=>void revokeTraceabilityQr(c.id)}>{t("Révoquer le QR")}</button>
             </div>
           </div> : <button type="button" className="btn mt-3 w-full text-sm" disabled={traceabilityBusyId===c.id} onClick={()=>void createTraceabilityQr(c.id)}>{traceabilityBusyId===c.id?t("Création…"):t("Créer un QR de traçabilité")}</button>}
           {c.status!=="épuisé"&&<button type="button" className="mt-2 text-sm font-semibold text-destructive" onClick={()=>void saveCatch(c.id,{qtyKg:0,status:"épuisé"})}>{t("Marquer épuisé")}</button>}
-        </li>)}</ul>}
+        </li>;
+        })}</ul>}
         <h2 className="mt-8 mb-3 text-xl font-semibold">{t("Demandes reçues")}</h2>
         {myOrders.length===0?<Empty>{t("Aucune demande reçue.")}</Empty>:<ul className="grid gap-3">{myOrders.map((o)=>{
           const c=catches.find((x)=>x.id===o.catch_id);
