@@ -11,6 +11,14 @@ export const Route = createFileRoute("/mentions-legales")({
 
 function LegalPage() {
   const { t } = useLanguage();
+  if (import.meta.env["VITE_MAREE_PREVIEW_MODE"] === "true") return <main className="mx-auto grid max-w-4xl gap-8 px-4 py-10">
+    <header className="grid gap-3">
+      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">Marée Jersey</p>
+      <h1 className="font-display text-4xl font-semibold">{t("Informations légales")}</h1>
+      <p className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm">{t("Les mentions légales complètes seront publiées avec les coordonnées professionnelles validées.")}</p>
+    </header>
+    <Link to="/" className="btn w-fit">{t("Retour à l'accueil")}</Link>
+  </main>;
   return <main className="mx-auto grid max-w-4xl gap-8 px-4 py-10">
     <header className="grid gap-3">
       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">Marée Jersey</p>

@@ -135,8 +135,8 @@ function RootContent() {
             ))}
           </nav>
           <div className="mt-auto rounded-2xl border border-border bg-background p-3">
-            <p className="text-xs font-semibold">{t("Pêche du jour, en direct")}</p>
-            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t("Les disponibilités et commandes affichées proviennent du marché partagé. Les réservations sont des demandes : aucun paiement en ligne n’est activé dans cette version.")}</p>
+            <p className="text-xs font-semibold">{previewMode ? t("Données de démonstration") : t("Pêche du jour, en direct")}</p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{previewMode ? t("Cette maquette utilise des données fictives. Aucun compte, aucune commande ni aucun paiement n’est actif.") : t("Les disponibilités et commandes affichées proviennent du marché partagé. Les réservations sont des demandes : aucun paiement en ligne n’est activé dans cette version.")}</p>
           </div>
         </aside>
         <div className="min-w-0 flex-1 lg:ml-60">
@@ -179,8 +179,8 @@ function RootContent() {
       <footer className="mt-12 border-t border-border bg-card text-card-foreground">
         <div className="mx-auto max-w-7xl px-4 py-8 text-sm text-muted-foreground lg:px-8">
           <div className="flex items-center gap-3"><img src="/maree-jersey-logo.png" alt="" className="h-10 w-10 rounded-lg bg-black object-cover" /><p className="font-display text-lg">Marée Jersey</p></div>
-          <p className="mt-1">{t("Les disponibilités et commandes affichées proviennent du marché partagé. Les réservations sont des demandes : aucun paiement en ligne n’est activé dans cette version.")}</p>
-          <div className="mt-4 flex flex-wrap gap-4 text-xs"><Link to="/mentions-legales" className="underline hover:text-foreground">{t("Informations légales & confidentialité")}</Link><a href="tel:07700343725" className="underline hover:text-foreground">Alexandre Cosqueric · 07700343725</a></div>
+          <p className="mt-1">{previewMode ? t("Cette maquette utilise des données fictives. Aucun compte, aucune commande ni aucun paiement n’est actif.") : t("Les disponibilités et commandes affichées proviennent du marché partagé. Les réservations sont des demandes : aucun paiement en ligne n’est activé dans cette version.")}</p>
+          <div className="mt-4 flex flex-wrap gap-4 text-xs"><Link to="/mentions-legales" className="underline hover:text-foreground">{t("Informations légales & confidentialité")}</Link>{!previewMode && <a href="tel:07700343725" className="underline hover:text-foreground">Alexandre Cosqueric · 07700343725</a>}</div>
         </div>
       </footer>
         </div>

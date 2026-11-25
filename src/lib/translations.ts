@@ -73,6 +73,8 @@ export const translations: Record<string, readonly [string, string]> = {
   "Local": ["Local", "Local"],
   "Des pêcheurs côtiers de Gorey, St Helier, St Aubin et Rozel.": ["Coastal fishers from Gorey, St Helier, St Aubin and Rozel.", "Pescari de coastă din Gorey, St Helier, St Aubin și Rozel."],
   "Données de démonstration": ["Demonstration data", "Date demonstrative"],
+  "Cette maquette utilise des données fictives. Aucun compte, aucune commande ni aucun paiement n’est actif.": ["This preview uses fictional data. Accounts, orders and payments are disabled.", "Această previzualizare folosește date fictive. Conturile, comenzile și plățile sunt dezactivate."],
+  "Les mentions légales complètes seront publiées avec les coordonnées professionnelles validées.": ["The full legal notice will be published with verified business contact details.", "Informațiile legale complete vor fi publicate împreună cu datele de contact profesionale verificate."],
   "disponible": ["available", "disponibil"],
   "réservé": ["reserved", "rezervat"],
   "épuisé": ["sold out", "epuizat"],
