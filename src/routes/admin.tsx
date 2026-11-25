@@ -160,7 +160,7 @@ function Admin() {
     } finally {
       setLoading(false);
     }
-  }, [language]);
+  }, [t]);
 
   useEffect(() => { void loadRequests(); }, [loadRequests]);
 

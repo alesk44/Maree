@@ -1,4 +1,5 @@
-import { useLanguage, LanguageProvider } from "@/lib/i18n";
+import { useLanguage } from "@/lib/i18n";
+import { LanguageProvider } from "@/lib/language-provider";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Outlet, Link, createRootRouteWithContext, useRouter, HeadContent, Scripts, type ErrorComponentProps } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";

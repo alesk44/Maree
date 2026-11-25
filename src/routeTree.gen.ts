@@ -11,12 +11,19 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
-import { Route as CompteRouteImport } from './routes/compte'
-import { Route as AdminEmailReviewRouteImport } from './routes/admin.email-review'
 import { Route as CatalogueRouteImport } from './routes/catalogue'
+import { Route as CompteRouteImport } from './routes/compte'
+import { Route as ConnexionRouteImport } from './routes/connexion'
 import { Route as EspacePecheurRouteImport } from './routes/espace-pecheur'
 import { Route as GuideRouteImport } from './routes/guide'
+import { Route as MentionsLegalesRouteImport } from './routes/mentions-legales'
+import { Route as RecettesRouteImport } from './routes/recettes'
 import { Route as RestaurantRouteImport } from './routes/restaurant'
+import { Route as TracabiliteRouteImport } from './routes/tracabilite'
+import { Route as VerificationRouteImport } from './routes/verification'
+import { Route as AdminEmailReviewRouteImport } from './routes/admin_.email-review'
+import { Route as ApiMarineRouteImport } from './routes/api.marine'
+import { Route as ApiWeatherRouteImport } from './routes/api.weather'
 import { Route as PecheursIndexRouteImport } from './routes/pecheurs.index'
 import { Route as PecheursIdRouteImport } from './routes/pecheurs.$id'
 
@@ -25,24 +32,24 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CompteRoute = CompteRouteImport.update({
-  id: '/compte',
-  path: '/compte',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminEmailReviewRoute = AdminEmailReviewRouteImport.update({
-  id: '/admin/email-review',
-  path: '/admin/email-review',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const CatalogueRoute = CatalogueRouteImport.update({
   id: '/catalogue',
   path: '/catalogue',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CompteRoute = CompteRouteImport.update({
+  id: '/compte',
+  path: '/compte',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConnexionRoute = ConnexionRouteImport.update({
+  id: '/connexion',
+  path: '/connexion',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EspacePecheurRoute = EspacePecheurRouteImport.update({
@@ -55,9 +62,44 @@ const GuideRoute = GuideRouteImport.update({
   path: '/guide',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MentionsLegalesRoute = MentionsLegalesRouteImport.update({
+  id: '/mentions-legales',
+  path: '/mentions-legales',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecettesRoute = RecettesRouteImport.update({
+  id: '/recettes',
+  path: '/recettes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RestaurantRoute = RestaurantRouteImport.update({
   id: '/restaurant',
   path: '/restaurant',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TracabiliteRoute = TracabiliteRouteImport.update({
+  id: '/tracabilite',
+  path: '/tracabilite',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VerificationRoute = VerificationRouteImport.update({
+  id: '/verification',
+  path: '/verification',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminEmailReviewRoute = AdminEmailReviewRouteImport.update({
+  id: '/admin_/email-review',
+  path: '/admin/email-review',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMarineRoute = ApiMarineRouteImport.update({
+  id: '/api/marine',
+  path: '/api/marine',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiWeatherRoute = ApiWeatherRouteImport.update({
+  id: '/api/weather',
+  path: '/api/weather',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PecheursIndexRoute = PecheursIndexRouteImport.update({
@@ -73,38 +115,59 @@ const PecheursIdRoute = PecheursIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/compte': typeof CompteRoute
   '/admin': typeof AdminRoute
-  '/admin/email-review': typeof AdminEmailReviewRoute
   '/catalogue': typeof CatalogueRoute
+  '/compte': typeof CompteRoute
+  '/connexion': typeof ConnexionRoute
   '/espace-pecheur': typeof EspacePecheurRoute
   '/guide': typeof GuideRoute
+  '/mentions-legales': typeof MentionsLegalesRoute
+  '/recettes': typeof RecettesRoute
   '/restaurant': typeof RestaurantRoute
+  '/tracabilite': typeof TracabiliteRoute
+  '/verification': typeof VerificationRoute
+  '/admin/email-review': typeof AdminEmailReviewRoute
+  '/api/marine': typeof ApiMarineRoute
+  '/api/weather': typeof ApiWeatherRoute
   '/pecheurs/$id': typeof PecheursIdRoute
   '/pecheurs/': typeof PecheursIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/compte': typeof CompteRoute
   '/admin': typeof AdminRoute
-  '/admin/email-review': typeof AdminEmailReviewRoute
   '/catalogue': typeof CatalogueRoute
+  '/compte': typeof CompteRoute
+  '/connexion': typeof ConnexionRoute
   '/espace-pecheur': typeof EspacePecheurRoute
   '/guide': typeof GuideRoute
+  '/mentions-legales': typeof MentionsLegalesRoute
+  '/recettes': typeof RecettesRoute
   '/restaurant': typeof RestaurantRoute
+  '/tracabilite': typeof TracabiliteRoute
+  '/verification': typeof VerificationRoute
+  '/admin/email-review': typeof AdminEmailReviewRoute
+  '/api/marine': typeof ApiMarineRoute
+  '/api/weather': typeof ApiWeatherRoute
   '/pecheurs/$id': typeof PecheursIdRoute
   '/pecheurs': typeof PecheursIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/compte': typeof CompteRoute
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
-  '/admin/email-review': typeof AdminEmailReviewRoute
   '/catalogue': typeof CatalogueRoute
+  '/compte': typeof CompteRoute
+  '/connexion': typeof ConnexionRoute
   '/espace-pecheur': typeof EspacePecheurRoute
   '/guide': typeof GuideRoute
+  '/mentions-legales': typeof MentionsLegalesRoute
+  '/recettes': typeof RecettesRoute
   '/restaurant': typeof RestaurantRoute
+  '/tracabilite': typeof TracabiliteRoute
+  '/verification': typeof VerificationRoute
+  '/admin_/email-review': typeof AdminEmailReviewRoute
+  '/api/marine': typeof ApiMarineRoute
+  '/api/weather': typeof ApiWeatherRoute
   '/pecheurs/$id': typeof PecheursIdRoute
   '/pecheurs/': typeof PecheursIndexRoute
 }
@@ -112,49 +175,78 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/compte'
     | '/admin'
-    | '/admin/email-review'
     | '/catalogue'
+    | '/compte'
+    | '/connexion'
     | '/espace-pecheur'
     | '/guide'
+    | '/mentions-legales'
+    | '/recettes'
     | '/restaurant'
+    | '/tracabilite'
+    | '/verification'
+    | '/admin/email-review'
+    | '/api/marine'
+    | '/api/weather'
     | '/pecheurs/$id'
     | '/pecheurs/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/compte'
     | '/admin'
     | '/catalogue'
+    | '/compte'
+    | '/connexion'
     | '/espace-pecheur'
     | '/guide'
+    | '/mentions-legales'
+    | '/recettes'
     | '/restaurant'
+    | '/tracabilite'
+    | '/verification'
+    | '/admin/email-review'
+    | '/api/marine'
+    | '/api/weather'
     | '/pecheurs/$id'
     | '/pecheurs'
   id:
     | '__root__'
     | '/'
-    | '/compte'
     | '/admin'
-    | '/admin/email-review'
     | '/catalogue'
+    | '/compte'
+    | '/connexion'
     | '/espace-pecheur'
     | '/guide'
+    | '/mentions-legales'
+    | '/recettes'
     | '/restaurant'
+    | '/tracabilite'
+    | '/verification'
+    | '/admin_/email-review'
+    | '/api/marine'
+    | '/api/weather'
     | '/pecheurs/$id'
     | '/pecheurs/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  CompteRoute: typeof CompteRoute
   AdminRoute: typeof AdminRoute
-  AdminEmailReviewRoute: typeof AdminEmailReviewRoute
   CatalogueRoute: typeof CatalogueRoute
+  CompteRoute: typeof CompteRoute
+  ConnexionRoute: typeof ConnexionRoute
   EspacePecheurRoute: typeof EspacePecheurRoute
   GuideRoute: typeof GuideRoute
+  MentionsLegalesRoute: typeof MentionsLegalesRoute
+  RecettesRoute: typeof RecettesRoute
   RestaurantRoute: typeof RestaurantRoute
+  TracabiliteRoute: typeof TracabiliteRoute
+  VerificationRoute: typeof VerificationRoute
+  AdminEmailReviewRoute: typeof AdminEmailReviewRoute
+  ApiMarineRoute: typeof ApiMarineRoute
+  ApiWeatherRoute: typeof ApiWeatherRoute
   PecheursIdRoute: typeof PecheursIdRoute
   PecheursIndexRoute: typeof PecheursIndexRoute
 }
@@ -168,13 +260,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/compte': {
-      id: '/compte'
-      path: '/compte'
-      fullPath: '/compte'
-      preLoaderRoute: typeof CompteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/admin': {
       id: '/admin'
       path: '/admin'
@@ -182,18 +267,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/email-review': {
-      id: '/admin/email-review'
-      path: '/admin/email-review'
-      fullPath: '/admin/email-review'
-      preLoaderRoute: typeof AdminEmailReviewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/catalogue': {
       id: '/catalogue'
       path: '/catalogue'
       fullPath: '/catalogue'
       preLoaderRoute: typeof CatalogueRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/compte': {
+      id: '/compte'
+      path: '/compte'
+      fullPath: '/compte'
+      preLoaderRoute: typeof CompteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/connexion': {
+      id: '/connexion'
+      path: '/connexion'
+      fullPath: '/connexion'
+      preLoaderRoute: typeof ConnexionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/espace-pecheur': {
@@ -210,11 +302,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GuideRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/mentions-legales': {
+      id: '/mentions-legales'
+      path: '/mentions-legales'
+      fullPath: '/mentions-legales'
+      preLoaderRoute: typeof MentionsLegalesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recettes': {
+      id: '/recettes'
+      path: '/recettes'
+      fullPath: '/recettes'
+      preLoaderRoute: typeof RecettesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/restaurant': {
       id: '/restaurant'
       path: '/restaurant'
       fullPath: '/restaurant'
       preLoaderRoute: typeof RestaurantRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tracabilite': {
+      id: '/tracabilite'
+      path: '/tracabilite'
+      fullPath: '/tracabilite'
+      preLoaderRoute: typeof TracabiliteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verification': {
+      id: '/verification'
+      path: '/verification'
+      fullPath: '/verification'
+      preLoaderRoute: typeof VerificationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin_/email-review': {
+      id: '/admin_/email-review'
+      path: '/admin/email-review'
+      fullPath: '/admin/email-review'
+      preLoaderRoute: typeof AdminEmailReviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/marine': {
+      id: '/api/marine'
+      path: '/api/marine'
+      fullPath: '/api/marine'
+      preLoaderRoute: typeof ApiMarineRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/weather': {
+      id: '/api/weather'
+      path: '/api/weather'
+      fullPath: '/api/weather'
+      preLoaderRoute: typeof ApiWeatherRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pecheurs/': {
@@ -236,13 +377,20 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  CompteRoute: CompteRoute,
   AdminRoute: AdminRoute,
-  AdminEmailReviewRoute: AdminEmailReviewRoute,
   CatalogueRoute: CatalogueRoute,
+  CompteRoute: CompteRoute,
+  ConnexionRoute: ConnexionRoute,
   EspacePecheurRoute: EspacePecheurRoute,
   GuideRoute: GuideRoute,
+  MentionsLegalesRoute: MentionsLegalesRoute,
+  RecettesRoute: RecettesRoute,
   RestaurantRoute: RestaurantRoute,
+  TracabiliteRoute: TracabiliteRoute,
+  VerificationRoute: VerificationRoute,
+  AdminEmailReviewRoute: AdminEmailReviewRoute,
+  ApiMarineRoute: ApiMarineRoute,
+  ApiWeatherRoute: ApiWeatherRoute,
   PecheursIdRoute: PecheursIdRoute,
   PecheursIndexRoute: PecheursIndexRoute,
 }
