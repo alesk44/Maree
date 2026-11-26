@@ -21,14 +21,12 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_SUPABASE_PROJECT_REF: ${{ vars.VITE_SUPABASE_PROJECT_REF }}
           SUPABASE_PRODUCTION_PROJECT_REF: ${{ vars.SUPABASE_PRODUCTION_PROJECT_REF }}
         run: |
           test -n "$CLOUDFLARE_API_TOKEN" || (echo "Missing GitHub Environment secret: CLOUDFLARE_API_TOKEN" && exit 1)
           test -n "$CLOUDFLARE_ACCOUNT_ID" || (echo "Missing GitHub Environment variable: CLOUDFLARE_ACCOUNT_ID" && exit 1)
           test -n "$VITE_SUPABASE_URL" || (echo "Missing GitHub Environment variable: VITE_SUPABASE_URL" && exit 1)
-          test -n "$VITE_SUPABASE_PUBLISHABLE_KEY" || (echo "Missing GitHub Environment secret: VITE_SUPABASE_PUBLISHABLE_KEY" && exit 1)
           test -n "$VITE_SUPABASE_PROJECT_REF" || (echo "Missing GitHub Environment variable: VITE_SUPABASE_PROJECT_REF" && exit 1)
           test -n "$SUPABASE_PRODUCTION_PROJECT_REF" || (echo "Missing GitHub Environment variable: SUPABASE_PRODUCTION_PROJECT_REF" && exit 1)
           test "$VITE_SUPABASE_PROJECT_REF" != "$SUPABASE_PRODUCTION_PROJECT_REF" || (echo "Preview must use a project different from production" && exit 1)
@@ -48,7 +46,8 @@ jobs:
         run: bun run build
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          # Publishable client key for this isolated preview; no service_role key is used.
+          VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_VvfAbb3-s3HlY0E62uYj8A_8dt_Xp3F"
           VITE_MAREE_PREVIEW_MODE: "true"
       - name: Deploy isolated preview Worker
         run: bunx wrangler deploy --name maree-jersey-preview
