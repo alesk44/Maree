@@ -117,7 +117,7 @@ function RootContent() {
       <div className="min-h-screen bg-background lg:flex">
         <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-border bg-card/95 px-4 py-5 backdrop-blur lg:flex">
           <Link to="/" className="mb-9 flex items-center gap-3 px-2 font-display text-xl font-semibold text-foreground">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-xl text-accent-foreground">≈</span>
+            <img src="/maree-jersey-logo.png" alt="" className="h-10 w-10 rounded-xl object-cover" />
             <span>Marée <span className="text-accent">Jersey</span></span>
           </Link>
           <p className="mb-3 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">{t("Marché local")}</p>
@@ -139,7 +139,7 @@ function RootContent() {
             <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 lg:px-8">
               <div className="flex items-center gap-3">
                 <button className="btn btn-ghost lg:hidden" aria-expanded={open} aria-label={t("Menu")} onClick={() => setOpen(!open)}>☰</button>
-                <Link to="/" className="font-display text-lg font-semibold text-foreground lg:hidden">Marée <span className="text-accent">Jersey</span></Link>
+                <Link to="/" className="flex items-center gap-2 font-display text-lg font-semibold text-foreground lg:hidden"><img src="/maree-jersey-logo.png" alt="" className="h-8 w-8 rounded-lg object-cover" />Marée <span className="text-accent">Jersey</span></Link>
                 <p className="hidden text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground lg:block">{t("Marché de la mer · Jersey")}</p>
               </div>
               <div className="flex items-center gap-2">
