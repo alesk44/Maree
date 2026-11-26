@@ -89,6 +89,7 @@ function RootComponent() {
 function RootContent() {
   const { t, language, setLanguage } = useLanguage();
   const { queryClient } = Route.useRouteContext();
+  const isPreview = import.meta.env["VITE_MAREE_PREVIEW_MODE"] === "true";
   const [open, setOpen] = useState(false);
   useEffect(() => {
     document.title = t("Marée Jersey — marché local de produits de la mer");
@@ -114,6 +115,7 @@ function RootContent() {
   return (
     <QueryClientProvider client={queryClient}>
       <a href="#main" className="sr-only focus:not-sr-only">{t("Aller au contenu")}</a>
+      {isPreview && <div role="status" className="border-b border-accent/30 bg-accent/10 px-4 py-2 text-center text-xs font-medium text-foreground">{t("Maquette de démonstration : profils et lots fictifs; commandes et factures restent dans cet environnement isolé. Aucun paiement en ligne n’est activé.")}</div>}
       <div className="min-h-screen bg-background lg:flex">
         <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-border bg-card/95 px-4 py-5 backdrop-blur lg:flex">
           <Link to="/" className="mb-9 flex items-center gap-3 px-2 font-display text-xl font-semibold text-foreground">

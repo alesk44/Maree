@@ -49,6 +49,7 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_MAREE_PREVIEW_MODE: "true"
       - name: Deploy isolated preview Worker
         run: bunx wrangler deploy --name maree-jersey-preview
         env:
