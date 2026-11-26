@@ -112,7 +112,7 @@ function AuthPage() {
         if (error) throw error;
         if (data.session) {
           setSessionEmail(data.user?.email ?? email.trim());
-          toast.success(t("Compte créé. Vous êtes connecté en tant que restaurant."));
+          toast.success(t("Compte créé. Vous êtes connecté."));
         } else {
           setNeedsEmailConfirmation(true);
           toast.success(t("Compte créé. Vérifiez votre e-mail pour confirmer l'adresse."));
@@ -180,7 +180,7 @@ function AuthPage() {
         <div>
           <p className="text-sm font-semibold uppercase tracking-widest text-accent">Marée Jersey</p>
           <h1 className="mt-2 font-display text-3xl font-semibold">{t("Compte sécurisé")}</h1>
-          <p className="mt-2 text-muted-foreground">{t("Créez un compte restaurant ou connectez-vous pour continuer.")}</p>
+          <p className="mt-2 text-muted-foreground">{t("Créez un compte ou connectez-vous pour continuer.")}</p>
         </div>
         {sessionEmail && mode !== "update" ? (
           <div className="grid gap-4">
@@ -230,7 +230,7 @@ function AuthPage() {
               {mode === "signup" && <label className="grid gap-1 text-sm font-medium">{t("Nom / établissement")}<input className="field" autoComplete="name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required maxLength={120} /></label>}
               {mode !== "update" && <label className="grid gap-1 text-sm font-medium">{t("E-mail")}<input className="field" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>}
               {mode !== "reset" && <label className="grid gap-1 text-sm font-medium">{t(mode === "update" ? "Nouveau mot de passe" : "Mot de passe")}<input className="field" type="password" autoComplete={mode === "signup" || mode === "update" ? "new-password" : "current-password"} value={password} onChange={(e) => setPassword(e.target.value)} minLength={8} required /></label>}
-              <button className="btn btn-accent" disabled={busy}>{busy ? t("Patientez…") : mode === "signup" ? t("Créer mon compte restaurant") : mode === "reset" ? t("Envoyer le lien de réinitialisation") : mode === "update" ? t("Enregistrer le nouveau mot de passe") : t("Se connecter")}</button>
+              <button className="btn btn-accent" disabled={busy}>{busy ? t("Patientez…") : mode === "signup" ? t("Créer mon compte") : mode === "reset" ? t("Envoyer le lien de réinitialisation") : mode === "update" ? t("Enregistrer le nouveau mot de passe") : t("Se connecter")}</button>
             </form>
             {mode === "update" && <p className="text-sm text-muted-foreground">{t("Choisissez un nouveau mot de passe de huit caractères minimum.")}</p>}
             {mode === "signup" && <p className="text-sm text-muted-foreground">{t("Vous êtes pêcheur ? Créez votre compte, puis demandez le rôle pêcheur après connexion.")} <Link className="underline" to="/verification">{t("Demander une vérification professionnelle")}</Link></p>}
