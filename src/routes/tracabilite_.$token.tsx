@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/ui-bits";
 import { useLanguage } from "@/lib/i18n";
 import { fetchPublicCatchTraceability, type PublicCatchTraceability } from "@/lib/shared-market";
 
-export const Route = createFileRoute("/tracabilite/$token")({
+export const Route = createFileRoute("/tracabilite_/$token")({
   head: () => ({
     meta: [
       { title: "Traçabilité du lot — Marée Jersey" },

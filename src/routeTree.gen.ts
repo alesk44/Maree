@@ -26,7 +26,7 @@ import { Route as ApiMarineRouteImport } from './routes/api.marine'
 import { Route as ApiWeatherRouteImport } from './routes/api.weather'
 import { Route as PecheursIndexRouteImport } from './routes/pecheurs.index'
 import { Route as PecheursIdRouteImport } from './routes/pecheurs.$id'
-import { Route as TracabiliteTokenRouteImport } from './routes/tracabilite.$token'
+import { Route as TracabiliteTokenRouteImport } from './routes/tracabilite_.$token'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -114,9 +114,9 @@ const PecheursIdRoute = PecheursIdRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const TracabiliteTokenRoute = TracabiliteTokenRouteImport.update({
-  id: '/$token',
-  path: '/$token',
-  getParentRoute: () => TracabiliteRoute,
+  id: '/tracabilite_/$token',
+  path: '/tracabilite/$token',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -130,7 +130,7 @@ export interface FileRoutesByFullPath {
   '/mentions-legales': typeof MentionsLegalesRoute
   '/recettes': typeof RecettesRoute
   '/restaurant': typeof RestaurantRoute
-  '/tracabilite': typeof TracabiliteRouteWithChildren
+  '/tracabilite': typeof TracabiliteRoute
   '/verification': typeof VerificationRoute
   '/admin/email-review': typeof AdminEmailReviewRoute
   '/api/marine': typeof ApiMarineRoute
@@ -150,7 +150,7 @@ export interface FileRoutesByTo {
   '/mentions-legales': typeof MentionsLegalesRoute
   '/recettes': typeof RecettesRoute
   '/restaurant': typeof RestaurantRoute
-  '/tracabilite': typeof TracabiliteRouteWithChildren
+  '/tracabilite': typeof TracabiliteRoute
   '/verification': typeof VerificationRoute
   '/admin/email-review': typeof AdminEmailReviewRoute
   '/api/marine': typeof ApiMarineRoute
@@ -171,13 +171,13 @@ export interface FileRoutesById {
   '/mentions-legales': typeof MentionsLegalesRoute
   '/recettes': typeof RecettesRoute
   '/restaurant': typeof RestaurantRoute
-  '/tracabilite': typeof TracabiliteRouteWithChildren
+  '/tracabilite': typeof TracabiliteRoute
   '/verification': typeof VerificationRoute
   '/admin_/email-review': typeof AdminEmailReviewRoute
   '/api/marine': typeof ApiMarineRoute
   '/api/weather': typeof ApiWeatherRoute
   '/pecheurs/$id': typeof PecheursIdRoute
-  '/tracabilite/$token': typeof TracabiliteTokenRoute
+  '/tracabilite_/$token': typeof TracabiliteTokenRoute
   '/pecheurs/': typeof PecheursIndexRoute
 }
 export interface FileRouteTypes {
@@ -239,7 +239,7 @@ export interface FileRouteTypes {
     | '/api/marine'
     | '/api/weather'
     | '/pecheurs/$id'
-    | '/tracabilite/$token'
+    | '/tracabilite_/$token'
     | '/pecheurs/'
   fileRoutesById: FileRoutesById
 }
@@ -254,12 +254,13 @@ export interface RootRouteChildren {
   MentionsLegalesRoute: typeof MentionsLegalesRoute
   RecettesRoute: typeof RecettesRoute
   RestaurantRoute: typeof RestaurantRoute
-  TracabiliteRoute: typeof TracabiliteRouteWithChildren
+  TracabiliteRoute: typeof TracabiliteRoute
   VerificationRoute: typeof VerificationRoute
   AdminEmailReviewRoute: typeof AdminEmailReviewRoute
   ApiMarineRoute: typeof ApiMarineRoute
   ApiWeatherRoute: typeof ApiWeatherRoute
   PecheursIdRoute: typeof PecheursIdRoute
+  TracabiliteTokenRoute: typeof TracabiliteTokenRoute
   PecheursIndexRoute: typeof PecheursIndexRoute
 }
 
@@ -384,27 +385,15 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PecheursIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/tracabilite/$token': {
-      id: '/tracabilite/$token'
-      path: '/$token'
+    '/tracabilite_/$token': {
+      id: '/tracabilite_/$token'
+      path: '/tracabilite/$token'
       fullPath: '/tracabilite/$token'
       preLoaderRoute: typeof TracabiliteTokenRouteImport
-      parentRoute: typeof TracabiliteRoute
+      parentRoute: typeof rootRouteImport
     }
   }
 }
-
-interface TracabiliteRouteChildren {
-  TracabiliteTokenRoute: typeof TracabiliteTokenRoute
-}
-
-const TracabiliteRouteChildren: TracabiliteRouteChildren = {
-  TracabiliteTokenRoute: TracabiliteTokenRoute,
-}
-
-const TracabiliteRouteWithChildren = TracabiliteRoute._addFileChildren(
-  TracabiliteRouteChildren,
-)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -417,12 +406,13 @@ const rootRouteChildren: RootRouteChildren = {
   MentionsLegalesRoute: MentionsLegalesRoute,
   RecettesRoute: RecettesRoute,
   RestaurantRoute: RestaurantRoute,
-  TracabiliteRoute: TracabiliteRouteWithChildren,
+  TracabiliteRoute: TracabiliteRoute,
   VerificationRoute: VerificationRoute,
   AdminEmailReviewRoute: AdminEmailReviewRoute,
   ApiMarineRoute: ApiMarineRoute,
   ApiWeatherRoute: ApiWeatherRoute,
   PecheursIdRoute: PecheursIdRoute,
+  TracabiliteTokenRoute: TracabiliteTokenRoute,
   PecheursIndexRoute: PecheursIndexRoute,
 }
 export const routeTree = rootRouteImport
