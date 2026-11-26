@@ -1,9 +1,17 @@
 import { useLanguage } from "@/lib/i18n";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import type { Catch } from "@/lib/store";
 import { useSharedMarket } from "@/lib/shared-market";
 import { DemoBadge, Empty, PageHeader, StatusPill } from "@/components/ui-bits";
+
+const isPreview = import.meta.env["VITE_MAREE_PREVIEW_MODE"] === "true";
+const demoTraceabilityTokens: Record<string, string> = {
+  "10000000-0000-4000-8000-000000000101": "90000000-0000-4000-8000-000000000101",
+  "10000000-0000-4000-8000-000000000102": "90000000-0000-4000-8000-000000000102",
+  "10000000-0000-4000-8000-000000000103": "90000000-0000-4000-8000-000000000103",
+};
 
 export const Route = createFileRoute("/catalogue")({
   head: () => ({
@@ -41,7 +49,7 @@ function Catalogue() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
-      <PageHeader title={t("Pêche du jour")} sub={t("Lots publiés par les pêcheurs partenaires.")} />
+      <PageHeader title={t("Pêche du jour")} sub={t("Lots publiés par les pêcheurs partenaires.")}>{isPreview && <DemoBadge />}</PageHeader>
       {loading && <p role="status" className="mb-4 text-sm text-muted-foreground">{t("Chargement des prises partagées…")}</p>}
       {error && <p role="alert" className="mb-4 rounded-lg border border-destructive/40 p-3 text-sm">{t("Catalogue indisponible :")} {error}</p>}
       {!loading && !error && catches.length === 0 && <p className="mb-4 text-sm text-muted-foreground">{t("Aucune prise réelle publiée pour le moment.")}</p>}
@@ -65,15 +73,19 @@ function Catalogue() {
       </div>
       {list.length === 0 ? <Empty>{t("Aucun lot ne correspond à vos filtres.")}</Empty> : (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {list.map((c) => <CatchCard key={c.id} c={c} fisher={fishers.find((f) => f.id === c.fisherId)?.name ?? "—"} boat={fishers.find((f) => f.id === c.fisherId)?.boat ?? ""} />)}
+          {list.map((c) => <CatchCard key={c.id} c={c} fisher={fishers.find((f) => f.id === c.fisherId)?.name ?? "—"} boat={fishers.find((f) => f.id === c.fisherId)?.boat ?? ""} demoTraceabilityToken={isPreview ? demoTraceabilityTokens[c.id] : undefined} />)}
         </div>
       )}
     </div>
   );
 }
 
-function CatchCard({ c, fisher, boat }: { c: Catch; fisher: string; boat: string }) {
+function CatchCard({ c, fisher, boat, demoTraceabilityToken }: { c: Catch; fisher: string; boat: string; demoTraceabilityToken: string | undefined }) {
   const { t, gbp, dt } = useLanguage();
+  const [traceabilityUrl, setTraceabilityUrl] = useState<string | null>(null);
+  useEffect(() => {
+    setTraceabilityUrl(demoTraceabilityToken ? `${window.location.origin}/tracabilite/${demoTraceabilityToken}` : null);
+  }, [demoTraceabilityToken]);
   return (
     <article className="card overflow-hidden">
       <div className="flex h-32 items-center justify-center bg-sea text-6xl" aria-hidden>{c.emoji}</div>
@@ -96,6 +108,7 @@ function CatchCard({ c, fisher, boat }: { c: Catch; fisher: string; boat: string
           <dt className="text-muted-foreground">{t("Méthode")}</dt><dd>{t(c.method)}</dd>
         </dl>
         <p className="mt-3 rounded-md bg-muted p-2 text-xs">❄️ {t(c.storage)}</p>
+        {traceabilityUrl && demoTraceabilityToken && <div className="mt-4 flex items-center gap-3 rounded-lg border border-border p-3"><QRCodeSVG value={traceabilityUrl} size={76} level="M" aria-label={t("QR de démonstration pour ce lot fictif")} /><div className="min-w-0"><p className="text-xs font-semibold">{t("Traçabilité · démo")}</p><a href={traceabilityUrl} className="text-xs underline underline-offset-2">{t("Ouvrir la fiche du lot")}</a></div></div>}
         {c.status === "disponible" && c.qtyKg > 0 && (
           <Link to="/restaurant" search={{ produit: c.id }} className="btn mt-4 w-full">{t("Réserver")}</Link>
         )}
