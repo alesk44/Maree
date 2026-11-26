@@ -2,9 +2,10 @@ import { useLanguage } from "@/lib/i18n";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { fetchMyOrders, fetchMyMonthlyInvoices, fetchMyMareeCommissionInvoices, declareMareeCommissionInvoicePaid, reserveSharedCatch, requestMyOrderCancellation, respondMyOrderCancellation, setRestaurantFisherBillingMode, useSharedMarket, type SharedOrderRow, type SharedMonthlyInvoiceRow, type SharedMareeCommissionInvoiceRow } from "@/lib/shared-market";
+import { fetchMyOrders, fetchMyMonthlyInvoices, fetchMyMareeCommissionInvoices, declareMareeCommissionInvoicePaid, fetchOrderInvoiceContact, reserveSharedCatch, requestMyOrderCancellation, respondMyOrderCancellation, setRestaurantFisherBillingMode, useSharedMarket, type SharedOrderRow, type SharedMonthlyInvoiceRow, type SharedMareeCommissionInvoiceRow } from "@/lib/shared-market";
 import { supabase } from "@/lib/supabase";
 import { Empty, OrderSteps, PageHeader } from "@/components/ui-bits";
+import { buildProductInvoiceMailto } from "@/lib/invoice-email";
 
 export const Route = createFileRoute("/restaurant")({
   validateSearch: (s: Record<string, unknown>) => ({ produit: typeof s["produit"] === "string" ? s["produit"] : undefined }),
@@ -19,6 +20,15 @@ export const Route = createFileRoute("/restaurant")({
   component: Restaurant,
 });
 
+type RestaurantSubscriptionRow = {
+  id:string;
+  monthly_fee:number|string;
+  started_at:string;
+  ends_at:string|null;
+  accepted_at:string;
+  terms_version:string;
+};
+
 function Restaurant() {
   const { t, gbp, dt } = useLanguage();
   const tRef = useRef(t);
@@ -28,7 +38,11 @@ function Restaurant() {
   const [orders, setOrders] = useState<SharedOrderRow[]>([]);
   const [monthlyInvoices, setMonthlyInvoices] = useState<SharedMonthlyInvoiceRow[]>([]);
   const [mareeInvoices, setMareeInvoices] = useState<SharedMareeCommissionInvoiceRow[]>([]);
+  const [subscriptions, setSubscriptions] = useState<RestaurantSubscriptionRow[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
+  const [invoiceDraftBusyId, setInvoiceDraftBusyId] = useState<string|null>(null);
+  const [subscriptionConsent, setSubscriptionConsent] = useState(false);
+  const [subscriptionBusy, setSubscriptionBusy] = useState(false);
   const [catchId, setCatchId] = useState(produit ?? "");
   const [qty, setQty] = useState(2);
   const [tipAmount, setTipAmount] = useState(0);
@@ -36,10 +50,12 @@ function Restaurant() {
   const [mode, setMode] = useState<"livraison" | "retrait">("livraison");
   const [note, setNote] = useState("");
   const [signedIn, setSignedIn] = useState(false);
+  const [accountRole,setAccountRole] = useState<string|null>(null);
   const [accountTab, setAccountTab] = useState<"activity" | "billing" | "profile">("activity");
   const [profileName, setProfileName] = useState("");
   const [billingMode, setBillingMode] = useState<"immediate"|"monthly">("immediate");
   const [mareeFeeRate,setMareeFeeRate]=useState(0.065);
+  const [monthlySubscriptionFee,setMonthlySubscriptionFee]=useState(19.99);
   const [deliveryFeeRate,setDeliveryFeeRate]=useState(0.20);
   const [deliveryFeePayer,setDeliveryFeePayer]=useState<'buyer'|'fisher'>('buyer');
 
@@ -52,9 +68,16 @@ function Restaurant() {
         const {data:commercialRows,error:commercialError}=await supabase.rpc('get_maree_commercial_settings');
         if(commercialError) throw commercialError;
         const commercial=Array.isArray(commercialRows)?commercialRows[0]:commercialRows;
-        if(commercial){setMareeFeeRate(Number(commercial.maree_fee_rate));setDeliveryFeeRate(Number(commercial.delivery_fee_rate));setDeliveryFeePayer(commercial.delivery_fee_payer==='fisher'?'fisher':'buyer');}
-        const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", auth.user.id).maybeSingle();
+        if(commercial){setMareeFeeRate(Number(commercial.maree_fee_rate));setDeliveryFeeRate(Number(commercial.delivery_fee_rate));setDeliveryFeePayer(commercial.delivery_fee_payer==='fisher'?'fisher':'buyer');setMonthlySubscriptionFee(Number(commercial.monthly_subscription_fee));}
+        const { data: profile } = await supabase.from("profiles").select("display_name,role").eq("id", auth.user.id).maybeSingle();
         setProfileName(profile?.display_name ?? "");
+        setAccountRole(profile?.role??null);
+        const {data:subscriptionRows,error:subscriptionError}=await supabase.from("maree_restaurant_subscriptions").select("id,monthly_fee,started_at,ends_at,accepted_at,terms_version").eq("restaurant_id",auth.user.id).order("started_at",{ascending:false});
+        if(subscriptionError) throw subscriptionError;
+        setSubscriptions((subscriptionRows??[]) as RestaurantSubscriptionRow[]);
+      } else {
+        setSubscriptions([]);
+        setAccountRole(null);
       }
       const [nextOrders,nextInvoices,nextMareeInvoices] = await Promise.all([fetchMyOrders(),fetchMyMonthlyInvoices(),fetchMyMareeCommissionInvoices()]);
       setOrders(nextOrders);
@@ -85,8 +108,14 @@ function Restaurant() {
     + monthlyUnbilled.reduce((sum,o)=>sum+Number(o.tip_amount??0),0);
   const fisherPaid = deliveredOrders.filter(o=>o.fisher_payment_status==="paid").reduce((sum,o)=>sum+Number(o.product_subtotal??0)+Number(o.tip_amount??0)-(o.delivery_fee_payer_snapshot==='fisher'?Number(o.delivery_fee??0):0),0);
   const mareeAccrued = deliveredOrders.reduce((sum,o)=>sum+Number(o.maree_fee??0)+(o.delivery_fee_payer_snapshot==='buyer'?Number(o.delivery_fee??0):0),0);
-  const mareeSettled = mareeInvoices.filter(i=>i.status==="paid").reduce((sum,i)=>sum+Number(i.commission_total)+Number(i.delivery_total),0);
-  const mareeOutstanding = Math.max(0,mareeAccrued-mareeSettled);
+  const currentDate = new Date();
+  const currentPeriodStart = currentDate.getFullYear()+"-"+String(currentDate.getMonth()+1).padStart(2,"0")+"-01";
+  const currentSubscriptionInvoiceExists = mareeInvoices.some(i=>i.period_start===currentPeriodStart);
+  const activeSubscription = subscriptions.find(s=>new Date(s.started_at).getTime()<=Date.now()&&(!s.ends_at||new Date(s.ends_at).getTime()>Date.now()));
+  const subscriptionOutstanding = mareeInvoices.filter(i=>i.status!=="void").reduce((sum,i)=>sum+Number(i.subscription_total??0),0)
+    + (activeSubscription&&!currentSubscriptionInvoiceExists?Number(activeSubscription.monthly_fee):0);
+  const mareeSettled = mareeInvoices.filter(i=>i.status==="paid").reduce((sum,i)=>sum+Number(i.commission_total)+Number(i.delivery_total)+Number(i.subscription_total??0),0);
+  const mareeOutstanding = Math.max(0,mareeAccrued+subscriptionOutstanding-mareeSettled);
 
   useEffect(() => { void loadOrders(); }, [loadOrders]);
   useEffect(() => {
@@ -142,6 +171,52 @@ function Restaurant() {
     } catch (e) { toast.error(e instanceof Error ? t(e.message) : t("Impossible d'envoyer la réservation.")); return; }
   };
 
+  const openProductInvoiceDraft = async (orderId:string) => {
+    setInvoiceDraftBusyId(orderId);
+    try {
+      const contact=await fetchOrderInvoiceContact(orderId);
+      const reference=contact.order_id.slice(0,8).toUpperCase();
+      const subject=t("Facture produits — commande {reference}",{reference});
+      const body=[
+        t("Bonjour {name}",{name:contact.recipient_name}),"",
+        t("Voici le récapitulatif de la commande {reference}.",{reference}),
+        t("Produit")+" : "+t(contact.species),
+        t("Quantité")+" : "+Number(contact.quantity_kg).toLocaleString()+" kg × "+gbp(Number(contact.unit_price))+"/kg",
+        t("Total des produits")+" : "+gbp(Number(contact.product_subtotal)),"",
+        t("Veuillez joindre votre facture produits ; le règlement s'effectue directement entre les deux entreprises."),
+        t("Marée n'encaisse pas le prix des produits."),
+      ].join("\n");
+      window.location.href=buildProductInvoiceMailto(contact.recipient_email??"",subject,body);
+      toast.info(t("Un brouillon s’ouvre dans votre messagerie. Vérifiez l’adresse, joignez votre facture et envoyez-la."));
+    } catch(error) { toast.error(t(error instanceof Error?error.message:"Impossible de préparer le brouillon de facture.")); }
+    finally { setInvoiceDraftBusyId(null); }
+  };
+
+  const startSubscription = async () => {
+    if(!subscriptionConsent) { toast.error(t("Cochez la case pour accepter l’abonnement mensuel.")); return; }
+    setSubscriptionBusy(true);
+    try {
+      const {error}=await supabase.rpc("start_maree_restaurant_subscription",{p_accept_terms:true});
+      if(error) throw error;
+      setSubscriptionConsent(false);
+      toast.success(t("Abonnement Marée activé."));
+      await loadOrders();
+    } catch(error) { toast.error(t(error instanceof Error?error.message:"Impossible d’activer l’abonnement.")); }
+    finally { setSubscriptionBusy(false); }
+  };
+
+  const cancelSubscription = async () => {
+    if(!window.confirm(t("La résiliation prendra effet à la fin du mois civil en cours. Continuer ?"))) return;
+    setSubscriptionBusy(true);
+    try {
+      const {data,error}=await supabase.rpc("cancel_maree_restaurant_subscription");
+      if(error) throw error;
+      toast.success(t("Résiliation programmée pour la fin du mois.")+" "+t("Résiliation prévue le {date}",{date:dt(String(data))}));
+      await loadOrders();
+    } catch(error) { toast.error(t(error instanceof Error?error.message:"Impossible de résilier l’abonnement.")); }
+    finally { setSubscriptionBusy(false); }
+  };
+
   return <div className="mx-auto max-w-6xl px-4 py-10">
     <PageHeader title={t("Espace restaurant")} sub={t("Réservez directement la pêche du jour. Aucun paiement dans cette version.")} />
     <Link to="/tracabilite" className="btn btn-accent mb-4 inline-flex">{t("Scanner QR")}</Link>
@@ -160,13 +235,24 @@ function Restaurant() {
         <Metric label={t("Dette Marée à régler")} value={gbp(mareeOutstanding)} detail={t("Relevés ouverts ou en vérification")}/>
         <Metric label={t("Paiements Marée vérifiés")} value={gbp(mareeSettled)} detail={t("Relevés réglés")}/>
       </div>
+      <section className="rounded-xl border border-border p-4" aria-labelledby="restaurant-subscription-heading">
+        <h3 id="restaurant-subscription-heading" className="font-semibold">{t("Abonnement Marée")}</h3>
+        <p className="mt-1 text-sm text-muted-foreground">{t("L’abonnement coûte {amount} par mois civil complet, sans prorata. Il est facturé dans le même relevé mensuel que les frais des commandes Marée. Les factures des produits restent échangées directement entre restaurant et pêcheur par e-mail. Aucun paiement en ligne n’est actif.",{amount:gbp(monthlySubscriptionFee)})}</p>
+        {activeSubscription ? <div className="mt-3 grid gap-2 text-sm">
+          <p>{t("Abonnement actif depuis le {date}",{date:dt(activeSubscription.started_at)})} — {gbp(Number(activeSubscription.monthly_fee))}/mois</p>
+          {activeSubscription.ends_at ? <p className="text-muted-foreground">{t("Résiliation prévue le {date}",{date:dt(activeSubscription.ends_at)})}</p> : <button type="button" className="btn w-fit" disabled={subscriptionBusy} onClick={()=>void cancelSubscription()}>{subscriptionBusy?t("Traitement…"):t("Résilier à la fin du mois")}</button>}
+        </div> : signedIn&&accountRole==="restaurant" ? <div className="mt-3 grid gap-3">
+          <label className="flex items-start gap-2 text-sm"><input type="checkbox" checked={subscriptionConsent} onChange={e=>setSubscriptionConsent(e.target.checked)} /><span>{t("J’accepte l’abonnement Marée à {amount} par mois civil complet, sans prorata, à compter de son activation. La résiliation prendra effet à la fin du mois en cours. Les frais de commande Marée restent facturés en plus.",{amount:gbp(monthlySubscriptionFee)})}</span></label>
+          <button type="button" className="btn btn-accent w-fit" disabled={!subscriptionConsent||subscriptionBusy} onClick={()=>void startSubscription()}>{subscriptionBusy?t("Activation…"):t("Activer l’abonnement")}</button>
+        </div> : <p className="mt-3 text-sm text-muted-foreground">{signedIn?t("Cette action est réservée aux comptes restaurant."):t("Connectez-vous avec un compte restaurant pour gérer l’abonnement.")}</p>}
+      </section>
       <div className="grid gap-2">
         <h3 className="font-semibold">{t("Relevés mensuels de commission Marée")}</h3>
         <p className="text-xs text-muted-foreground">{t("Ces relevés regroupent la commission Marée et les frais de livraison imputés au restaurant selon les tarifs figés à chaque réservation. Ils sont distincts des factures produits dues aux pêcheurs. Une déclaration de paiement reste à vérifier par l’administration.")}</p>
         {mareeInvoices.length===0 ? <Empty>{t("Aucun relevé mensuel de commission pour le moment.")}</Empty> :
           <ul className="grid gap-2">{mareeInvoices.map(i=><li key={i.id} className="rounded-xl border border-border p-4">
-            <div className="flex flex-wrap justify-between gap-2"><strong>{t("Période")} {i.period_start} — {i.period_end}</strong><strong>{gbp(Number(i.commission_total)+Number(i.delivery_total))}</strong></div>
-            <p className="text-xs text-muted-foreground">{t("Commission Marée")} : {gbp(Number(i.commission_total))} · {t("Livraison facturée au restaurant")} : {gbp(Number(i.delivery_total))}</p>
+            <div className="flex flex-wrap justify-between gap-2"><strong>{t("Période")} {i.period_start} — {i.period_end}</strong><strong>{gbp(Number(i.commission_total)+Number(i.delivery_total)+Number(i.subscription_total??0))}</strong></div>
+            <p className="text-xs text-muted-foreground">{t("Abonnement")} : {gbp(Number(i.subscription_total??0))} · {t("Commission Marée")} : {gbp(Number(i.commission_total))} · {t("Livraison facturée au restaurant")} : {gbp(Number(i.delivery_total))}</p>
             <p className="text-sm text-muted-foreground">{t("Échéance")} : {i.due_date} · {i.status==="paid"?t("Paiement vérifié par Marée"):i.status==="declared_paid"?t("Paiement déclaré — vérification Marée en attente"):i.status==="void"?t("Annulé"):t("À régler à Marée")}</p>
             {i.items?.length ? <ul className="mt-2 grid gap-1 border-t border-border pt-2 text-xs">{i.items.map(item=><li key={item.order_id} className="flex flex-wrap justify-between gap-2"><span>Commande {item.order_id.slice(0,8).toUpperCase()} · {item.fulfilment==="delivery"?t("Livraison"):t("Retrait")} · {gbp(Number(item.product_subtotal))} {t("produits")}</span><strong>{t("Commission")} : {gbp(Number(item.commission_amount))} · {t("Livraison")} : {gbp(Number(item.delivery_amount))} · {t(item.delivery_fee_payer_snapshot==='buyer'?'Payée par le restaurant':'Déduite du pêcheur')}</strong></li>)}</ul> : null}
             {i.payment_method&&<p className="text-xs text-muted-foreground">{t("Mode")} : {i.payment_method} {i.payment_reference?("· "+t("Référence")+" : "+i.payment_reference):""}</p>}
@@ -200,6 +286,7 @@ function Restaurant() {
           <p className="text-xs text-muted-foreground">{t("Livrée")} · {dt(o.delivered_at??o.requested_slot)} · Réf. {o.id.slice(0,8).toUpperCase()}</p>
           <p className="mt-1 text-sm">{t("Produits")} : {gbp(products)} · {t("Pourboire")} : {gbp(Number(o.tip_amount??0))} · {t("Commission Marée ({rate} %)",{rate:(Number(o.maree_fee_rate)*100).toString()})} : {gbp(Number(o.maree_fee??0))} · {t("Livraison ({rate} %)",{rate:(Number(o.delivery_fee_rate)*100).toString()})} : {gbp(Number(o.delivery_fee??0))} · {t("Payeur")} : {t(o.delivery_fee_payer_snapshot==='buyer'?'Restaurant':'Pêcheur')}</p>
           <p className="mt-1 text-xs text-muted-foreground">{t("Relevé indicatif — ne constitue pas une facture fiscale ni une preuve de paiement.")}</p>
+          <button type="button" className="btn mt-3 text-sm" disabled={invoiceDraftBusyId===o.id} onClick={()=>void openProductInvoiceDraft(o.id)}>{invoiceDraftBusyId===o.id?t("Préparation…"):t("Préparer la facture par e-mail")}</button>
         </li>})}</ul>}
     </section>}
     {accountTab==="profile" && <section className="card mb-8 grid gap-2 p-5">

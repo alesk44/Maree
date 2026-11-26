@@ -1,8 +1,10 @@
 import { useLanguage } from "@/lib/i18n";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
-import { createSharedCatch, fetchMyOrders, fetchMyMonthlyInvoices, confirmFisherInvoicePaid, markFisherOrderPaid, updateMyCatch, updateMyOrderStatus, useSharedMarket, type SharedOrderRow, type SharedMonthlyInvoiceRow } from "@/lib/shared-market";
+import { buildProductInvoiceMailto } from "@/lib/invoice-email";
+import { createSharedCatch, fetchOrderInvoiceContact, fetchMyOrders, fetchMyMonthlyInvoices, confirmFisherInvoicePaid, markFisherOrderPaid, getMyCatchTraceabilityToken, revokeMyCatchTraceabilityToken, updateMyCatch, updateMyOrderStatus, useSharedMarket, type SharedOrderRow, type SharedMonthlyInvoiceRow } from "@/lib/shared-market";
 import { supabase } from "@/lib/supabase";
 import { Empty, OrderSteps, PageHeader, StatusPill } from "@/components/ui-bits";
 import type { Status } from "@/lib/store";
@@ -33,6 +35,9 @@ function FisherSpace() {
   const [accountTab,setAccountTab] = useState<"activity"|"sales"|"profile">("activity");
   const [orders,setOrders] = useState<SharedOrderRow[]>([]);
   const [monthlyInvoices,setMonthlyInvoices] = useState<SharedMonthlyInvoiceRow[]>([]);
+  const [traceabilityUrls,setTraceabilityUrls] = useState<Record<string,string>>({});
+  const [traceabilityBusyId,setTraceabilityBusyId] = useState<string|null>(null);
+  const [invoiceDraftBusyId,setInvoiceDraftBusyId] = useState<string|null>(null);
   const [verificationStatus,setVerificationStatus] = useState<"pending"|"rejected"|null>(null);
   const [verificationNote,setVerificationNote] = useState<string|null>(null);
   const [fisherProfile,setFisherProfile] = useState({
@@ -169,6 +174,71 @@ function FisherSpace() {
       toast.success(t("Lot mis à jour."));
       await refresh();
     } catch(e) { toast.error(e instanceof Error && !("code" in e) ? t(e.message) : t("Impossible de modifier ce lot.")); }
+  };
+
+  const createTraceabilityQr = async (catchId:string) => {
+    setTraceabilityBusyId(catchId);
+    try {
+      const token = await getMyCatchTraceabilityToken(catchId);
+      const url = new URL(`/tracabilite/${token}`, window.location.origin).toString();
+      setTraceabilityUrls((current)=>({...current,[catchId]:url}));
+    } catch {
+      toast.error(t("Impossible de créer le QR de traçabilité."));
+    } finally {
+      setTraceabilityBusyId(null);
+    }
+  };
+
+  const revokeTraceabilityQr = async (catchId:string) => {
+    setTraceabilityBusyId(catchId);
+    try {
+      await revokeMyCatchTraceabilityToken(catchId);
+      setTraceabilityUrls((current)=>{
+        const next={...current};
+        delete next[catchId];
+        return next;
+      });
+      toast.success(t("Lien de traçabilité révoqué."));
+    } catch {
+      toast.error(t("Impossible de révoquer le QR de traçabilité."));
+    } finally {
+      setTraceabilityBusyId(null);
+    }
+  };
+
+  const copyTraceabilityLink = async (url:string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success(t("Lien copié."));
+    } catch {
+      toast.error(t("Impossible de copier le lien."));
+    }
+  };
+
+  const openProductInvoiceDraft = async (orderId:string) => {
+    setInvoiceDraftBusyId(orderId);
+    try {
+      const contact = await fetchOrderInvoiceContact(orderId);
+      const reference = contact.order_id.slice(0,8).toUpperCase();
+      const subject = t("Facture produits — commande {reference}", { reference });
+      const body = [
+        t("Bonjour {name},", { name: contact.recipient_name }),
+        "",
+        t("Voici le récapitulatif de la commande {reference}.", { reference }),
+        `${t("Produit")} : ${t(contact.species)}`,
+        `${t("Quantité")} : ${Number(contact.quantity_kg).toLocaleString()} kg`,
+        `${t("Total des produits")} : ${gbp(Number(contact.product_subtotal))}`,
+        "",
+        t("Veuillez joindre votre facture produits ; le règlement s'effectue directement entre les deux entreprises."),
+        t("Marée n'encaisse pas le prix des produits."),
+      ].join("\n");
+      window.location.href = buildProductInvoiceMailto(contact.recipient_email ?? "", subject, body);
+      toast.info(t("Un brouillon s’ouvre dans votre messagerie. Vérifiez l’adresse, joignez votre facture et envoyez-la."));
+    } catch (error) {
+      toast.error(t(error instanceof Error ? error.message : "Impossible de préparer le brouillon de facture."));
+    } finally {
+      setInvoiceDraftBusyId(null);
+    }
   };
 
   const confirmInvoicePayment = async (invoiceId:string) => {
@@ -340,15 +410,28 @@ function FisherSpace() {
       </form>
       <section>
         <h2 className="mb-3 text-xl font-semibold">{t("Mes lots")}</h2>
-        {mine.length===0?<Empty>{t("Aucun lot publié.")}</Empty>:<ul className="grid gap-3">{mine.map((c)=><li key={c.id} className="card p-4">
+        {mine.length===0?<Empty>{t("Aucun lot publié.")}</Empty>:<ul className="grid gap-3">{mine.map((c)=>{
+          const traceabilityUrl = traceabilityUrls[c.id];
+          return <li key={c.id} className="card p-4">
           <div className="flex items-center justify-between"><strong>{c.emoji} {t(c.species)}</strong><StatusPill s={c.status}/></div>
           <p className="text-xs text-muted-foreground">{t("Débarqué")} {dt(c.landedAt)}</p>
           <div className="mt-3 grid grid-cols-2 gap-2">
             <label className="grid gap-1 text-xs">{t("Quantité kg")}<input className="field" type="number" min={0} step={0.5} defaultValue={c.qtyKg} onBlur={(e)=>{const n=Number(e.target.value);if(Number.isFinite(n)&&n>=0&&n!==c.qtyKg)void saveCatch(c.id,{qtyKg:n,status:n===0?"épuisé":"disponible"});}}/></label>
             <label className="grid gap-1 text-xs">{t("Prix £/kg")}<input className="field" type="number" min={0} step={0.5} defaultValue={c.priceKg} onBlur={(e)=>{const n=Number(e.target.value);if(Number.isFinite(n)&&n>=0&&n!==c.priceKg)void saveCatch(c.id,{priceKg:n});}}/></label>
           </div>
+          {traceabilityUrl ? <div className="mt-4 grid justify-items-start gap-3 rounded-xl border border-border p-3">
+            <p className="text-sm font-semibold">{t("Lien public de traçabilité")}</p>
+            <p className="text-xs leading-relaxed text-muted-foreground">{t("Données déclarées par le pêcheur. Ce QR n'est ni une certification officielle ni une validation de légalité, de fraîcheur ou de sécurité sanitaire.")}</p>
+            <QRCodeSVG value={traceabilityUrl} size={176} level="M" marginSize={4} title={t("Lien public de traçabilité")} />
+            <a className="break-all text-sm underline" href={traceabilityUrl} target="_blank" rel="noopener noreferrer">{traceabilityUrl}</a>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" className="btn text-sm" onClick={()=>void copyTraceabilityLink(traceabilityUrl)}>{t("Copier le lien")}</button>
+              <button type="button" className="btn text-sm text-destructive" disabled={traceabilityBusyId===c.id} onClick={()=>void revokeTraceabilityQr(c.id)}>{t("Révoquer le QR")}</button>
+            </div>
+          </div> : <button type="button" className="btn mt-3 w-full text-sm" disabled={traceabilityBusyId===c.id} onClick={()=>void createTraceabilityQr(c.id)}>{traceabilityBusyId===c.id?t("Création…"):t("Créer un QR de traçabilité")}</button>}
           {c.status!=="épuisé"&&<button type="button" className="mt-2 text-sm font-semibold text-destructive" onClick={()=>void saveCatch(c.id,{qtyKg:0,status:"épuisé"})}>{t("Marquer épuisé")}</button>}
-        </li>)}</ul>}
+        </li>;
+        })}</ul>}
         <h2 className="mt-8 mb-3 text-xl font-semibold">{t("Demandes reçues")}</h2>
         {myOrders.length===0?<Empty>{t("Aucune demande reçue.")}</Empty>:<ul className="grid gap-3">{myOrders.map((o)=>{
           const c=catches.find((x)=>x.id===o.catch_id);
@@ -360,6 +443,7 @@ function FisherSpace() {
             {o.cancellation_request_status==="pending"&&<div className="mt-3 rounded-lg border border-border p-3"><p className="text-sm font-semibold">{t("Demande d’annulation tardive")}</p><p className="mb-2 text-xs text-muted-foreground">{t("Vous décidez d’accepter ou de refuser. En cas d’acceptation, vous fixez la pénalité en GBP (0 est autorisé).")}</p><div className="flex flex-col gap-2 sm:flex-row"><button type="button" className="btn btn-accent text-sm" onClick={()=>void decideLateCancellation(o,true)}>{t("Accepter et fixer la pénalité")}</button><button type="button" className="btn text-sm text-destructive" onClick={()=>void decideLateCancellation(o,false)}>{t("Refuser l’annulation")}</button></div></div>}
             {o.status==="submitted"&&o.cancellation_request_status!=="pending"&&o.cancellation_request_status!=="offered"&&<div className="mt-3 flex flex-col gap-2 sm:flex-row"><button type="button" className="btn btn-accent w-full justify-center text-sm sm:w-auto" onClick={()=>void decideOrder(o,"confirmed")}>{t("Accepter la commande")}</button><button type="button" className="btn w-full justify-center border border-destructive/40 text-sm text-destructive sm:w-auto" onClick={()=>void decideOrder(o,"cancelled")}>{t("Refuser")}</button></div>}
             {o.status in nextStatus&&o.cancellation_request_status!=="pending"&&o.cancellation_request_status!=="offered"&&<button type="button" className="btn btn-accent mt-3 text-sm" onClick={()=>void advance(o)}>{t("Passer à l'étape suivante")}</button>}
+            {o.status==="delivered"&&<button type="button" className="btn mt-3 text-sm" disabled={invoiceDraftBusyId===o.id} onClick={()=>void openProductInvoiceDraft(o.id)}>{invoiceDraftBusyId===o.id?t("Préparation…"):t("Préparer la facture par e-mail")}</button>}
           </li>;
         })}</ul>}
       </section>

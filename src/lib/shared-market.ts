@@ -8,6 +8,43 @@ const emoji = (method:string) => ({ Casiers:"🦀", Ligne:"🐟", Plongée:"🐚
 
 export type MarketData = { catches:Catch[]; fishers:Fisher[]; loading:boolean; error:string|null; refresh:()=>Promise<void> };
 
+export type PublicCatchTraceability = {
+  species: string;
+  zone: string;
+  caughtAt: string;
+  landedAt: string;
+  quantityKg: number;
+  method: string;
+  grade: string | null;
+  storageInstructions: string;
+  fisher: { name: string | null; boat: string | null; homePort: string | null };
+  timeline: Array<{ event: "catch_published" | "landed" | "weighed" | "external_code_scanned"; occurredAt: string; quantityKg: number | null }>;
+};
+
+export async function getMyCatchTraceabilityToken(catchId: string): Promise<string> {
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError) throw authError;
+  if (!user) throw new Error("Connectez-vous avec votre compte pêcheur.");
+  const { data, error } = await supabase.rpc("get_my_catch_traceability_token", { p_catch_id: catchId });
+  if (error) throw error;
+  if (typeof data !== "string") throw new Error("Impossible de créer le lien de traçabilité.");
+  return data;
+}
+
+export async function revokeMyCatchTraceabilityToken(catchId: string): Promise<void> {
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError) throw authError;
+  if (!user) throw new Error("Connectez-vous avec votre compte pêcheur.");
+  const { error } = await supabase.rpc("revoke_my_catch_traceability_token", { p_catch_id: catchId });
+  if (error) throw error;
+}
+
+export async function fetchPublicCatchTraceability(token: string): Promise<PublicCatchTraceability | null> {
+  const { data, error } = await supabase.rpc("get_public_catch_traceability", { p_token: token });
+  if (error) throw error;
+  return data && typeof data === "object" ? data as PublicCatchTraceability : null;
+}
+
 export function useSharedMarket():MarketData {
   const [catches,setCatches]=useState<Catch[]>([]);
   const [fishers,setFishers]=useState<Fisher[]>([]);
@@ -80,6 +117,33 @@ export type SharedOrderRow = {
   cancellation_request_status:"none"|"pending"|"offered"|"approved"|"rejected"; cancellation_requested_at:string|null; cancellation_penalty:number|string|null;
 };
 
+export type OrderInvoiceContact = {
+  order_id: string;
+  recipient_name: string;
+  recipient_email: string | null;
+  species: string;
+  quantity_kg: number | string;
+  unit_price: number | string;
+  product_subtotal: number | string;
+  delivered_at: string;
+};
+
+export async function fetchOrderInvoiceContact(orderId: string): Promise<OrderInvoiceContact> {
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError) throw authError;
+  if (!user) throw new Error("Connectez-vous pour préparer la facture.");
+  const { data, error } = await supabase.rpc("get_my_order_invoice_contact", { p_order_id: orderId });
+  if (error) throw error;
+  const contact = Array.isArray(data) ? data[0] : data;
+  if (!contact || typeof contact !== "object") throw new Error("Cette commande livrée n'est pas accessible pour la facturation.");
+  const row = contact as OrderInvoiceContact;
+  const email = typeof row.recipient_email === "string" ? row.recipient_email.trim() : "";
+  if (!email || email.length > 254 || /[\r\n\0]/.test(email) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new Error("Aucune adresse e-mail de facturation valide n'est renseignée pour l'autre compte.");
+  }
+  return { ...row, recipient_email: email };
+}
+
 export async function fetchMyOrders():Promise<SharedOrderRow[]> {
   const {data:{user},error:authError}=await supabase.auth.getUser();
   if(authError) throw authError;
@@ -129,7 +193,7 @@ export async function confirmFisherInvoicePaid(invoiceId:string,paymentMethod:st
 export type SharedMareeCommissionInvoiceItemRow = { order_id:string; commission_amount:number|string; delivery_amount:number|string; delivery_fee_payer_snapshot:'buyer'|'fisher'; product_subtotal:number|string; fulfilment:"delivery"|"collection"; delivered_at:string };
 export type SharedMareeCommissionInvoiceRow = {
   id:string; restaurant_id:string; period_start:string; period_end:string; due_date:string;
-  commission_total:number|string; delivery_total:number|string; status:"open"|"declared_paid"|"paid"|"void";
+  commission_total:number|string; delivery_total:number|string; subscription_total:number|string; status:"open"|"declared_paid"|"paid"|"void";
   declared_at:string|null; verified_at:string|null; payment_method:string|null; payment_reference:string|null;
   items?:SharedMareeCommissionInvoiceItemRow[];
 };
@@ -139,7 +203,7 @@ export async function fetchMyMareeCommissionInvoices():Promise<SharedMareeCommis
   if(authError) throw authError;
   if(!user) return [];
   const {data,error}=await supabase.from("maree_monthly_commission_invoices")
-    .select("id,restaurant_id,period_start,period_end,due_date,commission_total,delivery_total,status,declared_at,verified_at,payment_method,payment_reference,items:maree_monthly_commission_invoice_items(order_id,commission_amount,delivery_amount,delivery_fee_payer_snapshot,product_subtotal,fulfilment,delivered_at)")
+    .select("id,restaurant_id,period_start,period_end,due_date,commission_total,delivery_total,subscription_total,status,declared_at,verified_at,payment_method,payment_reference,items:maree_monthly_commission_invoice_items(order_id,commission_amount,delivery_amount,delivery_fee_payer_snapshot,product_subtotal,fulfilment,delivered_at)")
     .order("period_start",{ascending:false});
   if(error) throw new Error("Impossible de charger les relevés Marée : schéma Supabase incomplet ou non synchronisé. "+error.message);
   return (data??[]) as SharedMareeCommissionInvoiceRow[];
